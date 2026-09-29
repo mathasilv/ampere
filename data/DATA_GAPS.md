@@ -16,6 +16,7 @@ dotnet test tests/Ampere.Tests.Core --list-tests --treenode-filter "/*/*/*/*[Fon
 | ID | Pendência | Onde | Para fechar |
 |---|---|---|---|
 | GAP-001 | Item da NBR 5410:2004 que define a corrente de projeto I<sub>B</sub> e a tensão a adotar por esquema (F+N, 2F, 3F) | `CalculoDeCorrente.CorrenteDeProjetoMonofasica`; `CalculoDeCorrente_Teste` (valores de brinquedo) | Conferir no texto oficial, citar o item no perfil e trocar os valores de brinquedo por casos verificáveis |
+| GAP-002 | Regras e limites da NBR 5410 para agrupar pontos em circuitos (quantidades e potências por local, circuitos independentes, separação entre tipos de carga) — especificação §3, F1.2 | `RegraDeAgrupamento` e `PlanejadorDeCircuitos`: hoje só limites informados pelo projetista, sem nenhum padrão | Citar itens e valores no perfil `NBR5410/2004`; o diálogo passa a sugeri-los, sempre editáveis |
 
 ## Previstas (F1.3/F1.4 — ainda sem código)
 
