@@ -1,0 +1,14 @@
+<RevitAddIns>
+    <AddIn Type="Application">
+        <Name>Ampere</Name>
+        <Assembly>Ampere\Ampere.dll</Assembly>
+        <AddInId>5039CEB0-F821-4AE3-AF9F-45A51398A0FD</AddInId>
+        <FullClassName>Ampere.Application</FullClassName>
+        <VendorId>Development</VendorId>
+        <VendorDescription></VendorDescription>
+    </AddIn>
+    <ManifestSettings>
+        <UseRevitContext>False</UseRevitContext>
+        <ContextName>Ampere</ContextName>
+    </ManifestSettings>
+</RevitAddIns>
