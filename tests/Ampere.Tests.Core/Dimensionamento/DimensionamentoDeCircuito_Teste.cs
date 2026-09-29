@@ -28,6 +28,8 @@ public class DimensionamentoDeCircuito_Teste
         await Assert.That(resultado.Eletroduto).IsEqualTo("B");
         await Assert.That(resultado.DiametroInternoDoEletrodutoMm).IsEqualTo(15m);
         await Assert.That(Math.Round(resultado.OcupacaoDoEletrodutoPct!.Value, 4)).IsEqualTo(21.3333m);
+        await Assert.That(Observacoes(resultado)).Contains("acima da taxa: A (48%)");
+        await Assert.That(Observacoes(resultado)).Contains("outros circuitos na mesma tubulação não entram");
     }
 
     [Test]

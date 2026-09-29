@@ -197,7 +197,7 @@ public static class DimensionamentoDeCircuito
             var ocupacao = Ocupacao(adotado);
             Passo(dadoDaTaxa.Referencia, "Ocupação do eletroduto", "ocupação = n · d² / Di² · 100",
                 [new ValorDoPasso("n", condutores, "condutores"), new ValorDoPasso("d", diametro, "mm"), new ValorDoPasso("Di", adotado.DiametroInternoMm, "mm")],
-                ocupacao, "%");
+                ocupacao, "%", "só os condutores deste circuito: outros circuitos na mesma tubulação não entram");
 
             _eletroduto = adotado.Nominal;
             _diametroInterno = adotado.DiametroInternoMm;
