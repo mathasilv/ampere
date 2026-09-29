@@ -93,6 +93,7 @@ public class PerfilNormativo_Teste
     public async Task Ocupacao_de_eletroduto_usa_a_maior_faixa_para_muitos_condutores(int condutores, int esperado)
     {
         await Assert.That(Ficticio.OcupacaoMaximaDeEletrodutoPct(condutores).Valor).IsEqualTo((decimal)esperado);
+        await Assert.That(Ficticio.FaixaDeOcupacao(condutores)).IsEqualTo(Math.Min(condutores, 3));
     }
 
     [Test]

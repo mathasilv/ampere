@@ -83,7 +83,7 @@ public static class DimensionamentoDeCircuito
             _fct = Consultar(perfil.FatorDeTemperatura(entrada.Isolacao, entrada.TemperaturaAmbienteC), "Fator de correção de temperatura",
                 $"FCT = tabela ({entrada.Isolacao}; {Numero(entrada.TemperaturaAmbienteC)} °C)", [new ValorDoPasso("θ", entrada.TemperaturaAmbienteC, "°C")], string.Empty);
             _fca = Consultar(perfil.FatorDeAgrupamento(entrada.CircuitosAgrupados), "Fator de correção de agrupamento",
-                $"FCA = tabela ({entrada.CircuitosAgrupados} circuitos)", [new ValorDoPasso("circuitos", entrada.CircuitosAgrupados, string.Empty)], string.Empty);
+                $"FCA = tabela ({Contagem(entrada.CircuitosAgrupados, "circuito", "circuitos")})", [new ValorDoPasso("circuitos", entrada.CircuitosAgrupados, string.Empty)], string.Empty);
 
             var tipoDeCircuito = entrada.Tipo == TipoDeCarga.Iluminacao ? "Iluminacao" : "Forca";
             var secaoMinima = Consultar(perfil.SecaoMinimaMm2(tipoDeCircuito), "Seção mínima", $"Smín = tabela ({tipoDeCircuito})", [], "mm²");
@@ -265,7 +265,9 @@ public static class DimensionamentoDeCircuito
             var diametro = Consultar(catalogos.Condutores.DiametroExternoMm(entrada.TipoDeCondutor, secao), "Diâmetro externo do condutor",
                 $"d = catálogo ({entrada.TipoDeCondutor}; {Numero(secao)} mm²)", [], "mm");
             var dadoDaTaxa = perfil.OcupacaoMaximaDeEletrodutoPct(condutores);
-            var taxa = Consultar(dadoDaTaxa, "Taxa máxima de ocupação", $"taxa = tabela ({condutores} condutores)", [], "%");
+            var faixa = perfil.FaixaDeOcupacao(condutores);
+            var linhaDaTabela = faixa is { } usada && usada != condutores ? $"{condutores} condutores: faixa de {usada} ou mais" : $"{condutores} condutores";
+            var taxa = Consultar(dadoDaTaxa, "Taxa máxima de ocupação", $"taxa = tabela ({linhaDaTabela})", [], "%");
             var dadoDosTamanhos = catalogos.Eletrodutos.Tamanhos(entrada.TipoDeEletroduto);
             var tamanhos = Exigir(dadoDosTamanhos, "Tamanhos de eletroduto", $"Di ∈ catálogo ({entrada.TipoDeEletroduto})", "mm");
 
@@ -370,7 +372,9 @@ public static class DimensionamentoDeCircuito
 
         private static string Numero(decimal valor) => NumeroEmTexto.FormatarParaLeitura(valor);
 
-        private static string Pontos(int quantidade) => quantidade == 1 ? "1 ponto" : $"{quantidade} pontos";
+        private static string Pontos(int quantidade) => Contagem(quantidade, "ponto", "pontos");
+
+        private static string Contagem(int quantidade, string singular, string plural) => $"{quantidade} {(quantidade == 1 ? singular : plural)}";
 
         private sealed record ExigenciaDoLocal(string Local, int Pontos, decimal? SensibilidadeMa);
 

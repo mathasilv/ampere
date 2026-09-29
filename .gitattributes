@@ -1,2 +1,5 @@
 # Normaliza finais de linha: LF no repositório, checkout conforme a plataforma.
 * text=auto
+
+# Golden files: comparados byte a byte pelos testes, LF em qualquer plataforma.
+tests/Ampere.Tests.Core/Relatorios/Referencias/** text eol=lf

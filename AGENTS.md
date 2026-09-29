@@ -18,6 +18,9 @@ dotnet build source/Ampere/Ampere.csproj -c Release.R2026
 dotnet build source/Ampere/Ampere.csproj -c Release.R2027
 dotnet test tests/Ampere.Tests.Core                        # motor puro, fora do Revit (net8.0 + net10.0)
 dotnet test tests/Ampere.Tests.Revit -c Release.R2027      # integração: sobe o Revit 2027 no processo
+
+# Regenerar os golden files da memória e do relatório (só com justificativa; revise o diff dos .md antes do commit)
+AMPERE_ATUALIZAR_REFERENCIAS=1 dotnet test --project tests/Ampere.Tests.Core --framework net10.0 --treenode-filter "/*/*/ReferenciasDeMemoria_Teste/*"
 ```
 
 A pós-fixação `.RXXXX` na configuração é exigência do SDK Nice3point.Revit.Sdk.
@@ -80,6 +83,9 @@ quebre R2025/R2026: perguntar antes de aposentar essas configurações.
   decodificam o escape; confira o arquivo gravado e, se preciso, ajuste por script.
 - `JsonSerializerContext` (leitura gerada em compilação): o nome da classe precisa ser único no assembly
   mesmo em namespaces diferentes — nomes repetidos derrubam o gerador de todos os contextos (CS8785).
+- Golden files (`tests/Ampere.Tests.Core/Relatorios/Referencias`): comparados byte a byte, com LF forçado no
+  `.gitattributes`. Regenere num framework só (os dois processos de teste escreveriam o mesmo arquivo ao mesmo tempo) e
+  depois rode a suíte normal: net8.0 e net10.0 precisam gerar os mesmos bytes.
 - Parâmetro AMP_* que o dimensionamento grava (ex.: `AMP_IDR_SensibilidadeMa`) não pode ser lido de volta como
   entrada: na rodada seguinte o valor calculado viraria "decisão do projetista". Decisão manual precisa de fonte
   própria (ex.: `DecisaoDeIdr` do Core, alimentada por um campo que o motor nunca escreve).

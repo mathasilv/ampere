@@ -173,9 +173,12 @@ public sealed class PerfilNormativo
         if (_ocupacao.Pendente) return Pendente<decimal>("ocupacao_maxima_eletroduto_pct");
         if (condutores < 1) return DadoNormativo<decimal>.Ausente(_ocupacao.Referencia, $"número de condutores inválido ({condutores})");
 
-        var faixa = Math.Min(condutores, _ocupacao.Valores.Keys.Max());
-        return PorChave(_ocupacao, "ocupacao_maxima_eletroduto_pct", faixa, $"sem taxa para {condutores} condutores");
+        return PorChave(_ocupacao, "ocupacao_maxima_eletroduto_pct", FaixaDeOcupacao(condutores)!.Value, $"sem taxa para {condutores} condutores");
     }
+
+    /// <summary>Faixa da tabela de ocupação que vale para o número de condutores (acima da maior, a maior); nula sem tabela.</summary>
+    public int? FaixaDeOcupacao(int condutores) =>
+        _ocupacao.Pendente || condutores < 1 ? null : Math.Min(condutores, _ocupacao.Valores.Keys.Max());
 
     public DadoNormativo<IReadOnlyList<decimal>> CorrentesNominaisDeIdrA() => Inteira(_idr, "correntes_nominais_idr_a");
 

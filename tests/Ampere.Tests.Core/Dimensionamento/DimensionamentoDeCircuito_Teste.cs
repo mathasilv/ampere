@@ -183,6 +183,7 @@ public class DimensionamentoDeCircuito_Teste
 
         await Assert.That(resultado.SecaoMm2).IsEqualTo(4m);
         await Assert.That(PassoDe(resultado, "Condutores no eletroduto").Resultado).IsEqualTo(5m);
+        await Assert.That(PassoDe(resultado, "Taxa máxima de ocupação").Expressao).IsEqualTo("taxa = tabela (5 condutores: faixa de 3 ou mais)");
         await Assert.That(resultado.Eletroduto).IsEqualTo("C");
         await Assert.That(resultado.OcupacaoDoEletrodutoPct).IsEqualTo(31.25m);
     }
