@@ -17,7 +17,7 @@ public static class PlanejadorDeCircuitos
 {
     private static readonly RegraDeAgrupamento SemLimites = new();
 
-    /// <exception cref="ArgumentException">Alguma regra de agrupamento é inválida.</exception>
+    /// <exception cref="ArgumentException">Alguma regra de agrupamento ou a numeração é inválida.</exception>
     public static PlanoDeCircuitos Planejar(
         IReadOnlyCollection<PontoDeCarga> pontos,
         IReadOnlyDictionary<TipoDeCarga, RegraDeAgrupamento> regras,
@@ -29,6 +29,10 @@ public static class PlanejadorDeCircuitos
             .ToList();
         if (problemasDeRegra.Count > 0)
             throw new ArgumentException("Regras de agrupamento inválidas: " + string.Join("; ", problemasDeRegra), nameof(regras));
+
+        var problemasDeNumeracao = numeracao.Validar();
+        if (problemasDeNumeracao.Count > 0)
+            throw new ArgumentException("Numeração inválida: " + string.Join("; ", problemasDeNumeracao), nameof(numeracao));
 
         var ignorados = new List<PontoIgnorado>();
         var avisos = new List<string>();

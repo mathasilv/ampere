@@ -27,6 +27,33 @@ public sealed record ConfiguracaoDeNumeracao(
         [TipoDeCarga.Reserva] = "RES"
     });
 
+    /// <summary>
+    ///     Problemas que impedem numerar; vazio se estiver válida. Prefixo repetido é erro porque dois tipos gerariam o
+    ///     mesmo número (ex.: TUG e TUE com "T" dariam dois "T-01").
+    /// </summary>
+    public IReadOnlyList<string> Validar()
+    {
+        var problemas = new List<string>();
+        foreach (var tipo in Enum.GetValues<TipoDeCarga>())
+        {
+            if (!Prefixos.TryGetValue(tipo, out var prefixo)) problemas.Add($"sem prefixo para {CodigosDeTipoDeCarga.Codigo(tipo)}");
+            else if (string.IsNullOrWhiteSpace(prefixo)) problemas.Add($"prefixo de {CodigosDeTipoDeCarga.Codigo(tipo)} vazio");
+        }
+
+        var repetidos = Prefixos
+            .Where(par => !string.IsNullOrWhiteSpace(par.Value))
+            .GroupBy(par => par.Value.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Where(grupo => grupo.Count() > 1);
+        foreach (var grupo in repetidos)
+        {
+            var ordenados = grupo.OrderBy(par => par.Key).ToList();
+            problemas.Add($"prefixo '{ordenados[^1].Value}' repetido em {string.Join(" e ", ordenados.Select(par => CodigosDeTipoDeCarga.Codigo(par.Key)))}");
+        }
+
+        if (Digitos is < 1 or > 6) problemas.Add("dígitos devem estar entre 1 e 6");
+        return problemas;
+    }
+
     /// <summary>Tudo o que vem antes do número, ex.: "QD1-TUG-".</summary>
     public string PrefixoCompleto(TipoDeCarga tipo) =>
         (string.IsNullOrEmpty(PrefixoDoQuadro) ? string.Empty : PrefixoDoQuadro + Separador) + Prefixos[tipo] + Separador;
