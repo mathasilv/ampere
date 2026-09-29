@@ -1,0 +1,22 @@
+{
+  "$meta": {
+    "fonte": "ABNT NBR 5410:2004 — texto oficial ainda não disponível no projeto (data/DATA_GAPS.md, GAP-003)",
+    "versao": "2004",
+    "data": "2026-09-29",
+    "ficticio": false,
+    "situacao": "Esqueleto: toda tabela com ref TODO_NORMA e sem valores. Um valor só entra com o item da norma em 'ref' (AGENTS.md, regra 4); o carregador recusa valor sem fonte."
+  },
+  "perfil": "NBR5410:2004",
+  "tabelas": {
+    "secoes_nominais_mm2": { "ref": "TODO_NORMA", "valores": [] },
+    "correntes_nominais_disjuntor_a": { "ref": "TODO_NORMA", "valores": [] },
+    "condutores_carregados": { "ref": "TODO_NORMA", "valores": {} },
+    "secao_minima_mm2": { "ref": "TODO_NORMA", "valores": {} },
+    "capacidade_de_conducao_a": { "ref": "TODO_NORMA", "valores": [] },
+    "fator_de_temperatura": { "ref": "TODO_NORMA", "valores": [] },
+    "fator_de_agrupamento": { "ref": "TODO_NORMA", "valores": {} },
+    "queda_de_tensao_maxima_pct": { "ref": "TODO_NORMA", "valores": {} },
+    "resistividade_ohm_mm2_por_m": { "ref": "TODO_NORMA", "valores": {} },
+    "ocupacao_maxima_eletroduto_pct": { "ref": "TODO_NORMA", "valores": {} }
+  }
+}
