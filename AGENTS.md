@@ -9,12 +9,15 @@ Prompt de missão: `E:\ProEletrica_Referencia\11_PROMPT_OPUS.md`.
 ```bash
 # Gate antes de qualquer commit: testes do núcleo + build nas TRÊS configurações
 powershell -NoProfile -ExecutionPolicy Bypass -File ./ci.ps1
+# + testes de integração dentro do Revit (obrigatório ao mexer no adapter Ampere.Revit)
+powershell -NoProfile -ExecutionPolicy Bypass -File ./ci.ps1 -Integracao
 
 # Passos individuais
 dotnet build source/Ampere/Ampere.csproj -c Release.R2025
 dotnet build source/Ampere/Ampere.csproj -c Release.R2026
 dotnet build source/Ampere/Ampere.csproj -c Release.R2027
-dotnet test tests/Ampere.Tests.Core   # motor puro, fora do Revit (TUnit, net8.0 + net10.0)
+dotnet test tests/Ampere.Tests.Core                        # motor puro, fora do Revit (net8.0 + net10.0)
+dotnet test tests/Ampere.Tests.Revit -c Release.R2025      # integração: sobe o Revit 2025 no processo
 ```
 
 A pós-fixação `.RXXXX` na configuração é exigência do SDK Nice3point.Revit.Sdk.
@@ -23,8 +26,11 @@ A pós-fixação `.RXXXX` na configuração é exigência do SDK Nice3point.Revi
 
 - `Ampere.Core` — motor de cálculo **puro**: proibido referenciar `Autodesk.Revit.*`.
   Entradas/saídas são records (DTO). 100% coberto por TDD.
-- `Ampere.AddIn` — adapter Revit: ribbon WPF/MVVM, `ElectricalSystem`, `PanelScheduleView`,
-  injeção de parâmetros compartilhados, `ExternalEvent` para operações longas.
+  Fala com o Revit só por portas (interfaces, ex.: `IParametrosDoDocumento`).
+- `Ampere.Revit` — adapters das portas do Core sobre a API do Revit, sem UI e sem deploy.
+  Coberto por `Ampere.Tests.Revit` (Nice3point.TUnit.Revit, dentro do Revit real).
+- `Ampere` (add-in; na especificação, `Ampere.AddIn`) — ribbon, comandos, WPF/MVVM, `ExternalEvent`.
+  Só orquestra: regra no Core, API do Revit no `Ampere.Revit`.
 - `data/` — JSONs UTF-8 com `$meta` (fonte + versão da norma + data). Perfis de norma em
   `data/normas/<norma>/<ano>/perfil.json`.
 - GUIDs `AMP_*`: **congelados** — fonte versionada `data/parametros/parametros_compartilhados_ampere.json`
@@ -55,6 +61,10 @@ A pós-fixação `.RXXXX` na configuração é exigência do SDK Nice3point.Revi
 - `DeployAddin=true`: todo build do add-in copia para `%AppData%\Autodesk\Revit\Addins\<ano>` e falha
   se o Revit estiver aberto com a DLL em uso. O `ci.ps1` compila com `-p:DeployAddin=false`.
 - `dotnet sln add` mapeia `Release.R*` → `Debug` em projetos novos: corrigir para `Release` no `.sln`.
+- Revit fora de `C:\Program Files\Autodesk`: defina `RevitInstallDir` (testes) e `StartProgram` (F5) em
+  `*.csproj.user` git-ignorados, ou a variável de ambiente `RevitInstallDir`.
+- Projetos WPF perdem `System.IO` dos usings implícitos; `Autodesk.Revit.UI` nunca é implícito.
+  `BindingMap` não tem indexador C#: use `get_Item(definicao)`.
 
 ## Commits
 
