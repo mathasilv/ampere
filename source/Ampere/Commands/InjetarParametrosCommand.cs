@@ -16,12 +16,15 @@ namespace Ampere.Commands;
 [Transaction(TransactionMode.Manual)]
 public class InjetarParametrosCommand : ExternalCommand
 {
+    // O Revit 2027 já prefixa o nome do add-in ("Ampere - "); repetir "Ampere" aqui duplicaria o título.
+    private const string TituloDaJanela = "Injetar parâmetros";
+
     public override void Execute()
     {
         var documento = Application.ActiveUIDocument?.Document;
         if (documento is null || documento.IsFamilyDocument)
         {
-            TaskDialog.Show("Ampere", "Abra um projeto: a injeção de parâmetros não se aplica a documentos de família.");
+            TaskDialog.Show(TituloDaJanela, "Abra um projeto: a injeção de parâmetros não se aplica a documentos de família.");
             Result = Result.Cancelled;
             return;
         }
@@ -30,7 +33,7 @@ public class InjetarParametrosCommand : ExternalCommand
         var plano = InjecaoDeParametros.Executar(CatalogoDeParametros.Padrao, new ParametrosDoDocumentoRevit(documento));
         cronometro.Stop();
 
-        TaskDialog.Show("Ampere — parâmetros", ResumoDaInjecao.Texto(plano, cronometro.Elapsed));
+        TaskDialog.Show(TituloDaJanela, ResumoDaInjecao.Texto(plano, cronometro.Elapsed));
         if (plano.TemConflitos) Result = Result.Cancelled;
     }
 }
