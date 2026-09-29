@@ -22,11 +22,5 @@ public class Application : ExternalApplication
             .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
             .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
             .SetToolTip("Injeta no projeto os parâmetros compartilhados AMP_* (idempotente, um único desfazer).");
-
-        var panel = Application.CreatePanel("Commands", "Ampere");
-
-        panel.AddPushButton<StartupCommand>("Execute")
-            .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
-            .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png");
     }
 }
