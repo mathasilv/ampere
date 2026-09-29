@@ -21,6 +21,8 @@ dotnet test tests/Ampere.Tests.Revit -c Release.R2027      # integração: sobe 
 
 # Regenerar os golden files da memória e do relatório (só com justificativa; revise o diff dos .md antes do commit)
 AMPERE_ATUALIZAR_REFERENCIAS=1 dotnet test --project tests/Ampere.Tests.Core --framework net10.0 --treenode-filter "/*/*/ReferenciasDeMemoria_Teste/*"
+# PDFs de amostra dos mesmos circuitos, para revisão visual (fora do Git)
+AMPERE_AMOSTRAS_PDF=<pasta> dotnet test --project tests/Ampere.Tests.Core --framework net10.0 --treenode-filter "/*/*/ReferenciasDeMemoria_Teste/*"
 ```
 
 A pós-fixação `.RXXXX` na configuração é exigência do SDK Nice3point.Revit.Sdk.
@@ -33,6 +35,8 @@ quebre R2025/R2026: perguntar antes de aposentar essas configurações.
 - `Ampere.Core` — motor de cálculo **puro**: proibido referenciar `Autodesk.Revit.*`.
   Entradas/saídas são records (DTO). 100% coberto por TDD.
   Fala com o Revit só por portas (interfaces, ex.: `IParametrosDoDocumento`).
+  Única dependência externa: PDFsharp (MIT), para o relatório em PDF (decisão do usuário, 29/09/2026), com as fontes
+  DejaVu embutidas (licença em `source/Ampere.Core/Relatorios/Fontes/LICENSE_DEJAVU`).
 - `Ampere.Revit` — adapters das portas do Core sobre a API do Revit, sem UI e sem deploy.
   Coberto por `Ampere.Tests.Revit` (Nice3point.TUnit.Revit, dentro do Revit real).
 - `Ampere` (add-in; na especificação, `Ampere.AddIn`) — ribbon, comandos, WPF/MVVM, `ExternalEvent`.
@@ -86,6 +90,12 @@ quebre R2025/R2026: perguntar antes de aposentar essas configurações.
 - Golden files (`tests/Ampere.Tests.Core/Relatorios/Referencias`): comparados byte a byte, com LF forçado no
   `.gitattributes`. Regenere num framework só (os dois processos de teste escreveriam o mesmo arquivo ao mesmo tempo) e
   depois rode a suíte normal: net8.0 e net10.0 precisam gerar os mesmos bytes.
+- `Ampere.Core` compila para net8.0: nada de API do .NET 9+ (ex.: `System.Threading.Lock`), mesmo que o teste em net10.0
+  passe.
+- PDFsharp: `GlobalFontSettings.FontResolver` é global e só aceita um registro por processo. `FontesDoRelatorio.Registrar()`
+  registra o do Ampere; se outro add-in do Revit registrar antes, o PDF falha com mensagem clara. Os bytes do PDF mudam a
+  cada geração (data e IDs do PDFsharp; compressão diferente em net8/net10): o golden do PDF é o roteiro das páginas
+  (`*.pdf.txt`), igual em qualquer máquina porque a métrica vem das fontes embutidas.
 - Parâmetro AMP_* que o dimensionamento grava (ex.: `AMP_IDR_SensibilidadeMa`) não pode ser lido de volta como
   entrada: na rodada seguinte o valor calculado viraria "decisão do projetista". Decisão manual precisa de fonte
   própria (ex.: `DecisaoDeIdr` do Core, alimentada por um campo que o motor nunca escreve).

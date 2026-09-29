@@ -5,19 +5,22 @@ using Ampere.Core.Catalogos;
 using Ampere.Core.Dimensionamento;
 using Ampere.Core.Normas;
 using Ampere.Core.Relatorios;
+using Ampere.Core.Relatorios.Pdf;
 using Ampere.Tests.Core.Catalogos;
 using Ampere.Tests.Core.Normas;
 
 namespace Ampere.Tests.Core.Relatorios;
 
 /// <summary>
-///     Golden files: memória (JSON) e relatório (Markdown) de circuitos típicos, comparados byte a byte com os arquivos de
-///     Referencias/. Mudança de resultado só entra com justificativa: para regenerar, rode os testes com
-///     AMPERE_ATUALIZAR_REFERENCIAS=1 e revise o diff antes do commit.
+///     Golden files: memória (JSON), relatório (Markdown) e roteiro das páginas do PDF de circuitos típicos, comparados
+///     byte a byte com os arquivos de Referencias/. Mudança de resultado só entra com justificativa: para regenerar, rode
+///     os testes com AMPERE_ATUALIZAR_REFERENCIAS=1 e revise o diff antes do commit. Com AMPERE_AMOSTRAS_PDF=pasta, os
+///     PDFs também são gravados lá, para revisão visual.
 /// </summary>
 public class ReferenciasDeMemoria_Teste
 {
     private const string VariavelDeAtualizacao = "AMPERE_ATUALIZAR_REFERENCIAS";
+    private const string VariavelDeAmostras = "AMPERE_AMOSTRAS_PDF";
 
     private static readonly PerfilNormativo Ficticio = PerfilNormativo.Carregar(PerfilFicticio.Json);
 
@@ -37,6 +40,10 @@ public class ReferenciasDeMemoria_Teste
 
         await Conferir($"{cenario}.json", memoria.JsonCanonico());
         await Conferir($"{cenario}.md", RelatorioDeMemoria.Markdown(memoria));
+        await Conferir($"{cenario}.pdf.txt", PdfDoRelatorio.Roteiro(ConteudoDoRelatorio.De(memoria, null)));
+
+        if (Environment.GetEnvironmentVariable(VariavelDeAmostras) is { Length: > 0 } pasta)
+            await File.WriteAllBytesAsync(Path.Combine(pasta, $"{cenario}.pdf"), RelatorioDeMemoria.Pdf(memoria));
     }
 
     private static ResultadoDoDimensionamento Dimensionar(string cenario) => cenario switch

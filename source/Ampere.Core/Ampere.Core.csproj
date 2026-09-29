@@ -25,4 +25,19 @@
                           LogicalName="Ampere.Core.Catalogos.eletrodutos.json"/>
     </ItemGroup>
 
+    <!--
+        Relatório em PDF (escolha do usuário, 29/09/2026): PDFsharp (MIT, sem GDI). Fontes DejaVu 2.35 embutidas: a mesma
+        métrica em qualquer máquina e todos os símbolos da memória (Δ θ ρ Ω ≤ ∈ √ ₀); licença em Relatorios/Fontes.
+    -->
+    <ItemGroup>
+        <PackageReference Include="PDFsharp" Version="6.2.4"/>
+        <EmbeddedResource Include="Relatorios\Fontes\*.ttf" LogicalName="Ampere.Core.Relatorios.Fontes.%(Filename)%(Extension)"/>
+        <EmbeddedResource Include="Relatorios\Fontes\LICENSE_DEJAVU" LogicalName="Ampere.Core.Relatorios.Fontes.LICENSE_DEJAVU"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- A diagramação do PDF é interna; os testes a exercitam com um medidor de texto falso. -->
+        <InternalsVisibleTo Include="Ampere.Tests.Core"/>
+    </ItemGroup>
+
 </Project>

@@ -1,0 +1,24 @@
+== página 1 de 1
+56,7 [Titulo 56,7] Memória de cálculo — circuito IL-01
+80,2 [Rotulo 56,7] Perfil normativo: [Texto 150,4] NBR5410:2004
+91,2 [Rotulo 56,7] Identificador (AMP_MemoriaCalculoId):
+102,3 [Codigo 56,7] sha256:504b3f6636029bb975f3bbc9e693e3377ae7a71ca4592de482c6ca73cb709a87
+112,8 [Rotulo 56,7] Esquema do documento: [Texto 191,8] 1
+123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo interrompido no passo 2 (Condutores carregados): tabela condutores_carregados
+134,9 [Texto 56,7] sem dados oficiais (TODO_NORMA)
+145,9 [Rotulo 56,7] Referências pendentes (TODO_NORMA ou TODO_CATALOGO): [Texto 387,4] 2 passos (1, 2), sem fonte
+157 [Texto 56,7] oficial
+176 [Nota 56,7] Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O
+185,9 [Nota 56,7] documento JSON da memória guarda os valores completos.
+205,8 [Secao 56,7] Passos
+227,8 [TituloDoPasso 56,7] 1. Corrente de projeto
+242 [Rotulo 68,7] Referência: [Texto 133] TODO_NORMA
+253,1 [Rotulo 68,7] Expressão: [Codigo 132,7] IB = S / V
+264,1 [Rotulo 68,7] Valores: [Texto 115,8] S = 200 VA; V = 127 V
+275,2 [Rotulo 68,7] Resultado: [Texto 129,2] 1,5748 A
+294,3 [TituloDoPasso 56,7] 2. Condutores carregados
+308,5 [Rotulo 68,7] Referência: [Texto 133] TODO_NORMA
+319,5 [Rotulo 68,7] Expressão: [Codigo 132,7] n = condutores carregados (F+N)
+330,6 [Rotulo 68,7] Resultado: [Texto 129,2] não calculado
+341,7 [Rotulo 68,7] Observação: [Texto 138,3] tabela condutores_carregados sem dados oficiais (TODO_NORMA)
+776 [Rodape 194,5] Memória de cálculo — circuito IL-01 · página 1 de 1

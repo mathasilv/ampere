@@ -1,5 +1,6 @@
 using System.Text;
 using Ampere.Core.Memoria;
+using Ampere.Core.Relatorios.Pdf;
 
 namespace Ampere.Core.Relatorios;
 
@@ -46,6 +47,14 @@ public static class RelatorioDeMemoria
 
         return texto.ToString();
     }
+
+    /// <summary>
+    ///     O mesmo relatório em PDF A4, com as fontes embutidas no Ampere: a mesma memória gera o mesmo conteúdo, página
+    ///     a página, em qualquer máquina. O Assunto do PDF leva o identificador da memória (AMP_MemoriaCalculoId).
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Outro componente do processo já registrou um resolvedor de fontes do PDFsharp.</exception>
+    public static byte[] Pdf(MemoriaDeCalculo memoria, string? identificadorGravado = null) =>
+        PdfDoRelatorio.Gerar(ConteudoDoRelatorio.De(memoria, identificadorGravado), memoria.Hash());
 
     // Barra invertida antes de todo caractere que o Markdown pode interpretar. O sublinhado entre letras ou dígitos
     // (TODO_NORMA, AMP_TipoCarga) não abre ênfase e fica como está, para o texto continuar pesquisável.

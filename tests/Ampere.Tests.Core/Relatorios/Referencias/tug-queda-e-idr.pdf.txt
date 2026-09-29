@@ -1,0 +1,113 @@
+== página 1 de 3
+56,7 [Titulo 56,7] Memória de cálculo — circuito TUG-02
+80,2 [Rotulo 56,7] Perfil normativo: [Texto 150,4] FICTICIO-TESTE
+91,2 [Rotulo 56,7] Identificador (AMP_MemoriaCalculoId):
+102,3 [Codigo 56,7] sha256:3eeb26c495021b8f5a389138872141a478365e8daee2f283ee60cb1f0dc5aae6
+112,8 [Rotulo 56,7] Esquema do documento: [Texto 191,8] 1
+123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo completo (19 passos)
+134,9 [Rotulo 56,7] Atenção: [Texto 107,2] perfil fictício, só para testes
+153,9 [Nota 56,7] Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O
+163,8 [Nota 56,7] documento JSON da memória guarda os valores completos.
+183,7 [Secao 56,7] Passos
+205,7 [TituloDoPasso 56,7] 1. Corrente de projeto
+219,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra da corrente de projeto
+231 [Rotulo 68,7] Expressão: [Codigo 132,7] IB = S / V
+242 [Rotulo 68,7] Valores: [Texto 115,8] S = 1270 VA; V = 127 V
+253,1 [Rotulo 68,7] Resultado: [Texto 129,2] 10 A
+272,1 [TituloDoPasso 56,7] 2. Condutores carregados
+286,4 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: condutores carregados
+297,4 [Rotulo 68,7] Expressão: [Codigo 132,7] n = condutores carregados (F+N)
+308,5 [Rotulo 68,7] Resultado: [Texto 129,2] 2 condutores
+327,5 [TituloDoPasso 56,7] 3. Fator de correção de temperatura
+341,8 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: fator de temperatura
+352,8 [Rotulo 68,7] Expressão: [Codigo 132,7] FCT = tabela (PVC; 30 °C)
+363,9 [Rotulo 68,7] Valores: [Texto 115,8] θ = 30 °C
+374,9 [Rotulo 68,7] Resultado: [Texto 129,2] 1
+394 [TituloDoPasso 56,7] 4. Fator de correção de agrupamento
+408,2 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: fator de agrupamento
+419,3 [Rotulo 68,7] Expressão: [Codigo 132,7] FCA = tabela (1 circuito)
+430,3 [Rotulo 68,7] Valores: [Texto 115,8] circuitos = 1
+441,4 [Rotulo 68,7] Resultado: [Texto 129,2] 1
+460,5 [TituloDoPasso 56,7] 5. Seção mínima
+474,7 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: seção mínima
+485,7 [Rotulo 68,7] Expressão: [Codigo 132,7] Smín = tabela (Forca)
+496,8 [Rotulo 68,7] Resultado: [Texto 129,2] 2,5 mm²
+515,9 [TituloDoPasso 56,7] 6. Seção pela capacidade de condução
+530,1 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: capacidade de condução
+541,1 [Rotulo 68,7] Expressão: [Codigo 132,7] menor S ≥ Smín com IZ₀(S) · FCA · FCT ≥ IB
+552,2 [Rotulo 68,7] Valores: [Texto 115,8] Smín = 2,5 mm²; IB = 10 A; FCA = 1; FCT = 1
+563,3 [Rotulo 68,7] Resultado: [Texto 129,2] 2,5 mm²
+574,3 [Rotulo 68,7] Observação: [Texto 138,3] seções nominais: FICTÍCIO: seções
+593,4 [TituloDoPasso 56,7] 7. Resistividade do condutor
+607,6 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: resistividade
+618,7 [Rotulo 68,7] Expressão: [Codigo 132,7] ρ = tabela (Cobre)
+629,7 [Rotulo 68,7] Resultado: [Texto 129,2] 0,02 Ω·mm²/m
+648,8 [TituloDoPasso 56,7] 8. Limite de queda de tensão
+663 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: queda máxima
+674,1 [Rotulo 68,7] Expressão: [Codigo 132,7] ΔV%máx = tabela (circuito terminal)
+685,1 [Rotulo 68,7] Resultado: [Texto 129,2] 5%
+776 [Rodape 189,5] Memória de cálculo — circuito TUG-02 · página 1 de 3
+== página 2 de 3
+56,7 [TituloDoPasso 56,7] 9. Capacidade de condução da seção adotada
+70,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: capacidade de condução
+82 [Rotulo 68,7] Expressão: [Codigo 132,7] IZ = IZ₀(S) · FCA · FCT
+93 [Rotulo 68,7] Valores: [Texto 115,8] S = 4 mm²; IZ₀ = 30 A; FCA = 1; FCT = 1
+104,1 [Rotulo 68,7] Resultado: [Texto 129,2] 30 A
+115,2 [Rotulo 68,7] Observação: [Texto 138,3] seção elevada de 2,5 para 4 mm²: queda de tensão 7,5591% acima do limite de
+126,2 [Texto 68,7] 5%
+145,3 [TituloDoPasso 56,7] 10. Disjuntor
+159,5 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra de coordenação
+170,6 [Rotulo 68,7] Expressão: [Codigo 132,7] menor In com IB ≤ In ≤ IZ
+181,6 [Rotulo 68,7] Valores: [Texto 115,8] IB = 10 A; IZ = 30 A
+192,7 [Rotulo 68,7] Resultado: [Texto 129,2] 10 A
+203,7 [Rotulo 68,7] Observação: [Texto 138,3] correntes nominais: FICTÍCIO: disjuntores
+222,8 [TituloDoPasso 56,7] 11. Queda de tensão
+237 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra de queda
+248,1 [Rotulo 68,7] Expressão: [Codigo 132,7] ΔV% = k · ρ · L · IB / (S · V) · 100
+259,1 [Rotulo 68,7] Valores: [Texto 115,8] k = 2; ρ = 0,02 Ω·mm²/m; L = 60 m; IB = 10 A; S = 4 mm²; V = 127 V
+270,2 [Rotulo 68,7] Resultado: [Texto 129,2] 4,7244%
+281,2 [Rotulo 68,7] Observação: [Texto 138,3] fórmula resistiva (sem reatância), só o circuito terminal
+300,3 [TituloDoPasso 56,7] 12. Exigência de IDR
+314,5 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: IDR por local
+325,6 [Rotulo 68,7] Expressão: [Codigo 132,7] n = pontos em locais que exigem IDR para TUG
+336,6 [Rotulo 68,7] Valores: [Texto 115,8] total = 2 pontos
+347,7 [Rotulo 68,7] Resultado: [Texto 129,2] 1 ponto
+358,8 [Rotulo 68,7] Observação: [Texto 138,3] LOCAL-MOLHADO (1 ponto): exige IΔn ≤ 30 mA; LOCAL-SECO (1 ponto): não exige
+377,8 [TituloDoPasso 56,7] 13. Sensibilidade do IDR
+392 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: IDR por local
+403,1 [Rotulo 68,7] Expressão: [Codigo 132,7] IΔn = menor IΔn máx dos locais que exigem IDR
+414,2 [Rotulo 68,7] Resultado: [Texto 129,2] 30 mA
+433,2 [TituloDoPasso 56,7] 14. Corrente nominal do IDR
+447,4 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra IDR x disjuntor
+458,5 [Rotulo 68,7] Expressão: [Codigo 132,7] menor In(IDR) ≥ In(disjuntor)
+469,6 [Rotulo 68,7] Valores: [Texto 115,8] In = 10 A
+480,6 [Rotulo 68,7] Resultado: [Texto 129,2] 25 A
+491,7 [Rotulo 68,7] Observação: [Texto 138,3] correntes nominais de IDR: FICTÍCIO: correntes de IDR
+510,7 [TituloDoPasso 56,7] 15. Condutores no eletroduto
+525 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra dos condutores no eletroduto
+536 [Rotulo 68,7] Expressão: [Codigo 132,7] n = F + N + PE
+547,1 [Rotulo 68,7] Resultado: [Texto 129,2] 3 condutores
+558,1 [Rotulo 68,7] Observação: [Texto 138,3] neutro e proteção com o diâmetro da fase (conservador para a ocupação)
+577,2 [TituloDoPasso 56,7] 16. Diâmetro externo do condutor
+591,4 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: catálogo de condutores
+602,5 [Rotulo 68,7] Expressão: [Codigo 132,7] d = catálogo (FIO-TESTE; 4 mm²)
+613,5 [Rotulo 68,7] Resultado: [Texto 129,2] 5 mm
+632,6 [TituloDoPasso 56,7] 17. Taxa máxima de ocupação
+646,8 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: ocupação
+657,9 [Rotulo 68,7] Expressão: [Codigo 132,7] taxa = tabela (3 condutores)
+668,9 [Rotulo 68,7] Resultado: [Texto 129,2] 40%
+688 [TituloDoPasso 56,7] 18. Eletroduto adotado
+702,2 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: catálogo de eletrodutos
+713,3 [Rotulo 68,7] Expressão: [Codigo 132,7] menor Di com n · d² / Di² · 100 ≤ taxa
+724,3 [Rotulo 68,7] Valores: [Texto 115,8] n = 3 condutores; d = 5 mm; taxa = 40%
+735,4 [Rotulo 68,7] Resultado: [Texto 129,2] 15 mm
+746,4 [Rotulo 68,7] Observação: [Texto 138,3] tamanho nominal B (ELETRODUTO-TESTE); acima da taxa: A (75%)
+776 [Rodape 189,5] Memória de cálculo — circuito TUG-02 · página 2 de 3
+== página 3 de 3
+56,7 [TituloDoPasso 56,7] 19. Ocupação do eletroduto
+70,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: ocupação
+82 [Rotulo 68,7] Expressão: [Codigo 132,7] ocupação = n · d² / Di² · 100
+93 [Rotulo 68,7] Valores: [Texto 115,8] n = 3 condutores; d = 5 mm; Di = 15 mm
+104,1 [Rotulo 68,7] Resultado: [Texto 129,2] 33,3333%
+115,2 [Rotulo 68,7] Observação: [Texto 138,3] só os condutores deste circuito: outros circuitos na mesma tubulação não entram
+776 [Rodape 189,5] Memória de cálculo — circuito TUG-02 · página 3 de 3
