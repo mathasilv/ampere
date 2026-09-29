@@ -76,6 +76,8 @@ quebre R2025/R2026: perguntar antes de aposentar essas configurações.
 - C# 14: `array.Reverse()` resolve para `Span.Reverse` (in-place, `void`); use `Enumerable.Reverse(array)`.
 - Commit com mensagem de várias linhas: pelo Bash com heredoc (`git commit -F - <<'EOF'`); no PowerShell o
   here-string vira argumento e o git o lê como caminho.
+- Literal com escape `\uXXXX` (ex.: JSON canônico fixado em teste): as ferramentas de escrita de arquivo
+  decodificam o escape; confira o arquivo gravado e, se preciso, ajuste por script.
 
 ## Commits
 
