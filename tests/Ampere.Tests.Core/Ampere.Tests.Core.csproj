@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+        Testes do motor puro, executados fora do Revit.
+        net8.0 é o runtime do Revit 2025/2026 e net10.0 o do Revit 2027: rodar nos dois
+        garante que o cálculo produz o mesmo resultado em todas as versões suportadas.
+    -->
+    <PropertyGroup>
+        <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+        <OutputType>Exe</OutputType>
+        <Nullable>enable</Nullable>
+        <LangVersion>latest</LangVersion>
+        <ImplicitUsings>true</ImplicitUsings>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="TUnit" Version="1.71.0"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\source\Ampere.Core\Ampere.Core.csproj"/>
+    </ItemGroup>
+
+</Project>

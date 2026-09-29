@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+        Motor de cálculo PURO: proibido referenciar Autodesk.Revit.* (guardado por ArquiteturaDoNucleo_Teste).
+        net8.0 carrega tanto no Revit 2025/2026 (.NET 8) quanto no Revit 2027 (.NET 10).
+    -->
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <LangVersion>latest</LangVersion>
+        <ImplicitUsings>true</ImplicitUsings>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </PropertyGroup>
+
+</Project>

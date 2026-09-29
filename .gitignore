@@ -10,5 +10,8 @@
 #Build output folder
 /output/
 
+#Test results (relatórios do Microsoft.Testing.Platform/TUnit)
+TestResults/
+
 #User-specific files
 *.user
