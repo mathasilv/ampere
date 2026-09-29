@@ -1,0 +1,55 @@
+<Window
+    x:Class="Ampere.Views.ClassificacaoView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:viewModels="clr-namespace:Ampere.ViewModels"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance viewModels:ClassificacaoViewModel}"
+    Title="Classificar cargas"
+    SizeToContent="WidthAndHeight"
+    ResizeMode="NoResize"
+    WindowStartupLocation="CenterOwner"
+    ShowInTaskbar="False">
+    <StackPanel Margin="16" Width="400">
+        <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" Margin="0,0,0,12" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="140" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="Tipo de carga" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="0" Grid.Column="1" Margin="0,4" ItemsSource="{Binding Tipos}" DisplayMemberPath="Nome"
+                      SelectedItem="{Binding Tipo}" />
+
+            <TextBlock Grid.Row="1" Text="Potência (VA)" VerticalAlignment="Center" />
+            <TextBox Grid.Row="1" Grid.Column="1" Margin="0,4" Text="{Binding PotenciaVA, UpdateSourceTrigger=PropertyChanged}" />
+
+            <TextBlock Grid.Row="2" Text="Fator de potência" VerticalAlignment="Center" />
+            <TextBox Grid.Row="2" Grid.Column="1" Margin="0,4" Text="{Binding FatorDePotencia, UpdateSourceTrigger=PropertyChanged}" />
+
+            <TextBlock Grid.Row="3" Text="Tensão (V)" VerticalAlignment="Center" />
+            <TextBox Grid.Row="3" Grid.Column="1" Margin="0,4" Text="{Binding TensaoV, UpdateSourceTrigger=PropertyChanged}" />
+
+            <TextBlock Grid.Row="4" Text="Fases" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="4" Grid.Column="1" Margin="0,4" ItemsSource="{Binding OpcoesDeFases}" SelectedItem="{Binding Fases}" />
+        </Grid>
+
+        <TextBlock Margin="0,10,0,0" TextWrapping="Wrap" Foreground="Gray" Text="{Binding Dica}" />
+        <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" Foreground="Firebrick" Text="{Binding Problemas}" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Classificar" IsDefault="True" Width="96" Margin="0,0,8,0" Click="Confirmar" />
+            <Button Content="Cancelar" IsCancel="True" Width="96" />
+        </StackPanel>
+    </StackPanel>
+</Window>

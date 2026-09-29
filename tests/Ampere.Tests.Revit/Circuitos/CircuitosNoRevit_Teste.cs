@@ -103,6 +103,16 @@ public sealed class CircuitosNoRevit_Teste : TesteComProjetoEletrico
     }
 
     [Test]
+    public async Task Lista_o_quadro_do_projeto_para_o_dialogo()
+    {
+        var quadros = Porta.ListarQuadros();
+
+        await Assert.That(quadros.Select(quadro => quadro.Nome)).IsEquivalentTo(["QD1"]);
+        await Assert.That(quadros[0].Id).IsEqualTo(Cenario.Quadro.Id.Value);
+        await Assert.That(Porta.ParametrosInjetados()).IsTrue();
+    }
+
+    [Test]
     public async Task Pontos_ja_circuitados_nao_entram_em_outro_circuito()
     {
         var tugs = Cenario.ColocarTomadas(4);

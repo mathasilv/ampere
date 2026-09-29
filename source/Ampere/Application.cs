@@ -22,5 +22,17 @@ public class Application : ExternalApplication
             .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
             .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
             .SetToolTip("Injeta no projeto os parâmetros compartilhados AMP_* (idempotente, um único desfazer).");
+
+        var circuitos = Application.CreatePanel("Circuitos", "Ampere");
+
+        circuitos.AddPushButton<ClassificarCargasCommand>("Classificar\ncargas")
+            .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
+            .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
+            .SetToolTip("Grava tipo de carga, potência e fatores nos elementos selecionados (um único desfazer).");
+
+        circuitos.AddPushButton<CriarCircuitosCommand>("Criar\ncircuitos")
+            .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
+            .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
+            .SetToolTip("Agrupa os pontos selecionados em circuitos numerados no quadro escolhido (um único desfazer).");
     }
 }

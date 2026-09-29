@@ -75,6 +75,16 @@ public sealed class InjecaoDeParametrosNoRevit_Teste : TesteComProjetoNovo
     }
 
     [Test]
+    public async Task Comandos_de_circuito_so_liberam_depois_da_injecao()
+    {
+        var porta = new Ampere.Revit.Circuitos.DocumentoEletricoRevit(Documento);
+
+        await Assert.That(porta.ParametrosInjetados()).IsFalse();
+        Injetar();
+        await Assert.That(porta.ParametrosInjetados()).IsTrue();
+    }
+
+    [Test]
     public async Task Injetar_duas_vezes_seguidas_nao_duplica_nem_altera_nada()
     {
         Injetar();

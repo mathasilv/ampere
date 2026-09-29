@@ -125,6 +125,11 @@ public sealed class DocumentoEletricoRevit(Document documento) : IDocumentoEletr
         }
     }
 
+    /// <summary>Os parâmetros Ampere usados pela classificação e pelos circuitos já estão no documento?</summary>
+    public bool ParametrosInjetados() =>
+        new[] { ParametrosAmpere.TipoCarga, ParametrosAmpere.PotenciaInstaladaVA, ParametrosAmpere.NumeroCircuito, ParametrosAmpere.Quadro }
+            .All(definicao => ParametrosAmpere.Injetado(documento, definicao));
+
     /// <summary>Quadros do documento (equipamento elétrico com conector de força), para o projetista escolher.</summary>
     public IReadOnlyList<QuadroEletrico> ListarQuadros() =>
         new FilteredElementCollector(documento)
