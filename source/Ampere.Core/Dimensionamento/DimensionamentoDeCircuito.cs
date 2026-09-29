@@ -8,7 +8,7 @@ namespace Ampere.Core.Dimensionamento;
 
 /// <summary>
 ///     Motor de dimensionamento de um circuito terminal: IB → condutores carregados → FCT → FCA → seção mínima →
-///     seção pela capacidade de condução → disjuntor (IB ≤ In ≤ IZ) → queda de tensão → eletroduto (ocupação).
+///     seção pela capacidade de condução → disjuntor (IB ≤ In ≤ IZ) → queda de tensão → IDR → eletroduto (ocupação).
 /// </summary>
 /// <remarks>
 ///     <list type="bullet">
@@ -18,6 +18,10 @@ namespace Ampere.Core.Dimensionamento;
 ///         <item>Sem disjuntor coordenável ou com queda acima do limite, a seção sobe para a próxima nominal e a memória
 ///         registra o motivo.</item>
 ///         <item>Queda de tensão pela fórmula resistiva (sem reatância), só do circuito terminal.</item>
+///         <item>IDR: exigido quando algum ponto está num local que a tabela do perfil manda proteger para o tipo de carga
+///         do circuito; I<sub>Δn</sub> = a menor máxima entre esses locais; corrente nominal = a menor da série com
+///         In(IDR) ≥ In(disjuntor). A decisão do projetista prevalece e a memória registra o que a tabela daria. Ponto sem
+///         local ou local fora da tabela, sem decisão do projetista, interrompe o cálculo.</item>
 ///         <item>Eletroduto: menor tamanho do catálogo com n · d² / Di² dentro da taxa máxima, contando só os condutores
 ///         do próprio circuito (fases, neutro e proteção, todos com o diâmetro da fase). Diâmetros vêm dos catálogos de
 ///         fabricante; catálogo sem dados interrompe o cálculo como tabela TODO_NORMA.</item>
@@ -34,7 +38,7 @@ public static class DimensionamentoDeCircuito
         if (problemas.Count > 0)
         {
             return new ResultadoDoDimensionamento(entrada.Circuito, SituacaoDoDimensionamento.EntradaInvalida, perfil.Nome,
-                null, null, null, null, null, null, null, null, null, null, null, null, problemas);
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null, problemas, []);
         }
 
         return new Calculo(entrada, perfil, catalogos).Executar();
@@ -54,6 +58,9 @@ public static class DimensionamentoDeCircuito
         private string? _eletroduto;
         private decimal? _diametroInterno;
         private decimal? _ocupacao;
+        private decimal? _idrNominal;
+        private decimal? _idrSensibilidade;
+        private readonly List<string> _avisos = [];
 
         public ResultadoDoDimensionamento Executar()
         {
@@ -123,6 +130,7 @@ public static class DimensionamentoDeCircuito
                     _capacidade = capacidade;
                     _disjuntor = disjuntor;
                     _queda = queda;
+                    Idr(disjuntor!.Value);
                     Eletroduto(secao);
                     return;
                 }
@@ -150,6 +158,93 @@ public static class DimensionamentoDeCircuito
             Passo(referencia, "Corrente de projeto", expressao, valores, ib, "A");
             _correnteDeProjeto = ib;
             return ib;
+        }
+
+        private void Idr(decimal disjuntor)
+        {
+            var tabela = perfil.ProtecaoDiferencialPorLocal();
+            var avaliacao = AvaliarPelaTabela(tabela);
+            var sensibilidade = entrada.IdrDoProjetista is { } decisao
+                ? PelaDecisaoDoProjetista(decisao, tabela.Referencia, avaliacao)
+                : PelaTabela(tabela.Referencia, avaliacao);
+            if (sensibilidade is null) return;
+            _idrSensibilidade = sensibilidade;
+
+            const string Criterio = "menor In(IDR) ≥ In(disjuntor)";
+            var referencia = perfil.ReferenciaDaRegra(RegraNormativa.CoordenacaoIdrDisjuntor);
+            var dadoDasCorrentes = perfil.CorrentesNominaisDeIdrA();
+            var correntes = Exigir(dadoDasCorrentes, "Correntes nominais de IDR", "In(IDR) ∈ correntes nominais", "A");
+            decimal? nominal = correntes.Where(corrente => corrente >= disjuntor).Select(corrente => (decimal?)corrente).FirstOrDefault();
+            if (nominal is null)
+            {
+                Parar(referencia, "Corrente nominal do IDR", Criterio, "A",
+                    $"nenhuma corrente nominal de IDR do perfil atende In = {Numero(disjuntor)} A (maior: {Numero(correntes[^1])} A)");
+            }
+
+            Passo(referencia, "Corrente nominal do IDR", Criterio, [new ValorDoPasso("In", disjuntor, "A")], nominal, "A",
+                $"correntes nominais de IDR: {dadoDasCorrentes.Referencia}");
+            _idrNominal = nominal;
+        }
+
+        private AvaliacaoPelaTabela AvaliarPelaTabela(DadoNormativo<IReadOnlyDictionary<string, ProtecaoDiferencialDoLocal>> tabela)
+        {
+            if (!tabela.Disponivel) return new AvaliacaoPelaTabela(tabela.Ausencia, []);
+
+            var semLocal = entrada.LocaisDosPontos.Count(string.IsNullOrWhiteSpace);
+            if (semLocal > 0) return new AvaliacaoPelaTabela($"{Pontos(semLocal)} sem local: informe o local ou a decisão do projetista sobre o IDR", []);
+
+            var locais = entrada.LocaisDosPontos
+                .GroupBy(local => local!.Trim(), StringComparer.Ordinal)
+                .OrderBy(grupo => grupo.Key, StringComparer.Ordinal)
+                .ToList();
+            var foraDaTabela = locais.Where(grupo => !tabela.Valor.ContainsKey(grupo.Key)).Select(grupo => $"'{grupo.Key}'").ToList();
+            if (foraDaTabela.Count > 0) return new AvaliacaoPelaTabela($"local fora da tabela de IDR: {string.Join(", ", foraDaTabela)}", []);
+
+            return new AvaliacaoPelaTabela(null, locais
+                .Select(grupo => new ExigenciaDoLocal(grupo.Key, grupo.Count(), tabela.Valor[grupo.Key].SensibilidadeExigidaMa(entrada.Tipo)))
+                .ToList());
+        }
+
+        private decimal? PelaTabela(string referencia, AvaliacaoPelaTabela avaliacao)
+        {
+            var expressao = $"n = pontos em locais que exigem IDR para {CodigosDeTipoDeCarga.Codigo(entrada.Tipo)}";
+            if (avaliacao.Impedimento is not null) Parar(referencia, "Exigência de IDR", expressao, "pontos", avaliacao.Impedimento);
+
+            Passo(referencia, "Exigência de IDR", expressao, [new ValorDoPasso("pontos", entrada.LocaisDosPontos.Count, "pontos")],
+                avaliacao.PontosQueExigem, "pontos", avaliacao.Descrever());
+            if (avaliacao.SensibilidadeExigida is not { } sensibilidade) return null;
+
+            Passo(referencia, "Sensibilidade do IDR", "IΔn = menor IΔn máx dos locais que exigem IDR", [], sensibilidade, "mA");
+            return sensibilidade;
+        }
+
+        private decimal? PelaDecisaoDoProjetista(DecisaoDeIdr decisao, string referencia, AvaliacaoPelaTabela avaliacao)
+        {
+            var total = entrada.LocaisDosPontos.Count;
+            var motivo = string.IsNullOrWhiteSpace(decisao.Motivo) ? "sem motivo informado" : $"motivo: {decisao.Motivo.Trim()}";
+            var observacao = $"decisão do projetista, prevalece sobre a tabela ({motivo}); pela tabela: {avaliacao.Descrever()}";
+            ValorDoPasso[] valores = [new ValorDoPasso("pontos", total, "pontos")];
+
+            if (!decisao.Exigir)
+            {
+                var exigidos = avaliacao.PontosQueExigem;
+                Passo(referencia, "Exigência de IDR", "n = 0 (IDR dispensado pelo projetista)", valores, 0m, "pontos",
+                    exigidos > 0 ? $"{observacao}; ATENÇÃO: a tabela exige IDR em {Pontos(exigidos)}" : observacao);
+                if (exigidos > 0) _avisos.Add($"IDR dispensado pelo projetista, mas a tabela o exige em {Pontos(exigidos)}");
+                return null;
+            }
+
+            Passo(referencia, "Exigência de IDR", "n = todos os pontos (IDR exigido pelo projetista)", valores, total, "pontos", observacao);
+            var sensibilidade = decisao.SensibilidadeMa!.Value;
+            string? alerta = null;
+            if (avaliacao.SensibilidadeExigida is { } exigida && sensibilidade > exigida)
+            {
+                alerta = $"IΔn de {Numero(sensibilidade)} mA acima da máxima de {Numero(exigida)} mA exigida pela tabela";
+                _avisos.Add(alerta);
+            }
+
+            Passo(referencia, "Sensibilidade do IDR", "IΔn = informada pelo projetista", [], sensibilidade, "mA", alerta);
+            return sensibilidade;
         }
 
         private void Eletroduto(decimal secao)
@@ -270,10 +365,28 @@ public static class DimensionamentoDeCircuito
         }
 
         private ResultadoDoDimensionamento Resultado(SituacaoDoDimensionamento situacao, IReadOnlyList<string> problemas) =>
-            new(entrada.Circuito, situacao, perfil.Nome, _correnteDeProjeto, _condutoresCarregados, _fct, _fca, _secao, _capacidade, _disjuntor, _queda,
-                _eletroduto, _diametroInterno, _ocupacao, new MemoriaDeCalculo(entrada.Circuito, perfil.Nome, _passos), problemas);
+            new(entrada.Circuito, situacao, perfil.Nome, _correnteDeProjeto, _condutoresCarregados, _fct, _fca, _secao, _capacidade, _disjuntor,
+                _idrNominal, _idrSensibilidade, _queda, _eletroduto, _diametroInterno, _ocupacao,
+                new MemoriaDeCalculo(entrada.Circuito, perfil.Nome, _passos), problemas, _avisos);
 
         private static string Numero(decimal valor) => PerfilNormativo.Numero(valor);
+
+        private static string Pontos(int quantidade) => quantidade == 1 ? "1 ponto" : $"{quantidade} pontos";
+
+        private sealed record ExigenciaDoLocal(string Local, int Pontos, decimal? SensibilidadeMa);
+
+        /// <summary>O que a tabela de proteção diferencial diz para o circuito, ou por que não dá para avaliar.</summary>
+        private sealed record AvaliacaoPelaTabela(string? Impedimento, IReadOnlyList<ExigenciaDoLocal> PorLocal)
+        {
+            public int PontosQueExigem => PorLocal.Where(local => local.SensibilidadeMa is not null).Sum(local => local.Pontos);
+
+            public decimal? SensibilidadeExigida => PorLocal.Select(local => local.SensibilidadeMa).Min();
+
+            public string Descrever() => Impedimento is not null
+                ? $"não avaliada ({Impedimento})"
+                : string.Join("; ", PorLocal.Select(local => $"{local.Local} ({Calculo.Pontos(local.Pontos)}): " +
+                    (local.SensibilidadeMa is { } sensibilidade ? $"exige IΔn ≤ {Numero(sensibilidade)} mA" : "não exige")));
+        }
     }
 
     private sealed class CalculoInterrompido(string motivo) : Exception(motivo);

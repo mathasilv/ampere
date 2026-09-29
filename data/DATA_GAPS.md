@@ -56,6 +56,12 @@ Não são valores de norma, mas decisões de engenharia do `DimensionamentoDeCir
 - Neutro e proteção com o diâmetro da fase: conservador, porque seção menor só reduziria a ocupação.
 - Um tipo de eletroduto por projeto (condição do projeto). O tipo de condutor vem de `AMP_TipoCondutor` do circuito
   ou do padrão do projeto.
+- IDR por circuito: cada circuito que exige recebe o seu (proteção de um grupo de circuitos por um só IDR fica para o
+  quadro, F1.4). I<sub>Δn</sub> = a menor máxima entre os locais dos pontos que exigem; corrente nominal = a menor da
+  série com In(IDR) ≥ In(disjuntor).
+- Ponto sem local ou local fora da tabela interrompe o cálculo, a menos que o projetista decida. A decisão do
+  projetista prevalece; a memória registra o que a tabela daria e o resultado traz um aviso quando divergem.
+- O IDR é calculado antes do eletroduto: um impedimento no IDR deixa o eletroduto sem cálculo.
 
 ## Previstas (ainda sem código)
 

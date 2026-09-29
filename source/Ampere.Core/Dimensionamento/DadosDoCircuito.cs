@@ -5,7 +5,8 @@ using Ampere.Core.Normas;
 namespace Ampere.Core.Dimensionamento;
 
 /// <summary>Valores AMP_* de um ponto do circuito, como o adapter os lê (nulo = parâmetro vazio).</summary>
-public sealed record DadosDoPonto(long Id, decimal? PotenciaVA, decimal? TensaoV, string? Fases);
+/// <param name="Local">Local do ponto no vocabulário da tabela de IDR do perfil (nulo = sem local).</param>
+public sealed record DadosDoPonto(long Id, decimal? PotenciaVA, decimal? TensaoV, string? Fases, string? Local = null);
 
 /// <summary>Valores AMP_* de um circuito e dos seus pontos, como o adapter os lê (nulo = parâmetro vazio).</summary>
 /// <param name="Id">Identificador do circuito no documento.</param>
@@ -16,6 +17,7 @@ public sealed record DadosDoPonto(long Id, decimal? PotenciaVA, decimal? TensaoV
 /// <param name="Isolacao">AMP_MaterialIsolacao.</param>
 /// <param name="Pontos">Pontos de carga do circuito.</param>
 /// <param name="TipoDeCondutor">AMP_TipoCondutor.</param>
+/// <param name="IdrDoProjetista">Decisão do projetista sobre o IDR do circuito, se houver.</param>
 public sealed record DadosDoCircuito(
     long Id,
     string? Numero,
@@ -24,7 +26,8 @@ public sealed record DadosDoCircuito(
     string? MetodoDeInstalacao,
     string? Isolacao,
     IReadOnlyList<DadosDoPonto> Pontos,
-    string? TipoDeCondutor = null);
+    string? TipoDeCondutor = null,
+    DecisaoDeIdr? IdrDoProjetista = null);
 
 /// <summary>
 ///     Condições do projeto que não são parâmetros do circuito, informadas pelo projetista.
@@ -83,7 +86,9 @@ public static class EntradaDoCircuito
             condicoes.TemperaturaAmbienteC,
             condicoes.CircuitosAgrupados,
             tipoDeCondutor!,
-            condicoes.TipoDeEletroduto!);
+            condicoes.TipoDeEletroduto!,
+            dados.Pontos.Select(ponto => ponto.Local).ToList(),
+            dados.IdrDoProjetista);
         return new EntradaMontada(entrada, []);
     }
 

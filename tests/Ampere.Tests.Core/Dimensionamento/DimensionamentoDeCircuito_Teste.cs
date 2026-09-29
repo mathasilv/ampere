@@ -1,6 +1,7 @@
 using Ampere.Core.Cargas;
 using Ampere.Core.Catalogos;
 using Ampere.Core.Dimensionamento;
+using Ampere.Core.Memoria;
 using Ampere.Core.Normas;
 using Ampere.Tests.Core.Catalogos;
 using Ampere.Tests.Core.Normas;
@@ -18,6 +19,136 @@ public class DimensionamentoDeCircuito_Teste
     private static readonly CatalogosDeProduto CatalogosFicticiosCarregados = new(
         CatalogoDeCondutores.Carregar(CatalogosFicticios.Condutores),
         CatalogoDeEletrodutos.Carregar(CatalogosFicticios.Eletrodutos));
+
+    [Test]
+    public async Task Local_que_nao_exige_deixa_o_circuito_sem_IDR()
+    {
+        var resultado = Dimensionar(Entrada());
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
+        await Assert.That(resultado.IdrSensibilidadeMa).IsNull();
+        await Assert.That(resultado.IdrNominalA).IsNull();
+        await Assert.That(PassoDe(resultado, "Exigência de IDR").Resultado).IsEqualTo(0m);
+        await Assert.That(PassoDe(resultado, "Exigência de IDR").Observacao).IsEqualTo("LOCAL-SECO (1 ponto): não exige");
+    }
+
+    [Test]
+    [Arguments(3175, 25, 25)]
+    [Arguments(3810, 32, 40)]
+    public async Task Local_que_exige_da_IDR_com_a_menor_corrente_nominal_nao_inferior_ao_disjuntor(decimal potenciaVA, decimal disjuntorA, decimal idrA)
+    {
+        var resultado = Dimensionar(Entrada(potenciaVA: potenciaVA, locais: ["LOCAL-SECO", "LOCAL-MOLHADO"]));
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
+        await Assert.That(resultado.DisjuntorA).IsEqualTo(disjuntorA);
+        await Assert.That(PassoDe(resultado, "Exigência de IDR").Resultado).IsEqualTo(1m);
+        await Assert.That(resultado.IdrSensibilidadeMa).IsEqualTo(30m);
+        await Assert.That(resultado.IdrNominalA).IsEqualTo(idrA);
+    }
+
+    [Test]
+    public async Task Tipo_de_carga_que_o_local_nao_atinge_fica_sem_IDR()
+    {
+        var resultado = Dimensionar(Entrada(potenciaVA: 127m, tipo: TipoDeCarga.Iluminacao, locais: ["LOCAL-EXTERNO"]));
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
+        await Assert.That(resultado.IdrSensibilidadeMa).IsNull();
+        await Assert.That(PassoDe(resultado, "Exigência de IDR").Observacao).IsEqualTo("LOCAL-EXTERNO (1 ponto): não exige");
+    }
+
+    [Test]
+    public async Task Locais_com_exigencias_diferentes_adotam_a_menor_sensibilidade()
+    {
+        var resultado = Dimensionar(Entrada(locais: ["LOCAL-MOLHADO", "LOCAL-ESPECIAL", "LOCAL-ESPECIAL"]));
+
+        await Assert.That(PassoDe(resultado, "Exigência de IDR").Resultado).IsEqualTo(3m);
+        await Assert.That(PassoDe(resultado, "Exigência de IDR").Observacao)
+            .IsEqualTo("LOCAL-ESPECIAL (2 pontos): exige IΔn ≤ 10 mA; LOCAL-MOLHADO (1 ponto): exige IΔn ≤ 30 mA");
+        await Assert.That(resultado.IdrSensibilidadeMa).IsEqualTo(10m);
+        await Assert.That(resultado.IdrNominalA).IsEqualTo(25m);
+    }
+
+    [Test]
+    public async Task Ponto_sem_local_para_no_IDR_com_explicacao()
+    {
+        var resultado = Dimensionar(Entrada(locais: [null, "LOCAL-SECO"]));
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
+        await Assert.That(resultado.DisjuntorA).IsEqualTo(10m);
+        await Assert.That(resultado.Eletroduto).IsNull();
+        await Assert.That(string.Join("\n", resultado.Problemas)).Contains("1 ponto sem local: informe o local ou a decisão do projetista sobre o IDR");
+    }
+
+    [Test]
+    public async Task Local_fora_da_tabela_para_com_explicacao()
+    {
+        var resultado = Dimensionar(Entrada(locais: ["COZINHA"]));
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
+        await Assert.That(string.Join("\n", resultado.Problemas)).Contains("local fora da tabela de IDR: 'COZINHA'");
+    }
+
+    [Test]
+    public async Task Projetista_exige_IDR_e_a_memoria_registra_a_tabela_e_a_divergencia()
+    {
+        var resultado = Dimensionar(Entrada(locais: ["LOCAL-MOLHADO"], idr: DecisaoDeIdr.Exigido(300m, "motivo de teste")));
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
+        await Assert.That(resultado.IdrSensibilidadeMa).IsEqualTo(300m);
+        await Assert.That(resultado.IdrNominalA).IsEqualTo(25m);
+        await Assert.That(PassoDe(resultado, "Exigência de IDR").Observacao)
+            .IsEqualTo("decisão do projetista, prevalece sobre a tabela (motivo: motivo de teste); pela tabela: LOCAL-MOLHADO (1 ponto): exige IΔn ≤ 30 mA");
+        await Assert.That(resultado.Avisos).IsEquivalentTo(["IΔn de 300 mA acima da máxima de 30 mA exigida pela tabela"]);
+    }
+
+    [Test]
+    public async Task Projetista_dispensa_IDR_com_aviso_quando_a_tabela_exige()
+    {
+        var resultado = Dimensionar(Entrada(locais: ["LOCAL-MOLHADO", "LOCAL-SECO"], idr: DecisaoDeIdr.Dispensado("motivo de teste")));
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
+        await Assert.That(resultado.IdrSensibilidadeMa).IsNull();
+        await Assert.That(PassoDe(resultado, "Exigência de IDR").Resultado).IsEqualTo(0m);
+        await Assert.That(PassoDe(resultado, "Exigência de IDR").Observacao).Contains("ATENÇÃO: a tabela exige IDR em 1 ponto");
+        await Assert.That(resultado.Avisos).IsEquivalentTo(["IDR dispensado pelo projetista, mas a tabela o exige em 1 ponto"]);
+    }
+
+    [Test]
+    public async Task Decisao_do_projetista_dispensa_o_local_dos_pontos()
+    {
+        var resultado = Dimensionar(Entrada(locais: [null], idr: DecisaoDeIdr.Exigido(30m)));
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
+        await Assert.That(resultado.IdrSensibilidadeMa).IsEqualTo(30m);
+        await Assert.That(PassoDe(resultado, "Exigência de IDR").Observacao)
+            .Contains("(sem motivo informado); pela tabela: não avaliada (1 ponto sem local");
+        await Assert.That(resultado.Avisos).IsEmpty();
+    }
+
+    [Test]
+    public async Task Nenhuma_corrente_de_IDR_atende_o_disjuntor_para_com_explicacao()
+    {
+        var soAte25 = PerfilNormativo.Carregar(PerfilFicticio.Json.Replace("\"valores\": [25, 40, 63]", "\"valores\": [25]"));
+
+        var resultado = DimensionamentoDeCircuito.Dimensionar(Entrada(potenciaVA: 3810m, locais: ["LOCAL-MOLHADO"]), soAte25, CatalogosFicticiosCarregados);
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
+        await Assert.That(resultado.IdrSensibilidadeMa).IsEqualTo(30m);
+        await Assert.That(resultado.IdrNominalA).IsNull();
+        await Assert.That(string.Join("\n", resultado.Problemas)).Contains("nenhuma corrente nominal de IDR do perfil atende In = 32 A (maior: 25 A)");
+    }
+
+    [Test]
+    public async Task Decisao_do_projetista_incoerente_e_entrada_invalida()
+    {
+        var semSensibilidade = Dimensionar(Entrada(idr: new DecisaoDeIdr(true, null)));
+        var dispensaComSensibilidade = Dimensionar(Entrada(idr: new DecisaoDeIdr(false, 30m)));
+
+        await Assert.That(semSensibilidade.Situacao).IsEqualTo(SituacaoDoDimensionamento.EntradaInvalida);
+        await Assert.That(string.Join("\n", semSensibilidade.Problemas)).Contains("IDR exigido pelo projetista sem sensibilidade positiva");
+        await Assert.That(dispensaComSensibilidade.Situacao).IsEqualTo(SituacaoDoDimensionamento.EntradaInvalida);
+        await Assert.That(string.Join("\n", dispensaComSensibilidade.Problemas)).Contains("IDR dispensado pelo projetista não leva sensibilidade");
+    }
 
     [Test]
     public async Task Eletroduto_e_o_menor_tamanho_dentro_da_ocupacao_maxima()
@@ -40,7 +171,7 @@ public class DimensionamentoDeCircuito_Teste
 
         var resultado = DimensionamentoDeCircuito.Dimensionar(Entrada(), taxaDe48, CatalogosFicticiosCarregados);
 
-        await Assert.That(resultado.Memoria!.Passos.Single(passo => passo.Descricao == "Taxa máxima de ocupação").Resultado).IsEqualTo(48m);
+        await Assert.That(PassoDe(resultado, "Taxa máxima de ocupação").Resultado).IsEqualTo(48m);
         await Assert.That(resultado.Eletroduto).IsEqualTo("A");
         await Assert.That(resultado.OcupacaoDoEletrodutoPct).IsEqualTo(48m);
     }
@@ -51,7 +182,7 @@ public class DimensionamentoDeCircuito_Teste
         var resultado = Dimensionar(Entrada(potenciaVA: 6600m, fases: "3F+N", tensaoV: 220m));
 
         await Assert.That(resultado.SecaoMm2).IsEqualTo(4m);
-        await Assert.That(resultado.Memoria!.Passos.Single(passo => passo.Descricao == "Condutores no eletroduto").Resultado).IsEqualTo(5m);
+        await Assert.That(PassoDe(resultado, "Condutores no eletroduto").Resultado).IsEqualTo(5m);
         await Assert.That(resultado.Eletroduto).IsEqualTo("C");
         await Assert.That(resultado.OcupacaoDoEletrodutoPct).IsEqualTo(31.25m);
     }
@@ -158,7 +289,7 @@ public class DimensionamentoDeCircuito_Teste
     [Test]
     public async Task Toda_linha_da_memoria_cita_a_referencia_do_perfil_nunca_do_codigo()
     {
-        var memoria = Dimensionar(Entrada(comprimentoM: 60m)).Memoria!;
+        var memoria = Dimensionar(Entrada(comprimentoM: 60m, locais: ["LOCAL-MOLHADO"])).Memoria!;
 
         await Assert.That(memoria.Passos.Count).IsGreaterThan(5);
         await Assert.That(memoria.Passos.Select(passo => passo.Referencia).Where(referencia => !referencia.StartsWith("FICTÍCIO"))).IsEmpty();
@@ -225,9 +356,14 @@ public class DimensionamentoDeCircuito_Teste
         decimal comprimentoM = 10m,
         TipoDeCarga tipo = TipoDeCarga.TUG,
         decimal temperaturaC = 30m,
-        int circuitosAgrupados = 1) =>
+        int circuitosAgrupados = 1,
+        IReadOnlyList<string?>? locais = null,
+        DecisaoDeIdr? idr = null) =>
         new("TUG-01", tipo, potenciaVA, fases, tensaoV, comprimentoM, "B1", "PVC", "Cobre", temperaturaC, circuitosAgrupados,
-            CatalogosFicticios.TipoDeCondutor, CatalogosFicticios.TipoDeEletroduto);
+            CatalogosFicticios.TipoDeCondutor, CatalogosFicticios.TipoDeEletroduto, locais ?? ["LOCAL-SECO"], idr);
+
+    private static PassoDeCalculo PassoDe(ResultadoDoDimensionamento resultado, string descricao) =>
+        resultado.Memoria!.Passos.Single(passo => passo.Descricao == descricao);
 
     private static string Observacoes(ResultadoDoDimensionamento resultado) =>
         string.Join("\n", resultado.Memoria!.Passos.Select(passo => passo.Observacao).OfType<string>());

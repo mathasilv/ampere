@@ -80,6 +80,9 @@ quebre R2025/R2026: perguntar antes de aposentar essas configurações.
   decodificam o escape; confira o arquivo gravado e, se preciso, ajuste por script.
 - `JsonSerializerContext` (leitura gerada em compilação): o nome da classe precisa ser único no assembly
   mesmo em namespaces diferentes — nomes repetidos derrubam o gerador de todos os contextos (CS8785).
+- Parâmetro AMP_* que o dimensionamento grava (ex.: `AMP_IDR_SensibilidadeMa`) não pode ser lido de volta como
+  entrada: na rodada seguinte o valor calculado viraria "decisão do projetista". Decisão manual precisa de fonte
+  própria (ex.: `DecisaoDeIdr` do Core, alimentada por um campo que o motor nunca escreve).
 
 ## Commits
 

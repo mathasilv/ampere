@@ -88,6 +88,20 @@ public class DimensionamentoDoProjeto_Teste
     }
 
     [Test]
+    public async Task Local_dos_pontos_e_decisao_do_projetista_chegam_ao_motor()
+    {
+        var molhado = Circuito(1, "TUG-01", "TUG", Ponto(11, 600m), Ponto(12, 600m, local: "LOCAL-MOLHADO"));
+        var dispensado = Circuito(2, "TUG-02", "TUG", Ponto(21, 600m, local: "LOCAL-MOLHADO")) with { IdrDoProjetista = DecisaoDeIdr.Dispensado() };
+
+        var resultados = DimensionamentoDoProjeto.Executar([1, 2], Condicoes, Ficticio, Catalogos, new DocumentoDeDimensionamentoFalso([molhado, dispensado]));
+
+        await Assert.That(resultados[0].Dimensionamento!.IdrSensibilidadeMa).IsEqualTo(30m);
+        await Assert.That(resultados[0].Dimensionamento!.IdrNominalA).IsEqualTo(25m);
+        await Assert.That(resultados[1].Dimensionamento!.IdrSensibilidadeMa).IsNull();
+        await Assert.That(resultados[1].Dimensionamento!.Avisos.Count).IsEqualTo(1);
+    }
+
+    [Test]
     public async Task Padroes_do_projeto_completam_metodo_e_isolacao_vazios()
     {
         var circuito = Circuito(1, "TUG-01", "TUG", Ponto(11, 1270m)) with { MetodoDeInstalacao = null, Isolacao = null };
@@ -122,8 +136,8 @@ public class DimensionamentoDoProjeto_Teste
     private static DadosDoCircuito Circuito(long id, string numero, string tipo, params DadosDoPonto[] pontos) =>
         new(id, numero, tipo, 10m, "B1", "PVC", pontos);
 
-    private static DadosDoPonto Ponto(long id, decimal potenciaVA, decimal tensaoV = 127m, string fases = "F+N") =>
-        new(id, potenciaVA, tensaoV, fases);
+    private static DadosDoPonto Ponto(long id, decimal potenciaVA, decimal tensaoV = 127m, string fases = "F+N", string? local = "LOCAL-SECO") =>
+        new(id, potenciaVA, tensaoV, fases, local);
 
     private sealed class DocumentoDeDimensionamentoFalso(IReadOnlyList<DadosDoCircuito> circuitos) : IDocumentoDeDimensionamento
     {
