@@ -1,3 +1,4 @@
+using Ampere.Core.Cargas;
 using Ampere.Core.Normas;
 
 namespace Ampere.Tests.Core.Normas;
@@ -17,6 +18,9 @@ public class PerfilNormativo_Teste
         await Assert.That(oficial.SecoesNominaisMm2().Referencia).IsEqualTo("TODO_NORMA");
         await Assert.That(oficial.CapacidadeDeConducaoA("B1", "PVC", "Cobre", 2, 2.5m).Disponivel).IsFalse();
         await Assert.That(oficial.QuedaDeTensaoMaximaPct("circuito_terminal").Referencia).IsEqualTo("TODO_NORMA");
+        await Assert.That(oficial.CorrentesNominaisDeIdrA().Referencia).IsEqualTo("TODO_NORMA");
+        await Assert.That(oficial.ProtecaoDiferencialPorLocal().Disponivel).IsFalse();
+        await Assert.That(oficial.ProtecaoDiferencialPorLocal().Ausencia).Contains("protecao_diferencial_por_local sem dados oficiais (TODO_NORMA)");
     }
 
     [Test]
@@ -40,6 +44,45 @@ public class PerfilNormativo_Teste
         await Assert.That(Ficticio.FatorDeAgrupamento(2).Valor).IsEqualTo(0.8m);
         await Assert.That(Ficticio.QuedaDeTensaoMaximaPct("circuito_terminal").Valor).IsEqualTo(5m);
         await Assert.That(Ficticio.ResistividadeOhmMm2PorM("Cobre").Valor).IsEqualTo(0.02m);
+        await Assert.That(Ficticio.CorrentesNominaisDeIdrA().Valor).IsEquivalentTo([25m, 40m, 63m]);
+        await Assert.That(Ficticio.ProtecaoDiferencialPorLocal().Valor.Count).IsEqualTo(4);
+    }
+
+    [Test]
+    public async Task Protecao_diferencial_por_local_da_a_sensibilidade_exigida_por_tipo_de_carga()
+    {
+        var tabela = Ficticio.ProtecaoDiferencialPorLocal();
+
+        await Assert.That(tabela.Referencia).IsEqualTo("FICTÍCIO: IDR por local");
+        await Assert.That(tabela.Valor["LOCAL-MOLHADO"].SensibilidadeExigidaMa(TipoDeCarga.Iluminacao)).IsEqualTo(30m);
+        await Assert.That(tabela.Valor["LOCAL-ESPECIAL"].SensibilidadeExigidaMa(TipoDeCarga.TUE)).IsEqualTo(10m);
+        await Assert.That(tabela.Valor["LOCAL-EXTERNO"].SensibilidadeExigidaMa(TipoDeCarga.Iluminacao)).IsNull();
+        await Assert.That(tabela.Valor["LOCAL-SECO"].SensibilidadeExigidaMa(TipoDeCarga.TUG)).IsNull();
+    }
+
+    [Test]
+    [Arguments("\"tipos_de_carga\": [\"TUG\"], \"sensibilidade_maxima_ma\": 30", "\"tipos_de_carga\": [\"Tomada\"], \"sensibilidade_maxima_ma\": 30",
+        "'LOCAL-EXTERNO' com tipo de carga inválido 'Tomada'")]
+    [Arguments("\"tipos_de_carga\": [\"TUG\"], \"sensibilidade_maxima_ma\": 30", "\"tipos_de_carga\": [\"Reserva\"], \"sensibilidade_maxima_ma\": 30",
+        "'LOCAL-EXTERNO' com tipo de carga inválido 'Reserva'")]
+    [Arguments("\"tipos_de_carga\": [\"TUG\", \"TUE\"], \"sensibilidade_maxima_ma\": 10", "\"tipos_de_carga\": [\"TUG\", \"tug\"], \"sensibilidade_maxima_ma\": 10",
+        "'LOCAL-ESPECIAL' com tipo de carga 'tug' repetido")]
+    [Arguments("\"tipos_de_carga\": [\"TUG\"], \"sensibilidade_maxima_ma\": 30", "\"tipos_de_carga\": [\"TUG\"]",
+        "'LOCAL-EXTERNO' exige IDR sem sensibilidade_maxima_ma positiva")]
+    [Arguments("{ \"local\": \"LOCAL-SECO\", \"tipos_de_carga\": [] }", "{ \"local\": \"LOCAL-SECO\", \"tipos_de_carga\": [], \"sensibilidade_maxima_ma\": 30 }",
+        "'LOCAL-SECO' tem sensibilidade_maxima_ma mas nenhum tipo de carga")]
+    [Arguments("{ \"local\": \"LOCAL-SECO\", \"tipos_de_carga\": [] }", "{ \"local\": \"LOCAL-SECO\" }",
+        "'LOCAL-SECO' sem tipos_de_carga")]
+    [Arguments("\"local\": \"LOCAL-EXTERNO\"", "\"local\": \"LOCAL-MOLHADO\"", "local 'LOCAL-MOLHADO' repetido")]
+    [Arguments("\"local\": \"LOCAL-EXTERNO\"", "\"local\": \" \"", "protecao_diferencial_por_local: linha sem local")]
+    public async Task Linha_invalida_de_protecao_diferencial_e_rejeitada(string trecho, string troca, string mensagem)
+    {
+        var json = PerfilFicticio.Json.Replace(trecho, troca);
+
+        await Assert.That(json).IsNotEqualTo(PerfilFicticio.Json);
+        await Assert.That(() => PerfilNormativo.Carregar(json))
+            .Throws<PerfilNormativoInvalidoException>()
+            .WithMessageContaining(mensagem);
     }
 
     [Test]
@@ -121,6 +164,7 @@ public class PerfilNormativo_Teste
     {
         await Assert.That(Ficticio.ReferenciaDaRegra(RegraNormativa.QuedaDeTensao)).IsEqualTo("FICTÍCIO: regra de queda");
         await Assert.That(PerfilNormativo.NBR5410_2004.ReferenciaDaRegra(RegraNormativa.CoordenacaoCondutorProtecao)).IsEqualTo("TODO_NORMA");
+        await Assert.That(Ficticio.ReferenciaDaRegra(RegraNormativa.CoordenacaoIdrDisjuntor)).IsEqualTo("FICTÍCIO: regra IDR x disjuntor");
     }
 
     [Test]

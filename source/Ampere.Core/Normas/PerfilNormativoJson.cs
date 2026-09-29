@@ -24,7 +24,9 @@ internal sealed record TabelasDoPerfil(
     TabelaJson<Dictionary<string, decimal>>? FatorDeAgrupamento,
     TabelaJson<Dictionary<string, decimal>>? QuedaDeTensaoMaximaPct,
     TabelaJson<Dictionary<string, decimal>>? ResistividadeOhmMm2PorM,
-    TabelaJson<Dictionary<string, decimal>>? OcupacaoMaximaEletrodutoPct);
+    TabelaJson<Dictionary<string, decimal>>? OcupacaoMaximaEletrodutoPct,
+    TabelaJson<List<decimal>>? CorrentesNominaisIdrA,
+    TabelaJson<List<LinhaDeProtecaoDiferencialJson>>? ProtecaoDiferencialPorLocal);
 
 internal sealed record TabelaJson<T>(string? Ref, T? Valores);
 
@@ -36,6 +38,8 @@ internal sealed record LinhaDeCapacidadeJson(
     Dictionary<string, decimal>? PorSecaoMm2);
 
 internal sealed record LinhaDeTemperaturaJson(string? Isolacao, Dictionary<string, decimal>? PorTemperaturaC);
+
+internal sealed record LinhaDeProtecaoDiferencialJson(string? Local, List<string>? TiposDeCarga, decimal? SensibilidadeMaximaMa);
 
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,

@@ -16,5 +16,8 @@ public enum RegraNormativa
     QuedaDeTensao,
 
     /// <summary>Condutores de um circuito dentro do eletroduto: fases, neutro e proteção ("condutores_no_eletroduto").</summary>
-    CondutoresNoEletroduto
+    CondutoresNoEletroduto,
+
+    /// <summary>Corrente nominal do IDR coordenada com o disjuntor do circuito ("coordenacao_idr_disjuntor").</summary>
+    CoordenacaoIdrDisjuntor
 }

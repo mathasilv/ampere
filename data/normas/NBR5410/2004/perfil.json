@@ -11,7 +11,8 @@
     "corrente_de_projeto": "TODO_NORMA",
     "coordenacao_condutor_protecao": "TODO_NORMA",
     "queda_de_tensao": "TODO_NORMA",
-    "condutores_no_eletroduto": "TODO_NORMA"
+    "condutores_no_eletroduto": "TODO_NORMA",
+    "coordenacao_idr_disjuntor": "TODO_NORMA"
   },
   "tabelas": {
     "secoes_nominais_mm2": { "ref": "TODO_NORMA", "valores": [] },
@@ -23,6 +24,8 @@
     "fator_de_agrupamento": { "ref": "TODO_NORMA", "valores": {} },
     "queda_de_tensao_maxima_pct": { "ref": "TODO_NORMA", "valores": {} },
     "resistividade_ohm_mm2_por_m": { "ref": "TODO_NORMA", "valores": {} },
-    "ocupacao_maxima_eletroduto_pct": { "ref": "TODO_NORMA", "valores": {} }
+    "ocupacao_maxima_eletroduto_pct": { "ref": "TODO_NORMA", "valores": {} },
+    "correntes_nominais_idr_a": { "ref": "TODO_NORMA", "valores": [] },
+    "protecao_diferencial_por_local": { "ref": "TODO_NORMA", "valores": [] }
   }
 }

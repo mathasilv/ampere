@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using Ampere.Core.Cargas;
 
 namespace Ampere.Core.Normas;
 
@@ -27,7 +28,8 @@ public sealed class PerfilNormativo
         ["corrente_de_projeto"] = RegraNormativa.CorrenteDeProjeto,
         ["coordenacao_condutor_protecao"] = RegraNormativa.CoordenacaoCondutorProtecao,
         ["queda_de_tensao"] = RegraNormativa.QuedaDeTensao,
-        ["condutores_no_eletroduto"] = RegraNormativa.CondutoresNoEletroduto
+        ["condutores_no_eletroduto"] = RegraNormativa.CondutoresNoEletroduto,
+        ["coordenacao_idr_disjuntor"] = RegraNormativa.CoordenacaoIdrDisjuntor
     };
 
     private readonly Dictionary<RegraNormativa, string> _regras = [];
@@ -41,6 +43,8 @@ public sealed class PerfilNormativo
     private readonly Tabela<IReadOnlyDictionary<string, decimal>> _queda;
     private readonly Tabela<IReadOnlyDictionary<string, decimal>> _resistividade;
     private readonly Tabela<IReadOnlyDictionary<int, decimal>> _ocupacao;
+    private readonly Tabela<IReadOnlyList<decimal>> _idr;
+    private readonly Tabela<IReadOnlyDictionary<string, ProtecaoDiferencialDoLocal>> _protecaoDiferencial;
 
     private PerfilNormativo(string nome, bool ficticio, Leitor leitor, TabelasDoPerfil tabelas)
     {
@@ -64,6 +68,9 @@ public sealed class PerfilNormativo
         _queda = leitor.PorTexto("queda_de_tensao_maxima_pct", tabelas.QuedaDeTensaoMaximaPct);
         _resistividade = leitor.PorTexto("resistividade_ohm_mm2_por_m", tabelas.ResistividadeOhmMm2PorM);
         _ocupacao = leitor.PorInteiro("ocupacao_maxima_eletroduto_pct", tabelas.OcupacaoMaximaEletrodutoPct);
+        _idr = leitor.Lista("correntes_nominais_idr_a", tabelas.CorrentesNominaisIdrA);
+        _protecaoDiferencial = leitor.Ler<List<LinhaDeProtecaoDiferencialJson>, IReadOnlyDictionary<string, ProtecaoDiferencialDoLocal>>(
+            "protecao_diferencial_por_local", tabelas.ProtecaoDiferencialPorLocal, valores => valores.Count == 0, leitor.ProtecaoDiferencial);
     }
 
     /// <summary>Nome do perfil, gravado em AMP_PerfilNorma (ex.: "NBR5410:2004").</summary>
@@ -169,6 +176,12 @@ public sealed class PerfilNormativo
         var faixa = Math.Min(condutores, _ocupacao.Valores.Keys.Max());
         return PorChave(_ocupacao, "ocupacao_maxima_eletroduto_pct", faixa, $"sem taxa para {condutores} condutores");
     }
+
+    public DadoNormativo<IReadOnlyList<decimal>> CorrentesNominaisDeIdrA() => Inteira(_idr, "correntes_nominais_idr_a");
+
+    /// <summary>Tabela inteira de proteção diferencial, por nome de local.</summary>
+    public DadoNormativo<IReadOnlyDictionary<string, ProtecaoDiferencialDoLocal>> ProtecaoDiferencialPorLocal() =>
+        Inteira(_protecaoDiferencial, "protecao_diferencial_por_local");
 
     internal static string Numero(decimal valor) => valor.ToString("0.############################", CultureInfo.InvariantCulture);
 
@@ -308,6 +321,41 @@ public sealed class PerfilNormativo
 
             return new LinhaDeCapacidade(linha.Metodo ?? string.Empty, linha.Isolacao ?? string.Empty, linha.Material ?? string.Empty,
                 linha.CondutoresCarregados ?? 0, PorDecimal(nome, linha.PorSecaoMm2));
+        }
+
+        public IReadOnlyDictionary<string, ProtecaoDiferencialDoLocal> ProtecaoDiferencial(List<LinhaDeProtecaoDiferencialJson> linhas, string nome)
+        {
+            var resultado = new Dictionary<string, ProtecaoDiferencialDoLocal>(StringComparer.Ordinal);
+            foreach (var linha in linhas)
+            {
+                var local = linha.Local?.Trim();
+                if (string.IsNullOrEmpty(local))
+                {
+                    problemas.Add($"{nome}: linha sem local");
+                    continue;
+                }
+
+                if (resultado.ContainsKey(local)) problemas.Add($"{nome}: local '{local}' repetido");
+                if (linha.TiposDeCarga is null) problemas.Add($"{nome}: '{local}' sem tipos_de_carga (use [] se o local não exige IDR)");
+
+                var tipos = new List<TipoDeCarga>();
+                foreach (var texto in linha.TiposDeCarga ?? [])
+                {
+                    if (!CodigosDeTipoDeCarga.TryLer(texto, out var tipo) || tipo == TipoDeCarga.Reserva)
+                        problemas.Add($"{nome}: '{local}' com tipo de carga inválido '{texto}'");
+                    else if (tipos.Contains(tipo)) problemas.Add($"{nome}: '{local}' com tipo de carga '{texto}' repetido");
+                    else tipos.Add(tipo);
+                }
+
+                if (linha.TiposDeCarga is { Count: > 0 } && linha.SensibilidadeMaximaMa is not > 0)
+                    problemas.Add($"{nome}: '{local}' exige IDR sem sensibilidade_maxima_ma positiva");
+                if (linha.TiposDeCarga is { Count: 0 } && linha.SensibilidadeMaximaMa is not null)
+                    problemas.Add($"{nome}: '{local}' tem sensibilidade_maxima_ma mas nenhum tipo de carga que exija IDR");
+
+                resultado[local] = new ProtecaoDiferencialDoLocal(local, tipos.Order().ToList(), tipos.Count > 0 ? linha.SensibilidadeMaximaMa : null);
+            }
+
+            return resultado;
         }
 
         public T Positivo<T>(string nome, T valor) where T : System.Numerics.INumber<T>

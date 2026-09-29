@@ -14,7 +14,8 @@ internal static class PerfilFicticio
             "corrente_de_projeto": "FICTÍCIO: regra da corrente de projeto",
             "coordenacao_condutor_protecao": "FICTÍCIO: regra de coordenação",
             "queda_de_tensao": "FICTÍCIO: regra de queda",
-            "condutores_no_eletroduto": "FICTÍCIO: regra dos condutores no eletroduto"
+            "condutores_no_eletroduto": "FICTÍCIO: regra dos condutores no eletroduto",
+            "coordenacao_idr_disjuntor": "FICTÍCIO: regra IDR x disjuntor"
           },
           "tabelas": {
             "secoes_nominais_mm2": { "ref": "FICTÍCIO: seções", "valores": [1.5, 2.5, 4, 6, 10, 16, 25] },
@@ -37,7 +38,17 @@ internal static class PerfilFicticio
             "fator_de_agrupamento": { "ref": "FICTÍCIO: fator de agrupamento", "valores": { "1": 1, "2": 0.8, "3": 0.7 } },
             "queda_de_tensao_maxima_pct": { "ref": "FICTÍCIO: queda máxima", "valores": { "circuito_terminal": 5 } },
             "resistividade_ohm_mm2_por_m": { "ref": "FICTÍCIO: resistividade", "valores": { "Cobre": 0.02 } },
-            "ocupacao_maxima_eletroduto_pct": { "ref": "FICTÍCIO: ocupação", "valores": { "1": 50, "2": 30, "3": 40 } }
+            "ocupacao_maxima_eletroduto_pct": { "ref": "FICTÍCIO: ocupação", "valores": { "1": 50, "2": 30, "3": 40 } },
+            "correntes_nominais_idr_a": { "ref": "FICTÍCIO: correntes de IDR", "valores": [25, 40, 63] },
+            "protecao_diferencial_por_local": {
+              "ref": "FICTÍCIO: IDR por local",
+              "valores": [
+                { "local": "LOCAL-SECO", "tipos_de_carga": [] },
+                { "local": "LOCAL-MOLHADO", "tipos_de_carga": ["Iluminacao", "TUG", "TUE"], "sensibilidade_maxima_ma": 30 },
+                { "local": "LOCAL-EXTERNO", "tipos_de_carga": ["TUG"], "sensibilidade_maxima_ma": 30 },
+                { "local": "LOCAL-ESPECIAL", "tipos_de_carga": ["TUG", "TUE"], "sensibilidade_maxima_ma": 10 }
+              ]
+            }
           }
         }
         """;
