@@ -1,13 +1,11 @@
 using System.Text;
-using Ampere.Core.Catalogos;
 using Ampere.Core.Memoria;
-using Ampere.Core.Normas;
 
 namespace Ampere.Core.Relatorios;
 
 /// <summary>
-///     Relatório legível da memória de cálculo de um circuito, em Markdown: cada passo com a referência que o justifica, a
-///     expressão, os valores e o resultado.
+///     Relatório legível da memória de cálculo de um circuito: cada passo com a referência que o justifica, a expressão,
+///     os valores e o resultado.
 /// </summary>
 /// <remarks>
 ///     <list type="bullet">
@@ -20,85 +18,34 @@ namespace Ampere.Core.Relatorios;
 /// </remarks>
 public static class RelatorioDeMemoria
 {
-    private const string NotaDeArredondamento =
-        "> Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). " +
-        "O documento JSON da memória guarda os valores completos.";
-
-    // Unidades de contagem que o motor escreve no plural.
-    private static readonly Dictionary<string, string> Singulares = new(StringComparer.Ordinal)
-    {
-        ["condutores"] = "condutor",
-        ["pontos"] = "ponto"
-    };
-
     /// <param name="memoria">Memória do circuito.</param>
     /// <param name="identificadorGravado">
     ///     AMP_MemoriaCalculoId lido do elemento, se houver: o relatório avisa quando não confere com esta memória.
     /// </param>
     public static string Markdown(MemoriaDeCalculo memoria, string? identificadorGravado = null)
     {
+        var conteudo = ConteudoDoRelatorio.De(memoria, identificadorGravado);
         var texto = new StringBuilder();
         void Linha(string linha = "") => texto.Append(linha).Append('\n');
+        void Campo(Campo campo) => Linha($"- **{Escapar(campo.Rotulo)}:** {(campo.EhCodigo ? Codigo(campo.Texto) : Escapar(campo.Texto))}");
 
-        var identificador = memoria.Hash();
-        Linha($"# Memória de cálculo — circuito {Escapar(memoria.Circuito)}");
+        Linha($"# {Escapar(conteudo.Titulo)}");
         Linha();
-        Linha($"- **Perfil normativo:** {Escapar(memoria.PerfilNorma)}");
-        Linha($"- **Identificador (AMP_MemoriaCalculoId):** {Codigo(identificador)}");
-        Linha($"- **Esquema do documento:** {MemoriaDeCalculo.VersaoDoEsquema}");
-        Linha($"- **Situação:** {Situacao(memoria)}");
-
-        var pendentes = memoria.Passos
-            .Select((passo, indice) => (Referencia: passo.Referencia.Trim(), Numero: indice + 1))
-            .Where(passo => passo.Referencia is PerfilNormativo.TodoNorma or RegrasDeCatalogo.TodoCatalogo)
-            .Select(passo => passo.Numero)
-            .ToList();
-        if (pendentes.Count > 0)
-            Linha($"- **Referências pendentes (TODO_NORMA ou TODO_CATALOGO):** {Contagem(pendentes.Count, "passo", "passos")} ({string.Join(", ", pendentes)}), sem fonte oficial");
-        if (memoria.PerfilNorma.StartsWith("FICTICIO", StringComparison.Ordinal))
-            Linha("- **Atenção:** perfil fictício, só para testes");
-        if (identificadorGravado is not null && identificadorGravado.Trim() != identificador)
-            Linha($"- **Atenção:** o identificador gravado no elemento ({Codigo(identificadorGravado)}) não confere com esta memória");
-
+        foreach (var campo in conteudo.Cabecalho) Campo(campo);
         Linha();
-        Linha(NotaDeArredondamento);
+        Linha($"> {Escapar(conteudo.Nota)}");
         Linha();
         Linha("## Passos");
-        foreach (var (passo, indice) in memoria.Passos.Select((passo, indice) => (passo, indice)))
+        foreach (var passo in conteudo.Passos)
         {
             Linha();
-            Linha($"### {indice + 1}. {Escapar(passo.Descricao)}");
+            Linha($"### {Escapar(passo.Titulo)}");
             Linha();
-            Linha($"- **Referência:** {Escapar(passo.Referencia)}");
-            Linha($"- **Expressão:** {Codigo(passo.Expressao)}");
-            if (passo.Valores.Count > 0)
-                Linha($"- **Valores:** {string.Join("; ", passo.Valores.Select(valor => $"{Escapar(valor.Nome)} = {Quantidade(valor.Valor, valor.Unidade)}"))}");
-            Linha($"- **Resultado:** {(passo.Resultado is { } resultado ? Quantidade(resultado, passo.Unidade) : "não calculado")}");
-            if (passo.Observacao is not null) Linha($"- **Observação:** {Escapar(passo.Observacao)}");
+            foreach (var campo in passo.Campos) Campo(campo);
         }
 
         return texto.ToString();
     }
-
-    // Resultado nulo marca o passo em que o cálculo parou (PassoDeCalculo.Resultado).
-    private static string Situacao(MemoriaDeCalculo memoria)
-    {
-        var parada = memoria.Passos.Select((passo, indice) => (passo, indice)).FirstOrDefault(par => par.passo.Resultado is null);
-        if (parada.passo is null) return $"cálculo completo ({Contagem(memoria.Passos.Count, "passo", "passos")})";
-
-        return $"cálculo interrompido no passo {parada.indice + 1} ({Escapar(parada.passo.Descricao)}): " +
-               Escapar(parada.passo.Observacao ?? "motivo não registrado");
-    }
-
-    private static string Quantidade(decimal valor, string unidade)
-    {
-        var numero = NumeroEmTexto.FormatarParaLeitura(valor);
-        if (unidade.Length == 0) return numero;
-        if (unidade == "%") return numero + "%";
-        return $"{numero} {Escapar(valor == 1m && Singulares.TryGetValue(unidade, out var singular) ? singular : unidade)}";
-    }
-
-    private static string Contagem(int quantidade, string singular, string plural) => $"{quantidade} {(quantidade == 1 ? singular : plural)}";
 
     // Barra invertida antes de todo caractere que o Markdown pode interpretar. O sublinhado entre letras ou dígitos
     // (TODO_NORMA, AMP_TipoCarga) não abre ênfase e fica como está, para o texto continuar pesquisável.

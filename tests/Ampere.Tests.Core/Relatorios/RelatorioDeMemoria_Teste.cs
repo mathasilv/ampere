@@ -72,7 +72,7 @@ public class RelatorioDeMemoria_Teste
 
         await Assert.That(confere).Contains($"- **Identificador (AMP_MemoriaCalculoId):** `{memoria.Hash()}`\n");
         await Assert.That(confere).DoesNotContain("não confere");
-        await Assert.That(naoConfere).Contains("- **Atenção:** o identificador gravado no elemento (`sha256:0000`) não confere com esta memória\n");
+        await Assert.That(naoConfere).Contains("- **Atenção:** o identificador gravado no elemento (sha256:0000) não confere com esta memória\n");
     }
 
     [Test]
