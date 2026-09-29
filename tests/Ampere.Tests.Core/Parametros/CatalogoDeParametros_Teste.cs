@@ -1,4 +1,5 @@
 using Ampere.Core.Parametros;
+using TUnit.Assertions.Enums;
 
 namespace Ampere.Tests.Core.Parametros;
 
@@ -28,7 +29,7 @@ public class CatalogoDeParametros_Teste
         await Assert.That(texto.Nome).IsEqualTo("AMP_Texto");
         await Assert.That(texto.Tipo).IsEqualTo(TipoDeDadoDoParametro.Texto);
         await Assert.That(texto.Descricao).IsEqualTo("teste");
-        await Assert.That(texto.Categorias).IsEquivalentTo([CategoriaEletrica.Luminarias, CategoriaEletrica.CircuitosEletricos]);
+        await Assert.That(texto.Categorias).IsEquivalentTo([CategoriaEletrica.Luminarias, CategoriaEletrica.CircuitosEletricos], CollectionOrdering.Matching);
         await Assert.That(catalogo.Parametros[1].Nome).IsEqualTo("AMP_Corrente");
     }
 
