@@ -44,7 +44,7 @@
         </Grid>
         <ItemsControl ItemsSource="{Binding Regras}">
             <ItemsControl.ItemTemplate>
-                <DataTemplate DataType="viewModels:LinhaDeRegra">
+                <DataTemplate DataType="{x:Type viewModels:LinhaDeRegra}">
                     <Grid Margin="0,2">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="130" />

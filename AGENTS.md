@@ -68,6 +68,14 @@ quebre R2025/R2026: perguntar antes de aposentar essas configurações.
   `*.csproj.user` git-ignorados, ou a variável de ambiente `RevitInstallDir`.
 - Projetos WPF perdem `System.IO` dos usings implícitos; `Autodesk.Revit.UI` nunca é implícito.
   `BindingMap` não tem indexador C#: use `get_Item(definicao)`.
+- Teste de integração novo: declarar `[DependsOn(typeof(DesempenhoDaInjecao_Teste), ProceedOnFailure = true)]` —
+  o teste de desempenho precisa medir a primeira injeção da sessão.
+- Cenários de circuito usam o template elétrico PTB da Autodesk (`RevitTemplateEletrico`): famílias hospedadas em
+  face e quadro sem sistema de distribuição (o `CenarioEletrico` define 120/208 Y; sem isso, `SelectPanel` falha).
+- Números digitados: só o separador decimal da cultura; separador de milhar é recusado (`NumeroDigitado`).
+- C# 14: `array.Reverse()` resolve para `Span.Reverse` (in-place, `void`); use `Enumerable.Reverse(array)`.
+- Commit com mensagem de várias linhas: pelo Bash com heredoc (`git commit -F - <<'EOF'`); no PowerShell o
+  here-string vira argumento e o git o lê como caminho.
 
 ## Commits
 
