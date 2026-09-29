@@ -123,10 +123,104 @@ public sealed class MemoriaDeCalculo
     /// <summary>"sha256:" + hash hexadecimal minúsculo do JSON canônico (gravado em AMP_MemoriaCalculoId).</summary>
     public string Hash() => "sha256:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonCanonico()))).ToLowerInvariant();
 
+    /// <summary>
+    ///     Lê um documento de memória: o JSON que <see cref="JsonCanonico" /> escreve, em qualquer formatação. Quem guarda o
+    ///     documento confere o vínculo com o elemento comparando <see cref="Hash" /> com o AMP_MemoriaCalculoId gravado.
+    /// </summary>
+    /// <exception cref="MemoriaDeCalculoInvalidaException">JSON inválido, esquema desconhecido, campo faltando ou sobrando.</exception>
+    public static MemoriaDeCalculo Ler(string json)
+    {
+        JsonDocument documento;
+        try
+        {
+            documento = JsonDocument.Parse(json);
+        }
+        catch (JsonException excecao)
+        {
+            throw new MemoriaDeCalculoInvalidaException([$"JSON inválido: {excecao.Message}"]);
+        }
+
+        using (documento)
+        {
+            var leitor = new LeitorDeDocumento();
+            var raiz = leitor.Campos(documento.RootElement, "documento", ["esquema", "circuito", "perfilNorma", "passos"], []);
+            var esquema = leitor.Texto(raiz, "esquema", "documento");
+            if (esquema.Length > 0 && esquema != VersaoDoEsquema)
+                throw new MemoriaDeCalculoInvalidaException([$"esquema '{esquema}' desconhecido (esta versão lê o esquema {VersaoDoEsquema})"]);
+
+            var passos = new List<PassoDeCalculo>();
+            foreach (var (elemento, indice) in leitor.Lista(raiz, "passos", "documento").Select((elemento, indice) => (elemento, indice)))
+            {
+                var onde = $"passo {indice + 1}";
+                var campos = leitor.Campos(elemento, onde, ["ref", "descricao", "expr", "valores", "resultado", "unidade"], ["obs"]);
+                var valores = leitor.Lista(campos, "valores", onde)
+                    .Select(item => leitor.Campos(item, $"{onde}, valor", ["nome", "valor", "unidade"], []))
+                    .Select(campo => new ValorDoPasso(leitor.Texto(campo, "nome", onde), leitor.Numero(campo, "valor", onde) ?? 0m, leitor.Texto(campo, "unidade", onde)))
+                    .ToList();
+                passos.Add(new PassoDeCalculo(leitor.Texto(campos, "ref", onde), leitor.Texto(campos, "descricao", onde), leitor.Texto(campos, "expr", onde),
+                    valores, leitor.Numero(campos, "resultado", onde, anulavel: true), leitor.Texto(campos, "unidade", onde),
+                    campos.ContainsKey("obs") ? leitor.Texto(campos, "obs", onde) : null));
+            }
+
+            if (leitor.Problemas.Count > 0) throw new MemoriaDeCalculoInvalidaException(leitor.Problemas);
+            return new MemoriaDeCalculo(leitor.Texto(raiz, "circuito", "documento"), leitor.Texto(raiz, "perfilNorma", "documento"), passos);
+        }
+    }
+
     private static string Texto(string texto) => texto.Normalize(NormalizationForm.FormC);
 
     private static string Numero(decimal valor) =>
         valor == 0m ? "0" : valor.ToString("0.############################", CultureInfo.InvariantCulture);
+
+    /// <summary>Lê os campos do documento acumulando os problemas, sem parar no primeiro.</summary>
+    private sealed class LeitorDeDocumento
+    {
+        public List<string> Problemas { get; } = [];
+
+        public Dictionary<string, JsonElement> Campos(JsonElement elemento, string onde, string[] obrigatorios, string[] opcionais)
+        {
+            var campos = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+            if (elemento.ValueKind != JsonValueKind.Object)
+            {
+                Problemas.Add($"{onde}: não é um objeto");
+                return campos;
+            }
+
+            foreach (var propriedade in elemento.EnumerateObject())
+            {
+                if (!obrigatorios.Contains(propriedade.Name) && !opcionais.Contains(propriedade.Name)) Problemas.Add($"{onde}: campo desconhecido '{propriedade.Name}'");
+                else if (!campos.TryAdd(propriedade.Name, propriedade.Value)) Problemas.Add($"{onde}: campo '{propriedade.Name}' repetido");
+            }
+
+            foreach (var ausente in obrigatorios.Where(nome => !campos.ContainsKey(nome))) Problemas.Add($"{onde}: sem '{ausente}'");
+            return campos;
+        }
+
+        public string Texto(Dictionary<string, JsonElement> campos, string nome, string onde)
+        {
+            if (!campos.TryGetValue(nome, out var valor)) return string.Empty;
+            if (valor.ValueKind == JsonValueKind.String) return valor.GetString()!;
+            Problemas.Add($"{onde}: '{nome}' não é texto");
+            return string.Empty;
+        }
+
+        public decimal? Numero(Dictionary<string, JsonElement> campos, string nome, string onde, bool anulavel = false)
+        {
+            if (!campos.TryGetValue(nome, out var valor)) return null;
+            if (anulavel && valor.ValueKind == JsonValueKind.Null) return null;
+            if (valor.ValueKind == JsonValueKind.Number && valor.TryGetDecimal(out var numero)) return numero;
+            Problemas.Add($"{onde}: '{nome}' não é um número decimal válido");
+            return null;
+        }
+
+        public List<JsonElement> Lista(Dictionary<string, JsonElement> campos, string nome, string onde)
+        {
+            if (!campos.TryGetValue(nome, out var valor)) return [];
+            if (valor.ValueKind == JsonValueKind.Array) return valor.EnumerateArray().ToList();
+            Problemas.Add($"{onde}: '{nome}' não é uma lista");
+            return [];
+        }
+    }
 }
 
 /// <summary>A memória viola alguma regra (ex.: passo sem referência). Traz todos os problemas.</summary>

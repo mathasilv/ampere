@@ -1,5 +1,7 @@
+using System.Buffers;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using Ampere.Core.Memoria;
 
 namespace Ampere.Tests.Core.Memoria;
@@ -102,6 +104,67 @@ public class MemoriaDeCalculo_Teste
 
         await Assert.That(json).Contains("\"resultado\":null");
         await Assert.That(json).Contains("\"obs\":\"tabela capacidade_de_conducao_a sem dados oficiais (TODO_NORMA)\"");
+    }
+
+    [Test]
+    public async Task Documento_lido_reproduz_o_mesmo_json_e_o_mesmo_hash()
+    {
+        var memoria = new MemoriaDeCalculo("TUG-01", "FICTICIO-TESTE",
+        [
+            Exemplo().Passos[0],
+            new PassoDeCalculo("TODO_NORMA", "Capacidade de condução", "IZ₀ = tabela", [], null, "A", "tabela sem dados oficiais (TODO_NORMA)")
+        ]);
+
+        var lida = MemoriaDeCalculo.Ler(memoria.JsonCanonico());
+
+        await Assert.That(lida.JsonCanonico()).IsEqualTo(memoria.JsonCanonico());
+        await Assert.That(lida.Hash()).IsEqualTo(memoria.Hash());
+    }
+
+    [Test]
+    public async Task Formatacao_do_documento_nao_muda_o_hash()
+    {
+        var memoria = Exemplo();
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var documento = JsonDocument.Parse(memoria.JsonCanonico()))
+        using (var escritor = new Utf8JsonWriter(buffer, new JsonWriterOptions { Indented = true }))
+        {
+            documento.WriteTo(escritor);
+        }
+
+        var indentado = Encoding.UTF8.GetString(buffer.WrittenSpan);
+
+        await Assert.That(indentado).IsNotEqualTo(memoria.JsonCanonico());
+        await Assert.That(MemoriaDeCalculo.Ler(indentado).Hash()).IsEqualTo(memoria.Hash());
+    }
+
+    [Test]
+    public async Task Documento_adulterado_nao_confere_com_o_identificador_gravado()
+    {
+        var memoria = Exemplo();
+        var identificadorGravado = memoria.Hash();
+
+        var adulterada = MemoriaDeCalculo.Ler(memoria.JsonCanonico().Replace("\"resultado\":10", "\"resultado\":11"));
+
+        await Assert.That(adulterada.Hash()).IsNotEqualTo(identificadorGravado);
+    }
+
+    [Test]
+    [Arguments("\"esquema\":\"1\"", "\"esquema\":\"2\"", "esquema '2' desconhecido (esta versão lê o esquema 1)")]
+    [Arguments("\"expr\":\"IB = S / V\",", "", "passo 1: sem 'expr'")]
+    [Arguments("\"unidade\":\"A\"}", "\"unidade\":\"A\",\"autor\":\"x\"}", "passo 1: campo desconhecido 'autor'")]
+    [Arguments("\"resultado\":10", "\"resultado\":\"10\"", "passo 1: 'resultado' não é um número decimal válido")]
+    [Arguments("\"ref\":\"TODO_NORMA\"", "\"ref\":\" \"", "passo 1 sem referência")]
+    [Arguments("{\"esquema\"", "[{\"esquema\"", "JSON inválido")]
+    public async Task Documento_fora_do_esquema_e_rejeitado(string trecho, string troca, string mensagem)
+    {
+        var original = Exemplo(referencia: "TODO_NORMA").JsonCanonico();
+        var json = original.Replace(trecho, troca);
+
+        await Assert.That(json).IsNotEqualTo(original);
+        await Assert.That(() => MemoriaDeCalculo.Ler(json))
+            .Throws<MemoriaDeCalculoInvalidaException>()
+            .WithMessageContaining(mensagem);
     }
 
     private static MemoriaDeCalculo Exemplo(
