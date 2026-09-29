@@ -26,7 +26,8 @@ public sealed class PerfilNormativo
     {
         ["corrente_de_projeto"] = RegraNormativa.CorrenteDeProjeto,
         ["coordenacao_condutor_protecao"] = RegraNormativa.CoordenacaoCondutorProtecao,
-        ["queda_de_tensao"] = RegraNormativa.QuedaDeTensao
+        ["queda_de_tensao"] = RegraNormativa.QuedaDeTensao,
+        ["condutores_no_eletroduto"] = RegraNormativa.CondutoresNoEletroduto
     };
 
     private readonly Dictionary<RegraNormativa, string> _regras = [];

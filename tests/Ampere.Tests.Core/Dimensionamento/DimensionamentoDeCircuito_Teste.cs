@@ -1,6 +1,8 @@
 using Ampere.Core.Cargas;
+using Ampere.Core.Catalogos;
 using Ampere.Core.Dimensionamento;
 using Ampere.Core.Normas;
+using Ampere.Tests.Core.Catalogos;
 using Ampere.Tests.Core.Normas;
 
 namespace Ampere.Tests.Core.Dimensionamento;
@@ -12,6 +14,75 @@ namespace Ampere.Tests.Core.Dimensionamento;
 public class DimensionamentoDeCircuito_Teste
 {
     private static readonly PerfilNormativo Ficticio = PerfilNormativo.Carregar(PerfilFicticio.Json);
+
+    private static readonly CatalogosDeProduto CatalogosFicticiosCarregados = new(
+        CatalogoDeCondutores.Carregar(CatalogosFicticios.Condutores),
+        CatalogoDeEletrodutos.Carregar(CatalogosFicticios.Eletrodutos));
+
+    [Test]
+    public async Task Eletroduto_e_o_menor_tamanho_dentro_da_ocupacao_maxima()
+    {
+        var resultado = Dimensionar(Entrada());
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
+        await Assert.That(resultado.Eletroduto).IsEqualTo("B");
+        await Assert.That(resultado.DiametroInternoDoEletrodutoMm).IsEqualTo(15m);
+        await Assert.That(Math.Round(resultado.OcupacaoDoEletrodutoPct!.Value, 4)).IsEqualTo(21.3333m);
+    }
+
+    [Test]
+    public async Task Ocupacao_igual_a_taxa_maxima_e_aceita()
+    {
+        // 3 condutores de 4 mm no tamanho A (Di 10 mm) ocupam exatamente 48%.
+        var taxaDe48 = PerfilNormativo.Carregar(PerfilFicticio.Json.Replace("\"3\": 40", "\"3\": 48"));
+
+        var resultado = DimensionamentoDeCircuito.Dimensionar(Entrada(), taxaDe48, CatalogosFicticiosCarregados);
+
+        await Assert.That(resultado.Memoria!.Passos.Single(passo => passo.Descricao == "Taxa máxima de ocupação").Resultado).IsEqualTo(48m);
+        await Assert.That(resultado.Eletroduto).IsEqualTo("A");
+        await Assert.That(resultado.OcupacaoDoEletrodutoPct).IsEqualTo(48m);
+    }
+
+    [Test]
+    public async Task Trifasico_com_neutro_leva_cinco_condutores_ao_eletroduto()
+    {
+        var resultado = Dimensionar(Entrada(potenciaVA: 6600m, fases: "3F+N", tensaoV: 220m));
+
+        await Assert.That(resultado.SecaoMm2).IsEqualTo(4m);
+        await Assert.That(resultado.Memoria!.Passos.Single(passo => passo.Descricao == "Condutores no eletroduto").Resultado).IsEqualTo(5m);
+        await Assert.That(resultado.Eletroduto).IsEqualTo("C");
+        await Assert.That(resultado.OcupacaoDoEletrodutoPct).IsEqualTo(31.25m);
+    }
+
+    [Test]
+    public async Task Nenhum_eletroduto_do_catalogo_atende_para_com_explicacao()
+    {
+        var soOPequeno = CatalogoDeEletrodutos.Carregar("""
+            {
+              "$meta": { "fonte": "fictício, só para testes", "versao": "0", "data": "2026-09-29", "ficticio": true },
+              "catalogo": "eletrodutos",
+              "ref": "FICTÍCIO: só um tamanho pequeno",
+              "tipos": [ { "tipo": "ELETRODUTO-TESTE", "tamanhos": [ { "nominal": "A", "diametro_interno_mm": 10 } ] } ]
+            }
+            """);
+
+        var resultado = DimensionamentoDeCircuito.Dimensionar(Entrada(), Ficticio, CatalogosFicticiosCarregados with { Eletrodutos = soOPequeno });
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
+        await Assert.That(string.Join("\n", resultado.Problemas)).Contains("nenhum eletroduto 'ELETRODUTO-TESTE' do catálogo atende");
+    }
+
+    [Test]
+    public async Task Catalogo_oficial_vazio_para_no_diametro_do_condutor()
+    {
+        var resultado = DimensionamentoDeCircuito.Dimensionar(Entrada(), Ficticio, CatalogosDeProduto.Padrao);
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
+        await Assert.That(resultado.SecaoMm2).IsEqualTo(2.5m);
+        var ultimo = resultado.Memoria!.Passos[^1];
+        await Assert.That(ultimo.Referencia).IsEqualTo("TODO_CATALOGO");
+        await Assert.That(ultimo.Observacao).Contains("catálogo de condutores sem dados (TODO_CATALOGO)");
+    }
 
     [Test]
     [Arguments("F+N", 1270, 127, 10)]
@@ -100,7 +171,7 @@ public class DimensionamentoDeCircuito_Teste
     [Test]
     public async Task Perfil_oficial_calcula_IB_e_para_na_primeira_tabela_sem_dados()
     {
-        var resultado = DimensionamentoDeCircuito.Dimensionar(Entrada(), PerfilNormativo.NBR5410_2004);
+        var resultado = DimensionamentoDeCircuito.Dimensionar(Entrada(), PerfilNormativo.NBR5410_2004, CatalogosFicticiosCarregados);
 
         await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
         await Assert.That(resultado.CorrenteDeProjetoA).IsEqualTo(10m);
@@ -143,7 +214,7 @@ public class DimensionamentoDeCircuito_Teste
     }
 
     private static ResultadoDoDimensionamento Dimensionar(EntradaDeDimensionamento entrada) =>
-        DimensionamentoDeCircuito.Dimensionar(entrada, Ficticio);
+        DimensionamentoDeCircuito.Dimensionar(entrada, Ficticio, CatalogosFicticiosCarregados);
 
     private static EntradaDeDimensionamento Entrada(
         decimal potenciaVA = 1270m,
@@ -153,7 +224,8 @@ public class DimensionamentoDeCircuito_Teste
         TipoDeCarga tipo = TipoDeCarga.TUG,
         decimal temperaturaC = 30m,
         int circuitosAgrupados = 1) =>
-        new("TUG-01", tipo, potenciaVA, fases, tensaoV, comprimentoM, "B1", "PVC", "Cobre", temperaturaC, circuitosAgrupados);
+        new("TUG-01", tipo, potenciaVA, fases, tensaoV, comprimentoM, "B1", "PVC", "Cobre", temperaturaC, circuitosAgrupados,
+            CatalogosFicticios.TipoDeCondutor, CatalogosFicticios.TipoDeEletroduto);
 
     private static string Observacoes(ResultadoDoDimensionamento resultado) =>
         string.Join("\n", resultado.Memoria!.Passos.Select(passo => passo.Observacao).OfType<string>());

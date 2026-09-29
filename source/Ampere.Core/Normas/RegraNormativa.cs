@@ -13,5 +13,8 @@ public enum RegraNormativa
     CoordenacaoCondutorProtecao,
 
     /// <summary>Critério de queda de tensão ("queda_de_tensao").</summary>
-    QuedaDeTensao
+    QuedaDeTensao,
+
+    /// <summary>Condutores de um circuito dentro do eletroduto: fases, neutro e proteção ("condutores_no_eletroduto").</summary>
+    CondutoresNoEletroduto
 }

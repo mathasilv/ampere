@@ -15,6 +15,7 @@ public sealed record DadosDoPonto(long Id, decimal? PotenciaVA, decimal? TensaoV
 /// <param name="MetodoDeInstalacao">AMP_MetodoInstalacao.</param>
 /// <param name="Isolacao">AMP_MaterialIsolacao.</param>
 /// <param name="Pontos">Pontos de carga do circuito.</param>
+/// <param name="TipoDeCondutor">AMP_TipoCondutor.</param>
 public sealed record DadosDoCircuito(
     long Id,
     string? Numero,
@@ -22,7 +23,8 @@ public sealed record DadosDoCircuito(
     decimal? ComprimentoM,
     string? MetodoDeInstalacao,
     string? Isolacao,
-    IReadOnlyList<DadosDoPonto> Pontos);
+    IReadOnlyList<DadosDoPonto> Pontos,
+    string? TipoDeCondutor = null);
 
 /// <summary>
 ///     Condições do projeto que não são parâmetros do circuito, informadas pelo projetista.
@@ -32,12 +34,16 @@ public sealed record DadosDoCircuito(
 /// <param name="Material">Material dos condutores, ex.: Cobre.</param>
 /// <param name="MetodoDeInstalacaoPadrao">Usado quando o circuito não tem AMP_MetodoInstalacao.</param>
 /// <param name="IsolacaoPadrao">Usada quando o circuito não tem AMP_MaterialIsolacao.</param>
+/// <param name="TipoDeCondutorPadrao">Usado quando o circuito não tem AMP_TipoCondutor.</param>
+/// <param name="TipoDeEletroduto">Tipo de eletroduto do catálogo usado no projeto.</param>
 public sealed record CondicoesDoProjeto(
     decimal TemperaturaAmbienteC,
     int CircuitosAgrupados,
     string Material,
     string? MetodoDeInstalacaoPadrao = null,
-    string? IsolacaoPadrao = null);
+    string? IsolacaoPadrao = null,
+    string? TipoDeCondutorPadrao = null,
+    string? TipoDeEletroduto = null);
 
 /// <summary>
 ///     Monta a entrada do dimensionamento a partir dos dados do circuito: potência = soma dos pontos; tensão e fases =
@@ -53,6 +59,8 @@ public static class EntradaDoCircuito
         if (dados.ComprimentoM is null) problemas.Add("sem AMP_ComprimentoRotaM");
         var metodo = Preencher(dados.MetodoDeInstalacao, condicoes.MetodoDeInstalacaoPadrao, "AMP_MetodoInstalacao", problemas);
         var isolacao = Preencher(dados.Isolacao, condicoes.IsolacaoPadrao, "AMP_MaterialIsolacao", problemas);
+        var tipoDeCondutor = Preencher(dados.TipoDeCondutor, condicoes.TipoDeCondutorPadrao, "AMP_TipoCondutor", problemas);
+        if (string.IsNullOrWhiteSpace(condicoes.TipoDeEletroduto)) problemas.Add("tipo de eletroduto do projeto não informado");
 
         if (dados.Pontos.Count == 0) problemas.Add("circuito sem pontos");
         foreach (var ponto in dados.Pontos.Where(ponto => ponto.PotenciaVA is null))
@@ -73,7 +81,9 @@ public static class EntradaDoCircuito
             isolacao!,
             condicoes.Material,
             condicoes.TemperaturaAmbienteC,
-            condicoes.CircuitosAgrupados);
+            condicoes.CircuitosAgrupados,
+            tipoDeCondutor!,
+            condicoes.TipoDeEletroduto!);
         return new EntradaMontada(entrada, []);
     }
 

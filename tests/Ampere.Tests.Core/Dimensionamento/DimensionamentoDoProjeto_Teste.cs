@@ -1,5 +1,7 @@
+using Ampere.Core.Catalogos;
 using Ampere.Core.Dimensionamento;
 using Ampere.Core.Normas;
+using Ampere.Tests.Core.Catalogos;
 using Ampere.Tests.Core.Normas;
 using TUnit.Assertions.Enums;
 
@@ -8,14 +10,18 @@ namespace Ampere.Tests.Core.Dimensionamento;
 public class DimensionamentoDoProjeto_Teste
 {
     private static readonly PerfilNormativo Ficticio = PerfilNormativo.Carregar(PerfilFicticio.Json);
-    private static readonly CondicoesDoProjeto Condicoes = new(30m, 1, "Cobre", "B1", "PVC");
+    private static readonly CondicoesDoProjeto Condicoes = new(30m, 1, "Cobre", "B1", "PVC", CatalogosFicticios.TipoDeCondutor, CatalogosFicticios.TipoDeEletroduto);
+
+    private static readonly CatalogosDeProduto Catalogos = new(
+        CatalogoDeCondutores.Carregar(CatalogosFicticios.Condutores),
+        CatalogoDeEletrodutos.Carregar(CatalogosFicticios.Eletrodutos));
 
     [Test]
     public async Task Dez_circuitos_mistos_dimensionados_com_memoria_100_por_cento_referenciada()
     {
         var documento = new DocumentoDeDimensionamentoFalso(DezCircuitos());
 
-        var resultados = DimensionamentoDoProjeto.Executar([.. documento.Ids], Condicoes, Ficticio, documento);
+        var resultados = DimensionamentoDoProjeto.Executar([.. documento.Ids], Condicoes, Ficticio, Catalogos, documento);
 
         await Assert.That(resultados.Count).IsEqualTo(10);
         await Assert.That(resultados.All(resultado => resultado.Dimensionamento?.Situacao == SituacaoDoDimensionamento.Dimensionado)).IsTrue();
@@ -34,7 +40,7 @@ public class DimensionamentoDoProjeto_Teste
     {
         var circuito = Circuito(1, "TUG-01", "TUG", Ponto(11, 600m), Ponto(12, 670m));
 
-        var resultado = DimensionamentoDoProjeto.Executar([1], Condicoes, Ficticio, new DocumentoDeDimensionamentoFalso([circuito]))[0];
+        var resultado = DimensionamentoDoProjeto.Executar([1], Condicoes, Ficticio, Catalogos, new DocumentoDeDimensionamentoFalso([circuito]))[0];
 
         await Assert.That(resultado.Dimensionamento!.CorrenteDeProjetoA).IsEqualTo(10m);
         await Assert.That(resultado.Dimensionamento.Memoria!.Passos[0].Valores[0].Valor).IsEqualTo(1270m);
@@ -45,7 +51,7 @@ public class DimensionamentoDoProjeto_Teste
     {
         var circuito = Circuito(1, "TUG-01", "TUG", Ponto(11, 600m), Ponto(12, 600m, tensaoV: 220m));
 
-        var resultado = DimensionamentoDoProjeto.Executar([1], Condicoes, Ficticio, new DocumentoDeDimensionamentoFalso([circuito]))[0];
+        var resultado = DimensionamentoDoProjeto.Executar([1], Condicoes, Ficticio, Catalogos, new DocumentoDeDimensionamentoFalso([circuito]))[0];
 
         await Assert.That(resultado.Dimensionamento).IsNull();
         await Assert.That(string.Join("\n", resultado.ProblemasDeDados)).Contains("pontos com tensões diferentes (127, 220)");
@@ -57,7 +63,7 @@ public class DimensionamentoDoProjeto_Teste
         var circuito = new DadosDoCircuito(1, null, "Tomada", null, null, null, [new DadosDoPonto(11, null, null, null)]);
         var documento = new DocumentoDeDimensionamentoFalso([circuito]);
 
-        var resultado = DimensionamentoDoProjeto.Executar([1], Condicoes with { MetodoDeInstalacaoPadrao = null }, Ficticio, documento)[0];
+        var resultado = DimensionamentoDoProjeto.Executar([1], Condicoes with { MetodoDeInstalacaoPadrao = null }, Ficticio, Catalogos, documento)[0];
 
         var problemas = string.Join("\n", resultado.ProblemasDeDados);
         await Assert.That(problemas).Contains("sem AMP_NumeroCircuito");
@@ -69,11 +75,24 @@ public class DimensionamentoDoProjeto_Teste
     }
 
     [Test]
+    public async Task Sem_tipo_de_eletroduto_no_projeto_nem_tipo_de_condutor_sao_problemas_de_dados()
+    {
+        var circuito = Circuito(1, "TUG-01", "TUG", Ponto(11, 1270m));
+        var semTipos = Condicoes with { TipoDeCondutorPadrao = null, TipoDeEletroduto = null };
+
+        var resultado = DimensionamentoDoProjeto.Executar([1], semTipos, Ficticio, Catalogos, new DocumentoDeDimensionamentoFalso([circuito]))[0];
+
+        var problemas = string.Join("\n", resultado.ProblemasDeDados);
+        await Assert.That(problemas).Contains("sem AMP_TipoCondutor nem padrão do projeto");
+        await Assert.That(problemas).Contains("tipo de eletroduto do projeto não informado");
+    }
+
+    [Test]
     public async Task Padroes_do_projeto_completam_metodo_e_isolacao_vazios()
     {
         var circuito = Circuito(1, "TUG-01", "TUG", Ponto(11, 1270m)) with { MetodoDeInstalacao = null, Isolacao = null };
 
-        var resultado = DimensionamentoDoProjeto.Executar([1], Condicoes, Ficticio, new DocumentoDeDimensionamentoFalso([circuito]))[0];
+        var resultado = DimensionamentoDoProjeto.Executar([1], Condicoes, Ficticio, Catalogos, new DocumentoDeDimensionamentoFalso([circuito]))[0];
 
         await Assert.That(resultado.Dimensionamento!.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
     }
@@ -83,7 +102,7 @@ public class DimensionamentoDoProjeto_Teste
     {
         var documento = new DocumentoDeDimensionamentoFalso(DezCircuitos());
 
-        var resultados = DimensionamentoDoProjeto.Executar([.. documento.Ids], Condicoes, PerfilNormativo.NBR5410_2004, documento);
+        var resultados = DimensionamentoDoProjeto.Executar([.. documento.Ids], Condicoes, PerfilNormativo.NBR5410_2004, Catalogos, documento);
 
         await Assert.That(resultados.All(resultado => resultado.Dimensionamento!.Situacao == SituacaoDoDimensionamento.Interrompido)).IsTrue();
         await Assert.That(resultados.All(resultado => resultado.Dimensionamento!.CorrenteDeProjetoA is not null)).IsTrue();

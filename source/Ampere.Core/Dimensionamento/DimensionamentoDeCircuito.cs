@@ -1,5 +1,6 @@
 using System.Globalization;
 using Ampere.Core.Cargas;
+using Ampere.Core.Catalogos;
 using Ampere.Core.Memoria;
 using Ampere.Core.Normas;
 
@@ -7,7 +8,7 @@ namespace Ampere.Core.Dimensionamento;
 
 /// <summary>
 ///     Motor de dimensionamento de um circuito terminal: IB → condutores carregados → FCT → FCA → seção mínima →
-///     seção pela capacidade de condução → disjuntor (IB ≤ In ≤ IZ) → queda de tensão.
+///     seção pela capacidade de condução → disjuntor (IB ≤ In ≤ IZ) → queda de tensão → eletroduto (ocupação).
 /// </summary>
 /// <remarks>
 ///     <list type="bullet">
@@ -17,6 +18,9 @@ namespace Ampere.Core.Dimensionamento;
 ///         <item>Sem disjuntor coordenável ou com queda acima do limite, a seção sobe para a próxima nominal e a memória
 ///         registra o motivo.</item>
 ///         <item>Queda de tensão pela fórmula resistiva (sem reatância), só do circuito terminal.</item>
+///         <item>Eletroduto: menor tamanho do catálogo com n · d² / Di² dentro da taxa máxima, contando só os condutores
+///         do próprio circuito (fases, neutro e proteção, todos com o diâmetro da fase). Diâmetros vêm dos catálogos de
+///         fabricante; catálogo sem dados interrompe o cálculo como tabela TODO_NORMA.</item>
 ///         <item>Aritmética em <c>decimal</c> e memória determinística.</item>
 ///     </list>
 /// </remarks>
@@ -24,19 +28,19 @@ public static class DimensionamentoDeCircuito
 {
     private const decimal Raiz3 = 1.7320508075688772935274463415m;
 
-    public static ResultadoDoDimensionamento Dimensionar(EntradaDeDimensionamento entrada, PerfilNormativo perfil)
+    public static ResultadoDoDimensionamento Dimensionar(EntradaDeDimensionamento entrada, PerfilNormativo perfil, CatalogosDeProduto catalogos)
     {
         var problemas = entrada.Validar();
         if (problemas.Count > 0)
         {
             return new ResultadoDoDimensionamento(entrada.Circuito, SituacaoDoDimensionamento.EntradaInvalida, perfil.Nome,
-                null, null, null, null, null, null, null, null, null, problemas);
+                null, null, null, null, null, null, null, null, null, null, null, null, problemas);
         }
 
-        return new Calculo(entrada, perfil).Executar();
+        return new Calculo(entrada, perfil, catalogos).Executar();
     }
 
-    private sealed class Calculo(EntradaDeDimensionamento entrada, PerfilNormativo perfil)
+    private sealed class Calculo(EntradaDeDimensionamento entrada, PerfilNormativo perfil, CatalogosDeProduto catalogos)
     {
         private readonly List<PassoDeCalculo> _passos = [];
         private decimal? _correnteDeProjeto;
@@ -47,6 +51,9 @@ public static class DimensionamentoDeCircuito
         private decimal? _capacidade;
         private decimal? _disjuntor;
         private decimal? _queda;
+        private string? _eletroduto;
+        private decimal? _diametroInterno;
+        private decimal? _ocupacao;
 
         public ResultadoDoDimensionamento Executar()
         {
@@ -116,6 +123,7 @@ public static class DimensionamentoDeCircuito
                     _capacidade = capacidade;
                     _disjuntor = disjuntor;
                     _queda = queda;
+                    Eletroduto(secao);
                     return;
                 }
 
@@ -142,6 +150,58 @@ public static class DimensionamentoDeCircuito
             Passo(referencia, "Corrente de projeto", expressao, valores, ib, "A");
             _correnteDeProjeto = ib;
             return ib;
+        }
+
+        private void Eletroduto(decimal secao)
+        {
+            var referenciaDaRegra = perfil.ReferenciaDaRegra(RegraNormativa.CondutoresNoEletroduto);
+            var (composicao, condutores) = entrada.Fases switch
+            {
+                "F+N" => ("F + N + PE", 3),
+                "2F" => ("2F + PE", 3),
+                "3F" => ("3F + PE", 4),
+                "3F+N" => ("3F + N + PE", 5),
+                _ => Parar<(string, int)>(referenciaDaRegra, "Condutores no eletroduto", "n = ?", "condutores",
+                    $"configuração {entrada.Fases} sem contagem de condutores no eletroduto")
+            };
+            Passo(referenciaDaRegra, "Condutores no eletroduto", $"n = {composicao}", [], condutores, "condutores",
+                (entrada.Fases.EndsWith("+N", StringComparison.Ordinal) ? "neutro e proteção" : "proteção")
+                + " com o diâmetro da fase (conservador para a ocupação)");
+
+            var diametro = Consultar(catalogos.Condutores.DiametroExternoMm(entrada.TipoDeCondutor, secao), "Diâmetro externo do condutor",
+                $"d = catálogo ({entrada.TipoDeCondutor}; {Numero(secao)} mm²)", [], "mm");
+            var dadoDaTaxa = perfil.OcupacaoMaximaDeEletrodutoPct(condutores);
+            var taxa = Consultar(dadoDaTaxa, "Taxa máxima de ocupação", $"taxa = tabela ({condutores} condutores)", [], "%");
+            var dadoDosTamanhos = catalogos.Eletrodutos.Tamanhos(entrada.TipoDeEletroduto);
+            var tamanhos = Exigir(dadoDosTamanhos, "Tamanhos de eletroduto", $"Di ∈ catálogo ({entrada.TipoDeEletroduto})", "mm");
+
+            decimal Ocupacao(TamanhoDeEletroduto tamanho) =>
+                condutores * diametro * diametro * 100m / (tamanho.DiametroInternoMm * tamanho.DiametroInternoMm);
+            string Descrever(TamanhoDeEletroduto tamanho) =>
+                $"{tamanho.Nominal} ({Numero(Math.Round(Ocupacao(tamanho), 4, MidpointRounding.AwayFromZero))}%)";
+
+            const string Criterio = "menor Di com n · d² / Di² · 100 ≤ taxa";
+            var adotado = tamanhos.FirstOrDefault(tamanho => Ocupacao(tamanho) <= taxa);
+            if (adotado is null)
+            {
+                Parar(dadoDosTamanhos.Referencia, "Eletroduto adotado", Criterio, "mm",
+                    $"nenhum eletroduto '{entrada.TipoDeEletroduto}' do catálogo atende: taxa máxima de {Numero(taxa)}%, e o maior tamanho fica em {Descrever(tamanhos[^1])}");
+            }
+
+            var recusados = tamanhos.TakeWhile(tamanho => tamanho != adotado).Select(Descrever).ToList();
+            Passo(dadoDosTamanhos.Referencia, "Eletroduto adotado", Criterio,
+                [new ValorDoPasso("n", condutores, "condutores"), new ValorDoPasso("d", diametro, "mm"), new ValorDoPasso("taxa", taxa, "%")],
+                adotado!.DiametroInternoMm, "mm",
+                $"tamanho nominal {adotado.Nominal} ({entrada.TipoDeEletroduto})" + (recusados.Count > 0 ? $"; acima da taxa: {string.Join(", ", recusados)}" : string.Empty));
+
+            var ocupacao = Ocupacao(adotado);
+            Passo(dadoDaTaxa.Referencia, "Ocupação do eletroduto", "ocupação = n · d² / Di² · 100",
+                [new ValorDoPasso("n", condutores, "condutores"), new ValorDoPasso("d", diametro, "mm"), new ValorDoPasso("Di", adotado.DiametroInternoMm, "mm")],
+                ocupacao, "%");
+
+            _eletroduto = adotado.Nominal;
+            _diametroInterno = adotado.DiametroInternoMm;
+            _ocupacao = ocupacao;
         }
 
         private int SecaoPelaCapacidade(decimal ib, List<decimal> candidatas, decimal secaoMinima, IReadOnlyList<decimal> secoes)
@@ -211,7 +271,7 @@ public static class DimensionamentoDeCircuito
 
         private ResultadoDoDimensionamento Resultado(SituacaoDoDimensionamento situacao, IReadOnlyList<string> problemas) =>
             new(entrada.Circuito, situacao, perfil.Nome, _correnteDeProjeto, _condutoresCarregados, _fct, _fca, _secao, _capacidade, _disjuntor, _queda,
-                new MemoriaDeCalculo(entrada.Circuito, perfil.Nome, _passos), problemas);
+                _eletroduto, _diametroInterno, _ocupacao, new MemoriaDeCalculo(entrada.Circuito, perfil.Nome, _passos), problemas);
 
         private static string Numero(decimal valor) => PerfilNormativo.Numero(valor);
     }

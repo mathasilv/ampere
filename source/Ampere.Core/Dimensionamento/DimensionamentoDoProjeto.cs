@@ -1,3 +1,4 @@
+using Ampere.Core.Catalogos;
 using Ampere.Core.Normas;
 
 namespace Ampere.Core.Dimensionamento;
@@ -35,6 +36,7 @@ public static class DimensionamentoDoProjeto
         IReadOnlyCollection<long> circuitos,
         CondicoesDoProjeto condicoes,
         PerfilNormativo perfil,
+        CatalogosDeProduto catalogos,
         IDocumentoDeDimensionamento documento)
     {
         var resultados = documento.LerCircuitos(circuitos)
@@ -43,7 +45,7 @@ public static class DimensionamentoDoProjeto
                 var montada = EntradaDoCircuito.Montar(dados, condicoes);
                 return montada.Entrada is null
                     ? new ResultadoDoCircuito(dados.Id, dados.Numero, null, montada.Problemas)
-                    : new ResultadoDoCircuito(dados.Id, dados.Numero, DimensionamentoDeCircuito.Dimensionar(montada.Entrada, perfil), []);
+                    : new ResultadoDoCircuito(dados.Id, dados.Numero, DimensionamentoDeCircuito.Dimensionar(montada.Entrada, perfil, catalogos), []);
             })
             .ToList();
 

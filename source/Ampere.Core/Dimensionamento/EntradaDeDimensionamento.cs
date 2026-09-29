@@ -17,6 +17,8 @@ namespace Ampere.Core.Dimensionamento;
 /// <param name="Material">Material do condutor, ex.: Cobre.</param>
 /// <param name="TemperaturaAmbienteC">Temperatura ambiente, em °C.</param>
 /// <param name="CircuitosAgrupados">Circuitos agrupados com este (incluindo ele).</param>
+/// <param name="TipoDeCondutor">Tipo de condutor no catálogo (AMP_TipoCondutor): dá o diâmetro externo.</param>
+/// <param name="TipoDeEletroduto">Tipo de eletroduto no catálogo: dá os tamanhos e diâmetros internos.</param>
 public sealed record EntradaDeDimensionamento(
     string Circuito,
     TipoDeCarga Tipo,
@@ -28,7 +30,9 @@ public sealed record EntradaDeDimensionamento(
     string Isolacao,
     string Material,
     decimal TemperaturaAmbienteC,
-    int CircuitosAgrupados)
+    int CircuitosAgrupados,
+    string TipoDeCondutor,
+    string TipoDeEletroduto)
 {
     /// <summary>Problemas que impedem dimensionar; vazio se a entrada estiver válida.</summary>
     public IReadOnlyList<string> Validar()
@@ -45,6 +49,8 @@ public sealed record EntradaDeDimensionamento(
         if (string.IsNullOrWhiteSpace(Isolacao)) problemas.Add("isolação não informada");
         if (string.IsNullOrWhiteSpace(Material)) problemas.Add("material do condutor não informado");
         if (CircuitosAgrupados < 1) problemas.Add("circuitos agrupados deve ser pelo menos 1");
+        if (string.IsNullOrWhiteSpace(TipoDeCondutor)) problemas.Add("tipo de condutor não informado");
+        if (string.IsNullOrWhiteSpace(TipoDeEletroduto)) problemas.Add("tipo de eletroduto não informado");
         return problemas;
     }
 }
@@ -66,6 +72,9 @@ public enum SituacaoDoDimensionamento
 ///     Resultado do dimensionamento: valores para os parâmetros AMP_* e a memória que os justifica. Valores ainda não
 ///     calculados quando o cálculo parou ficam nulos.
 /// </summary>
+/// <param name="Eletroduto">Tamanho nominal adotado (AMP_EletrodutoTipo).</param>
+/// <param name="DiametroInternoDoEletrodutoMm">Diâmetro interno do tamanho adotado, em mm.</param>
+/// <param name="OcupacaoDoEletrodutoPct">Ocupação do eletroduto pelos condutores do circuito (AMP_OcupacaoEletrodutoPct).</param>
 public sealed record ResultadoDoDimensionamento(
     string Circuito,
     SituacaoDoDimensionamento Situacao,
@@ -78,5 +87,8 @@ public sealed record ResultadoDoDimensionamento(
     decimal? CapacidadeDeConducaoA,
     decimal? DisjuntorA,
     decimal? QuedaDeTensaoPct,
+    string? Eletroduto,
+    decimal? DiametroInternoDoEletrodutoMm,
+    decimal? OcupacaoDoEletrodutoPct,
     MemoriaDeCalculo? Memoria,
     IReadOnlyList<string> Problemas);

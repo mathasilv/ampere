@@ -10,7 +10,8 @@
   "regras": {
     "corrente_de_projeto": "TODO_NORMA",
     "coordenacao_condutor_protecao": "TODO_NORMA",
-    "queda_de_tensao": "TODO_NORMA"
+    "queda_de_tensao": "TODO_NORMA",
+    "condutores_no_eletroduto": "TODO_NORMA"
   },
   "tabelas": {
     "secoes_nominais_mm2": { "ref": "TODO_NORMA", "valores": [] },

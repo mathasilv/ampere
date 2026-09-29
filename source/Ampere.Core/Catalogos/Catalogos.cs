@@ -145,6 +145,13 @@ public sealed class CatalogoDeEletrodutos
     }
 }
 
+/// <summary>Catálogos de fabricante usados pelo dimensionamento.</summary>
+public sealed record CatalogosDeProduto(CatalogoDeCondutores Condutores, CatalogoDeEletrodutos Eletrodutos)
+{
+    /// <summary>Catálogos oficiais, embarcados no assembly.</summary>
+    public static CatalogosDeProduto Padrao => new(CatalogoDeCondutores.Padrao, CatalogoDeEletrodutos.Padrao);
+}
+
 /// <summary>Tamanho nominal de eletroduto (ex.: 3/4") e seu diâmetro interno, em mm.</summary>
 public sealed record TamanhoDeEletroduto(string Nominal, decimal DiametroInternoMm);
 

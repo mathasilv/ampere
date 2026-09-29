@@ -13,7 +13,8 @@ internal static class PerfilFicticio
           "regras": {
             "corrente_de_projeto": "FICTÍCIO: regra da corrente de projeto",
             "coordenacao_condutor_protecao": "FICTÍCIO: regra de coordenação",
-            "queda_de_tensao": "FICTÍCIO: regra de queda"
+            "queda_de_tensao": "FICTÍCIO: regra de queda",
+            "condutores_no_eletroduto": "FICTÍCIO: regra dos condutores no eletroduto"
           },
           "tabelas": {
             "secoes_nominais_mm2": { "ref": "FICTÍCIO: seções", "valores": [1.5, 2.5, 4, 6, 10, 16, 25] },
