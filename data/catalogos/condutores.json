@@ -1,0 +1,12 @@
+{
+  "$meta": {
+    "fonte": "catálogo de fabricante ainda não escolhido (data/DATA_GAPS.md, GAP-004)",
+    "versao": "0",
+    "data": "2026-09-29",
+    "ficticio": false,
+    "situacao": "Vazio: diâmetros externos só entram com o catálogo (fabricante e edição) em 'ref'; o carregador recusa valor sem fonte."
+  },
+  "catalogo": "condutores",
+  "ref": "TODO_CATALOGO",
+  "tipos": []
+}

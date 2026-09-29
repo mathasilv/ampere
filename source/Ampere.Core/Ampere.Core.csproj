@@ -19,6 +19,10 @@
                           LogicalName="Ampere.Core.Parametros.parametros_compartilhados_ampere.json"/>
         <EmbeddedResource Include="..\..\data\normas\NBR5410\2004\perfil.json"
                           LogicalName="Ampere.Core.Normas.NBR5410_2004.perfil.json"/>
+        <EmbeddedResource Include="..\..\data\catalogos\condutores.json"
+                          LogicalName="Ampere.Core.Catalogos.condutores.json"/>
+        <EmbeddedResource Include="..\..\data\catalogos\eletrodutos.json"
+                          LogicalName="Ampere.Core.Catalogos.eletrodutos.json"/>
     </ItemGroup>
 
 </Project>

@@ -78,6 +78,8 @@ quebre R2025/R2026: perguntar antes de aposentar essas configurações.
   here-string vira argumento e o git o lê como caminho.
 - Literal com escape `\uXXXX` (ex.: JSON canônico fixado em teste): as ferramentas de escrita de arquivo
   decodificam o escape; confira o arquivo gravado e, se preciso, ajuste por script.
+- `JsonSerializerContext` (leitura gerada em compilação): o nome da classe precisa ser único no assembly
+  mesmo em namespaces diferentes — nomes repetidos derrubam o gerador de todos os contextos (CS8785).
 
 ## Commits
 
