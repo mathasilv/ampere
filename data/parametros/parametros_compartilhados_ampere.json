@@ -1,0 +1,195 @@
+{
+  "$meta": {
+    "fonte": "Especificação do MVP Ampere v0.1, §5 (cópia versionada de 10_Parametros_Compartilhados_Ampere.json)",
+    "versao": "0.1",
+    "data": "2026-09-28",
+    "regra": "GUIDs congelados: nunca alterar nem reutilizar. Parâmetro novo = GUID novo registrado aqui.",
+    "categorias": "Matriz de vínculo aprovada pelo usuário em 2026-09-28 (F1.1): carga nos pontos, dimensionamento nos circuitos."
+  },
+  "produto": "Ampere",
+  "grupo_revit": "Ampere",
+  "parametros": [
+    {
+      "guid": "952b3b09-e30f-46b7-a2e0-41da05638dff",
+      "nome": "AMP_NumeroCircuito",
+      "tipo": "TEXT",
+      "descricao": "Número do circuito no quadro (ex.: 1, 2, TUG-03)",
+      "categorias": ["Luminarias", "DispositivosDeIluminacao", "DispositivosEletricos", "EquipamentosMecanicos", "CircuitosEletricos"]
+    },
+    {
+      "guid": "de59d3d9-f2e4-48ad-8f01-37eac54aeb24",
+      "nome": "AMP_TipoCarga",
+      "tipo": "TEXT",
+      "descricao": "Iluminação/TUG/TUE/ArCondicionado/Motor/Reserva",
+      "categorias": ["Luminarias", "DispositivosEletricos", "EquipamentosMecanicos", "CircuitosEletricos"]
+    },
+    {
+      "guid": "400891f8-9e33-4169-8f96-ef1d7cb9f8a9",
+      "nome": "AMP_TensaoCircuitoV",
+      "tipo": "NUMBER",
+      "descricao": "Tensão do circuito (127/220/254/380...)",
+      "categorias": ["Luminarias", "DispositivosEletricos", "EquipamentosMecanicos", "CircuitosEletricos"]
+    },
+    {
+      "guid": "df7575ba-4cf2-401b-a8f6-7e2ea38789dd",
+      "nome": "AMP_Fases",
+      "tipo": "TEXT",
+      "descricao": "Configuração (F+N, 2F+N, 3F+N)",
+      "categorias": ["Luminarias", "DispositivosEletricos", "EquipamentosMecanicos", "CircuitosEletricos"]
+    },
+    {
+      "guid": "271e3ca9-095e-4faa-990a-bf29b6ef0c96",
+      "nome": "AMP_PotenciaInstaladaVA",
+      "tipo": "ELECTRICAL_APPARENT_POWER",
+      "descricao": "Soma das potências instaladas (VA)",
+      "categorias": ["Luminarias", "DispositivosEletricos", "EquipamentosMecanicos", "EquipamentosEletricos", "CircuitosEletricos"]
+    },
+    {
+      "guid": "5774436a-ca44-474f-8029-02ad32f3afcc",
+      "nome": "AMP_FatorDemanda",
+      "tipo": "NUMBER",
+      "descricao": "Fator de demanda aplicado (0-1)",
+      "categorias": ["EquipamentosEletricos", "CircuitosEletricos"]
+    },
+    {
+      "guid": "d0cb1ab2-e4bf-4503-aee2-c454de483907",
+      "nome": "AMP_FatorPotencia",
+      "tipo": "NUMBER",
+      "descricao": "Fator de potência do circuito",
+      "categorias": ["Luminarias", "DispositivosEletricos", "EquipamentosMecanicos", "CircuitosEletricos"]
+    },
+    {
+      "guid": "3351b48f-8ad5-4b84-b038-44725ee1fefc",
+      "nome": "AMP_CorrenteProjetoA",
+      "tipo": "CURRENT",
+      "descricao": "Corrente de projeto IB (A)",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "16687dae-c522-43d8-b894-590cb37c356c",
+      "nome": "AMP_MetodoInstalacao",
+      "tipo": "TEXT",
+      "descricao": "Método de instalação NBR 5410 (A1/A2/B1/B2/C/D...)",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "ec7ea6ab-ecee-496c-8bef-6a4e4ca02aa5",
+      "nome": "AMP_MaterialIsolacao",
+      "tipo": "TEXT",
+      "descricao": "PVC/EPR/XLPE",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "3ee0a581-296c-4159-af3d-7543d7f4473c",
+      "nome": "AMP_TipoCondutor",
+      "tipo": "TEXT",
+      "descricao": "Ex.: Fio 750V PVC, Cabo 1kV EPR",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "23ce7195-2a0e-4b0d-af1f-8c190c10172e",
+      "nome": "AMP_BitolaCondutorMm2",
+      "tipo": "NUMBER",
+      "descricao": "Seção adotada (mm²)",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "3854720d-d995-4791-b374-3844b99eeced",
+      "nome": "AMP_CapacidadeConducaoA",
+      "tipo": "CURRENT",
+      "descricao": "Capacidade de condução IZ (A)",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "7040703c-6018-4b88-8a70-628f5aca4dbd",
+      "nome": "AMP_FCA",
+      "tipo": "NUMBER",
+      "descricao": "Fator de correção de agrupamento",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "d91016fc-cf2c-4b16-812a-b5801ad2d14a",
+      "nome": "AMP_FCT",
+      "tipo": "NUMBER",
+      "descricao": "Fator de correção de temperatura",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "25c19efa-5ca1-40b1-9ba6-bbd66a2d1899",
+      "nome": "AMP_DisjuntorNominalA",
+      "tipo": "NUMBER",
+      "descricao": "In do disjuntor (A)",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "39e9361c-d39e-468f-87e1-ee575e42e990",
+      "nome": "AMP_CurvaDisjuntor",
+      "tipo": "TEXT",
+      "descricao": "Curva B/C/D",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "70b4a070-b890-4743-9588-868f9ee9c3e5",
+      "nome": "AMP_IDR_NominalA",
+      "tipo": "NUMBER",
+      "descricao": "Corrente nominal do IDR (A)",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "a8ed44a7-0de2-4116-907b-bbb60d268c0f",
+      "nome": "AMP_IDR_SensibilidadeMa",
+      "tipo": "NUMBER",
+      "descricao": "Sensibilidade do IDR (30/300 mA)",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "5f98123c-3b4e-4a90-96b3-8742f242ddef",
+      "nome": "AMP_QuedaTensaoPct",
+      "tipo": "NUMBER",
+      "descricao": "Queda de tensão calculada (%)",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "6bd40602-4daf-4c95-bf48-8e426b563bf1",
+      "nome": "AMP_ComprimentoRotaM",
+      "tipo": "LENGTH",
+      "descricao": "Comprimento do circuito pela rota (m)",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "3b1b037f-efcc-4a3b-9be6-e5dc239d0178",
+      "nome": "AMP_OcupacaoEletrodutoPct",
+      "tipo": "NUMBER",
+      "descricao": "Ocupação do eletroduto (%)",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "d494ec29-87fa-4e2d-9550-80f4a6e3cc62",
+      "nome": "AMP_EletrodutoTipo",
+      "tipo": "TEXT",
+      "descricao": "Tipo/diâmetro do eletroduto (ex.: 3/4\")",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "9e1989ab-5dbe-44a3-bad2-34aac6951d6f",
+      "nome": "AMP_Quadro",
+      "tipo": "TEXT",
+      "descricao": "Quadro alimentador",
+      "categorias": ["Luminarias", "DispositivosDeIluminacao", "DispositivosEletricos", "EquipamentosMecanicos", "EquipamentosEletricos", "CircuitosEletricos"]
+    },
+    {
+      "guid": "3847aabf-9378-4b04-a5dc-6fec34742c21",
+      "nome": "AMP_PerfilNorma",
+      "tipo": "TEXT",
+      "descricao": "Perfil normativo usado no cálculo (ex.: NBR5410:2004)",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "9c91f208-216c-4f76-a56c-d549fbd6d423",
+      "nome": "AMP_MemoriaCalculoId",
+      "tipo": "TEXT",
+      "descricao": "ID/hash da memória de cálculo auditável",
+      "categorias": ["CircuitosEletricos"]
+    }
+  ]
+}

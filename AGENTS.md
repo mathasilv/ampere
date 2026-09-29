@@ -27,8 +27,9 @@ A pós-fixação `.RXXXX` na configuração é exigência do SDK Nice3point.Revi
   injeção de parâmetros compartilhados, `ExternalEvent` para operações longas.
 - `data/` — JSONs UTF-8 com `$meta` (fonte + versão da norma + data). Perfis de norma em
   `data/normas/<norma>/<ano>/perfil.json`.
-- GUIDs `AMP_*`: **congelados** (`10_Parametros_Compartilhados_Ampere.json`). Nunca alterar,
-  nunca usar GUIDs de terceiros.
+- GUIDs `AMP_*`: **congelados** — fonte versionada `data/parametros/parametros_compartilhados_ampere.json`
+  (cópia do `10_Parametros_Compartilhados_Ampere.json`), guardada por `GuidsCongelados_Teste`.
+  Nunca alterar, nunca usar GUIDs de terceiros.
 
 ## Regras de domínio
 

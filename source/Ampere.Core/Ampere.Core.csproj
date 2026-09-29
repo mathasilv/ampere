@@ -12,4 +12,9 @@
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     </PropertyGroup>
 
+    <ItemGroup>
+        <EmbeddedResource Include="..\..\data\parametros\parametros_compartilhados_ampere.json"
+                          LogicalName="Ampere.Core.Parametros.parametros_compartilhados_ampere.json"/>
+    </ItemGroup>
+
 </Project>
