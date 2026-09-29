@@ -1,4 +1,3 @@
-using System.Globalization;
 using Ampere.Core.Cargas;
 using Ampere.Core.Catalogos;
 using Ampere.Core.Memoria;
@@ -110,7 +109,7 @@ public static class DimensionamentoDeCircuito
                 var motivo = disjuntor is null
                     ? $"nenhum disjuntor entre IB = {Numero(ib)} A e IZ = {Numero(capacidade)} A"
                     : queda > limite
-                        ? $"queda de tensão {Numero(Math.Round(queda, 4, MidpointRounding.AwayFromZero))}% acima do limite de {Numero(limite)}%"
+                        ? $"queda de tensão {Numero(queda)}% acima do limite de {Numero(limite)}%"
                         : null;
 
                 if (motivo is null)
@@ -210,7 +209,7 @@ public static class DimensionamentoDeCircuito
             var expressao = $"n = pontos em locais que exigem IDR para {CodigosDeTipoDeCarga.Codigo(entrada.Tipo)}";
             if (avaliacao.Impedimento is not null) Parar(referencia, "Exigência de IDR", expressao, "pontos", avaliacao.Impedimento);
 
-            Passo(referencia, "Exigência de IDR", expressao, [new ValorDoPasso("pontos", entrada.LocaisDosPontos.Count, "pontos")],
+            Passo(referencia, "Exigência de IDR", expressao, [new ValorDoPasso("total", entrada.LocaisDosPontos.Count, "pontos")],
                 avaliacao.PontosQueExigem, "pontos", avaliacao.Descrever());
             if (avaliacao.SensibilidadeExigida is not { } sensibilidade) return null;
 
@@ -223,7 +222,7 @@ public static class DimensionamentoDeCircuito
             var total = entrada.LocaisDosPontos.Count;
             var motivo = string.IsNullOrWhiteSpace(decisao.Motivo) ? "sem motivo informado" : $"motivo: {decisao.Motivo.Trim()}";
             var observacao = $"decisão do projetista, prevalece sobre a tabela ({motivo}); pela tabela: {avaliacao.Descrever()}";
-            ValorDoPasso[] valores = [new ValorDoPasso("pontos", total, "pontos")];
+            ValorDoPasso[] valores = [new ValorDoPasso("total", total, "pontos")];
 
             if (!decisao.Exigir)
             {
@@ -273,7 +272,7 @@ public static class DimensionamentoDeCircuito
             decimal Ocupacao(TamanhoDeEletroduto tamanho) =>
                 condutores * diametro * diametro * 100m / (tamanho.DiametroInternoMm * tamanho.DiametroInternoMm);
             string Descrever(TamanhoDeEletroduto tamanho) =>
-                $"{tamanho.Nominal} ({Numero(Math.Round(Ocupacao(tamanho), 4, MidpointRounding.AwayFromZero))}%)";
+                $"{tamanho.Nominal} ({Numero(Ocupacao(tamanho))}%)";
 
             const string Criterio = "menor Di com n · d² / Di² · 100 ≤ taxa";
             var adotado = tamanhos.FirstOrDefault(tamanho => Ocupacao(tamanho) <= taxa);
@@ -369,7 +368,7 @@ public static class DimensionamentoDeCircuito
                 _idrNominal, _idrSensibilidade, _queda, _eletroduto, _diametroInterno, _ocupacao,
                 new MemoriaDeCalculo(entrada.Circuito, perfil.Nome, _passos), problemas, _avisos);
 
-        private static string Numero(decimal valor) => NumeroEmTexto.Formatar(valor);
+        private static string Numero(decimal valor) => NumeroEmTexto.FormatarParaLeitura(valor);
 
         private static string Pontos(int quantidade) => quantidade == 1 ? "1 ponto" : $"{quantidade} pontos";
 

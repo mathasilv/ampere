@@ -20,6 +20,21 @@ public class NumeroEmTexto_Teste
     }
 
     [Test]
+    [Arguments("17.320508075688772935274463415", "17,3205")]
+    [Arguments("7.5590551181102362204724409449", "7,5591")]
+    [Arguments("2.00005", "2,0001")]
+    [Arguments("12345.678", "12345,678")]
+    [Arguments("0.01724", "0,01724")]
+    [Arguments("0.0068181818181818", "0,006818")]
+    [Arguments("0.5", "0,5")]
+    [Arguments("-0.12345", "-0,1235")]
+    [Arguments("0", "0")]
+    public async Task Para_leitura_ate_4_casas_e_4_algarismos_significativos_abaixo_de_1(string valor, string esperado)
+    {
+        await Assert.That(NumeroEmTexto.FormatarParaLeitura(decimal.Parse(valor, CultureInfo.InvariantCulture))).IsEqualTo(esperado);
+    }
+
+    [Test]
     public async Task Nao_depende_da_cultura_da_maquina()
     {
         var original = CultureInfo.CurrentCulture;
