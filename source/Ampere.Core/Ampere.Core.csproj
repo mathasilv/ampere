@@ -10,6 +10,8 @@
         <LangVersion>latest</LangVersion>
         <ImplicitUsings>true</ImplicitUsings>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <!-- Referenciado pelo add-in com Configuration=Release.R20XX: o SDK só otimiza quando o nome é "Release". -->
+        <Optimize Condition="'$(Optimize)' == '' And $(Configuration.StartsWith('Release'))">true</Optimize>
     </PropertyGroup>
 
     <ItemGroup>

@@ -1,0 +1,21 @@
+<Project Sdk="Nice3point.Revit.Sdk/6.2.3">
+
+    <!--
+        Adapters das portas do Ampere.Core sobre a API do Revit — sem UI e sem deploy, para que os testes de
+        integração (Ampere.Tests.Revit) exercitem exatamente o código que o add-in usa.
+    -->
+    <PropertyGroup>
+        <Configurations>Debug.R25;Debug.R26;Debug.R27</Configurations>
+        <Configurations>$(Configurations);Release.R25;Release.R26;Release.R27</Configurations>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitVersion).*"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Ampere.Core\Ampere.Core.csproj"/>
+    </ItemGroup>
+
+</Project>

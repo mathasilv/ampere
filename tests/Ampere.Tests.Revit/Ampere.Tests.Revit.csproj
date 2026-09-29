@@ -1,0 +1,33 @@
+<Project Sdk="Nice3point.Revit.Sdk/6.2.3">
+
+    <!--
+        Testes de integração do adapter (Ampere.Revit) com Nice3point.TUnit.Revit: rodam dentro do Revit, que precisa
+        estar instalado e licenciado na versão da configuração (Release.R2025 => Revit 2025).
+
+        RevitInstallDir: pasta do Revit. O padrão é o do instalador; numa máquina com outra pasta, defina a variável de
+        ambiente RevitInstallDir ou crie Ampere.Tests.Revit.csproj.user (git-ignorado) com essa propriedade.
+    -->
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <IsPackable>false</IsPackable>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <Configurations>Debug.R25;Debug.R26;Debug.R27</Configurations>
+        <Configurations>$(Configurations);Release.R25;Release.R26;Release.R27</Configurations>
+        <RevitInstallDir Condition="'$(RevitInstallDir)' == ''">C:\Program Files\Autodesk\Revit $(RevitVersion)</RevitInstallDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Nice3point.TUnit.Revit" Version="$(RevitVersion).*"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\source\Ampere.Revit\Ampere.Revit.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <AssemblyAttribute Include="Nice3point.Revit.Injector.Attributes.RevitInstallationPathAttribute">
+            <_Parameter1>$(RevitInstallDir)</_Parameter1>
+        </AssemblyAttribute>
+    </ItemGroup>
+
+</Project>
