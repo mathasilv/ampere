@@ -9,7 +9,7 @@ Prompt de missão: `E:\ProEletrica_Referencia\11_PROMPT_OPUS.md`.
 ```bash
 # Gate antes de qualquer commit: testes do núcleo + build nas TRÊS configurações
 powershell -NoProfile -ExecutionPolicy Bypass -File ./ci.ps1
-# + testes de integração dentro do Revit (obrigatório ao mexer no adapter Ampere.Revit)
+# + testes de integração dentro do Revit 2027 (obrigatório ao mexer no adapter Ampere.Revit)
 powershell -NoProfile -ExecutionPolicy Bypass -File ./ci.ps1 -Integracao
 
 # Passos individuais
@@ -17,10 +17,13 @@ dotnet build source/Ampere/Ampere.csproj -c Release.R2025
 dotnet build source/Ampere/Ampere.csproj -c Release.R2026
 dotnet build source/Ampere/Ampere.csproj -c Release.R2027
 dotnet test tests/Ampere.Tests.Core                        # motor puro, fora do Revit (net8.0 + net10.0)
-dotnet test tests/Ampere.Tests.Revit -c Release.R2025      # integração: sobe o Revit 2025 no processo
+dotnet test tests/Ampere.Tests.Revit -c Release.R2027      # integração: sobe o Revit 2027 no processo
 ```
 
 A pós-fixação `.RXXXX` na configuração é exigência do SDK Nice3point.Revit.Sdk.
+Decisão do usuário (29/09/2026): desenvolvimento, testes de integração e testes manuais **só no Revit 2027**;
+o build nas três configurações continua obrigatório (rede de segurança barata). API exclusiva do 2027 que
+quebre R2025/R2026: perguntar antes de aposentar essas configurações.
 
 ## Arquitetura (respeitar rigidamente)
 

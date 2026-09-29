@@ -11,10 +11,11 @@
     o Revit está aberto com a DLL do add-in em uso.
 
     Os testes de integração (Ampere.Tests.Revit) sempre compilam; só rodam com -Integracao, porque
-    sobem o Revit dentro do processo de teste. Versão sem Revit.exe instalado é pulada com aviso.
+    sobem o Revit dentro do processo de teste. Por decisão do usuário (29/09/2026), desenvolvimento
+    e testes no Revit são só no 2027; o build triplo continua como rede de segurança.
 
 .PARAMETER Integracao
-    Também roda os testes de integração dentro do Revit de cada versão instalada.
+    Também roda os testes de integração dentro do Revit 2027 (pulado com aviso se não instalado).
 
 .EXAMPLE
     powershell -NoProfile -ExecutionPolicy Bypass -File .\ci.ps1
@@ -80,7 +81,7 @@ foreach ($configuracao in 'Release.R2025', 'Release.R2026', 'Release.R2027') {
 }
 
 if ($Integracao) {
-    foreach ($ano in '2025', '2026', '2027') {
+    foreach ($ano in @('2027')) {
         $configuracao = "Release.R$ano"
         # Mesma resolução de pasta que os testes usam (RevitInstallDir: .csproj.user, variável de ambiente ou padrão).
         $pasta = (& dotnet msbuild tests/Ampere.Tests.Revit -getProperty:RevitInstallDir "-p:Configuration=$configuracao" | Out-String).Trim()
