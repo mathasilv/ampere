@@ -15,7 +15,7 @@ dotnet test tests/Ampere.Tests.Core --list-tests --treenode-filter "/*/*/*/*[Fon
 
 | ID | Pendência | Onde | Para fechar |
 |---|---|---|---|
-| GAP-001 | Item da NBR 5410:2004 que define a corrente de projeto I<sub>B</sub> e a tensão a adotar por esquema (F+N, 2F, 3F) | `CalculoDeCorrente.CorrenteDeProjetoMonofasica`; `CalculoDeCorrente_Teste` (valores de brinquedo) | Conferir no texto oficial, citar o item no perfil e trocar os valores de brinquedo por casos verificáveis |
+| GAP-001 | Item da NBR 5410:2004 que define a corrente de projeto I<sub>B</sub> e a tensão a adotar por esquema (F+N, 2F, 3F) | `CalculoDeCorrente.CorrenteDeProjetoMonofasica`; `CalculoDeCorrente_Teste` (valores de brinquedo); regra `corrente_de_projeto` do perfil, usada pelo `DimensionamentoDeCircuito` | Conferir no texto oficial, citar o item no perfil e trocar os valores de brinquedo por casos verificáveis |
 | GAP-002 | Regras e limites da NBR 5410 para agrupar pontos em circuitos (quantidades e potências por local, circuitos independentes, separação entre tipos de carga) — especificação §3, F1.2 | `RegraDeAgrupamento` e `PlanejadorDeCircuitos`: hoje só limites informados pelo projetista, sem nenhum padrão | Citar itens e valores no perfil `NBR5410/2004`; o diálogo passa a sugeri-los, sempre editáveis |
 | GAP-003 | Todas as tabelas do perfil `data/normas/NBR5410/2004/perfil.json` (hoje esqueleto, `ref: TODO_NORMA` e sem valores) — ver lista abaixo | `PerfilNormativo.NBR5410_2004`; o motor de dimensionamento para e diz qual tabela falta | Preencher tabela por tabela com o item da norma em `ref`; o carregador recusa valor sem fonte |
 
@@ -33,6 +33,18 @@ dotnet test tests/Ampere.Tests.Core --list-tests --treenode-filter "/*/*/*/*[Fon
 | `queda_de_tensao_maxima_pct` | Limites de queda de tensão | A especificação diz "4% instalação total, 7% circuito terminal". **Conferir se não está invertido:** há indício de que o limite menor se aplica aos circuitos terminais |
 | `resistividade_ohm_mm2_por_m` | Resistividade do condutor na temperatura de serviço | Para a queda de tensão |
 | `ocupacao_maxima_eletroduto_pct` | Taxa máxima de ocupação por nº de condutores | A especificação diz "40% ≥ 2 condutores; 31%/53% nos casos da norma". **Conferir a que número de condutores cada taxa se aplica** |
+
+## Simplificações do motor de dimensionamento (a validar pelo projetista)
+
+Não são valores de norma, mas decisões de engenharia do `DimensionamentoDeCircuito` que precisam de aval:
+
+- I<sub>B</sub> pela potência aparente instalada: `S / V` (F+N e 2F) e `S / (√3 · V)` (3F e 3F+N); fator de
+  demanda não aplicado no circuito terminal.
+- 2F+N não modelado (a divisão das cargas entre as fases é desconhecida): o cálculo para e explica.
+- Queda de tensão pela fórmula resistiva `k · ρ · L · IB / (S · V)`, k = 2 (F+N, 2F) ou √3 (3F), sem reatância,
+  só do circuito terminal (o trecho do alimentador ainda não entra).
+- Fator de temperatura sem interpolação: temperatura não tabelada interrompe o cálculo.
+- Coordenação: menor I<sub>n</sub> nominal com I<sub>B</sub> ≤ I<sub>n</sub> ≤ I<sub>Z</sub>; sem ela, a seção sobe.
 
 ## Previstas (ainda sem código)
 
