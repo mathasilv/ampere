@@ -45,15 +45,7 @@ public sealed class ParametrosDoDocumentoRevit(Document documento) : IParametros
             .ToList();
     }
 
-    public void EmUmaTransacao(string nome, Action acao)
-    {
-        using var transacao = new Transaction(documento, nome);
-        transacao.Start();
-        acao();
-        var situacao = transacao.Commit();
-        if (situacao != TransactionStatus.Committed)
-            throw new InvalidOperationException($"O Revit não confirmou a transação '{nome}' ({situacao}).");
-    }
+    public void EmUmaTransacao(string nome, Action acao) => TransacaoRevit.Executar(documento, nome, acao);
 
     public void Criar(IReadOnlyList<DefinicaoDeParametro> definicoes, string grupoRevit)
     {
