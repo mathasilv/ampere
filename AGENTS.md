@@ -7,13 +7,14 @@ Prompt de missão: `E:\ProEletrica_Referencia\11_PROMPT_OPUS.md`.
 ## Comandos
 
 ```bash
-# Build (as TRÊS configurações devem ficar verdes antes de qualquer commit)
+# Gate antes de qualquer commit: testes do núcleo + build nas TRÊS configurações
+powershell -NoProfile -ExecutionPolicy Bypass -File ./ci.ps1
+
+# Passos individuais
 dotnet build source/Ampere/Ampere.csproj -c Release.R2025
 dotnet build source/Ampere/Ampere.csproj -c Release.R2026
 dotnet build source/Ampere/Ampere.csproj -c Release.R2027
-
-# Testes do motor puro (rodam fora do Revit)
-dotnet test tests/Ampere.Tests.Core
+dotnet test tests/Ampere.Tests.Core   # motor puro, fora do Revit (TUnit, net8.0 + net10.0)
 ```
 
 A pós-fixação `.RXXXX` na configuração é exigência do SDK Nice3point.Revit.Sdk.
@@ -31,7 +32,8 @@ A pós-fixação `.RXXXX` na configuração é exigência do SDK Nice3point.Revi
 
 ## Regras de domínio
 
-- Valor normativo sem fonte oficial = `TODO_NORMA` no código + pendência em `data/DATA_GAPS.md`.
+- Valor normativo sem fonte oficial = `TODO_NORMA` no código + pendência em `data/DATA_GAPS.md`
+  + `[Property("Fonte", "TODO_NORMA")]` no teste.
   Nunca inventar capacidade de condução, fator de demanda ou limite de norma.
 - Memória de cálculo determinística: mesmas entras ⇒ mesmo hash. Sem timestamps no cálculo.
 - Siglas: IB, IZ, In, FCA, FCT, TUG, TUE, IDR, DPS (NBR 5410).
@@ -49,6 +51,9 @@ A pós-fixação `.RXXXX` na configuração é exigência do SDK Nice3point.Revi
   mistos UTF-8/cp1252 — se for ler, detectar por arquivo).
 - API Revit incerta: verificar em revitapidocs.com e isolar atrás de interface no adapter.
 - `E:\pro_elet` (instalação do concorrente): **somente leitura de estudo; nunca modificar.**
+- `DeployAddin=true`: todo build do add-in copia para `%AppData%\Autodesk\Revit\Addins\<ano>` e falha
+  se o Revit estiver aberto com a DLL em uso. O `ci.ps1` compila com `-p:DeployAddin=false`.
+- `dotnet sln add` mapeia `Release.R*` → `Debug` em projetos novos: corrigir para `Release` no `.sln`.
 
 ## Commits
 
