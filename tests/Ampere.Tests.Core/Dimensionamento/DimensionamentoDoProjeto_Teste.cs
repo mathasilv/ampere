@@ -54,7 +54,7 @@ public class DimensionamentoDoProjeto_Teste
         var resultado = DimensionamentoDoProjeto.Executar([1], Condicoes, Ficticio, Catalogos, new DocumentoDeDimensionamentoFalso([circuito]))[0];
 
         await Assert.That(resultado.Dimensionamento).IsNull();
-        await Assert.That(string.Join("\n", resultado.ProblemasDeDados)).Contains("pontos com tensões diferentes (127, 220)");
+        await Assert.That(string.Join("\n", resultado.ProblemasDeDados)).Contains("pontos com tensões diferentes (127; 220)");
     }
 
     [Test]

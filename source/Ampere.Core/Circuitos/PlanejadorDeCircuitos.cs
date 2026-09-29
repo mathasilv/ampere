@@ -103,7 +103,7 @@ public static class PlanejadorDeCircuitos
             if (regra.MaximaPotenciaVA is { } limiteDoTipo && potencia > limiteDoTipo)
             {
                 avisos.Add(string.Create(CultureInfo.InvariantCulture,
-                    $"ponto {ponto.Id} ({potencia:0.##} VA) excede sozinho o limite de {limiteDoTipo:0.##} VA de {CodigosDeTipoDeCarga.Codigo(tipo)}"));
+                    $"ponto {ponto.Id} ({NumeroEmTexto.Formatar(potencia)} VA) excede sozinho o limite de {NumeroEmTexto.Formatar(limiteDoTipo)} VA de {CodigosDeTipoDeCarga.Codigo(tipo)}"));
             }
 
             atual.Add(ponto);

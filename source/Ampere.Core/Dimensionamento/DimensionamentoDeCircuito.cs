@@ -369,7 +369,7 @@ public static class DimensionamentoDeCircuito
                 _idrNominal, _idrSensibilidade, _queda, _eletroduto, _diametroInterno, _ocupacao,
                 new MemoriaDeCalculo(entrada.Circuito, perfil.Nome, _passos), problemas, _avisos);
 
-        private static string Numero(decimal valor) => PerfilNormativo.Numero(valor);
+        private static string Numero(decimal valor) => NumeroEmTexto.Formatar(valor);
 
         private static string Pontos(int quantidade) => quantidade == 1 ? "1 ponto" : $"{quantidade} pontos";
 

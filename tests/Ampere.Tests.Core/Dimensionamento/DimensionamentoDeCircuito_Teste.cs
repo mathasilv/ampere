@@ -263,7 +263,7 @@ public class DimensionamentoDeCircuito_Teste
         await Assert.That(resultado.SecaoMm2).IsEqualTo(4m);
         await Assert.That(resultado.CapacidadeDeConducaoA).IsEqualTo(19.2m);
         await Assert.That(resultado.DisjuntorA).IsEqualTo(16m);
-        await Assert.That(Observacoes(resultado)).Contains("seção elevada de 2.5 para 4 mm²: nenhum disjuntor entre IB = 12 A e IZ = 12.8 A");
+        await Assert.That(Observacoes(resultado)).Contains("seção elevada de 2,5 para 4 mm²: nenhum disjuntor entre IB = 12 A e IZ = 12,8 A");
     }
 
     [Test]
@@ -274,7 +274,7 @@ public class DimensionamentoDeCircuito_Teste
         await Assert.That(resultado.SecaoMm2).IsEqualTo(4m);
         await Assert.That(resultado.DisjuntorA).IsEqualTo(10m);
         await Assert.That(Math.Round(resultado.QuedaDeTensaoPct!.Value, 4)).IsEqualTo(4.7244m);
-        await Assert.That(Observacoes(resultado)).Contains("seção elevada de 2.5 para 4 mm²: queda de tensão 7.5591% acima do limite de 5%");
+        await Assert.That(Observacoes(resultado)).Contains("seção elevada de 2,5 para 4 mm²: queda de tensão 7,5591% acima do limite de 5%");
     }
 
     [Test]

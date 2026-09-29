@@ -143,7 +143,7 @@ public sealed class PerfilNormativo
 
         return linha.PorSecao.TryGetValue(secaoMm2, out var capacidade)
             ? DadoNormativo<decimal>.Com(capacidade, _capacidade.Referencia)
-            : DadoNormativo<decimal>.Ausente(_capacidade.Referencia, $"sem valor para {Numero(secaoMm2)} mm² ({descricao})");
+            : DadoNormativo<decimal>.Ausente(_capacidade.Referencia, $"sem valor para {NumeroEmTexto.Formatar(secaoMm2)} mm² ({descricao})");
     }
 
     public DadoNormativo<decimal> FatorDeTemperatura(string isolacao, decimal temperaturaC)
@@ -155,7 +155,7 @@ public sealed class PerfilNormativo
 
         return linha.PorTemperatura.TryGetValue(temperaturaC, out var fator)
             ? DadoNormativo<decimal>.Com(fator, _temperatura.Referencia)
-            : DadoNormativo<decimal>.Ausente(_temperatura.Referencia, $"temperatura {Numero(temperaturaC)} °C não tabelada para {isolacao}");
+            : DadoNormativo<decimal>.Ausente(_temperatura.Referencia, $"temperatura {NumeroEmTexto.Formatar(temperaturaC)} °C não tabelada para {isolacao}");
     }
 
     public DadoNormativo<decimal> FatorDeAgrupamento(int circuitos) =>
@@ -182,8 +182,6 @@ public sealed class PerfilNormativo
     /// <summary>Tabela inteira de proteção diferencial, por nome de local.</summary>
     public DadoNormativo<IReadOnlyDictionary<string, ProtecaoDiferencialDoLocal>> ProtecaoDiferencialPorLocal() =>
         Inteira(_protecaoDiferencial, "protecao_diferencial_por_local");
-
-    internal static string Numero(decimal valor) => valor.ToString("0.############################", CultureInfo.InvariantCulture);
 
     private void LerRegras(Dictionary<string, string>? regras, Leitor leitor, List<string> problemas)
     {
@@ -360,7 +358,7 @@ public sealed class PerfilNormativo
 
         public T Positivo<T>(string nome, T valor) where T : System.Numerics.INumber<T>
         {
-            if (valor <= T.Zero) problemas.Add($"{nome}: valor não positivo ({valor})");
+            if (valor <= T.Zero) problemas.Add($"{nome}: valor não positivo ({NumeroEmTexto.Formatar(decimal.CreateChecked(valor))})");
             return valor;
         }
     }

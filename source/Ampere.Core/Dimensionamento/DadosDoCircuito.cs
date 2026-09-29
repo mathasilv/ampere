@@ -1,6 +1,4 @@
-using System.Globalization;
 using Ampere.Core.Cargas;
-using Ampere.Core.Normas;
 
 namespace Ampere.Core.Dimensionamento;
 
@@ -69,16 +67,18 @@ public static class EntradaDoCircuito
         foreach (var ponto in dados.Pontos.Where(ponto => ponto.PotenciaVA is null))
             problemas.Add($"ponto {ponto.Id} sem AMP_PotenciaInstaladaVA");
 
-        var tensao = Comum(dados.Pontos.Select(ponto => ponto.TensaoV).OfType<decimal>().Select(PerfilNormativo.Numero), "AMP_TensaoCircuitoV", "tensões", problemas);
-        var fases = Comum(dados.Pontos.Select(ponto => ponto.Fases).OfType<string>(), "AMP_Fases", "fases", problemas);
+        var tensoes = dados.Pontos.Select(ponto => ponto.TensaoV).OfType<decimal>().Distinct().Order().ToList();
+        Unica(tensoes.Select(NumeroEmTexto.Formatar).ToList(), "AMP_TensaoCircuitoV", "tensões", problemas);
+        var fases = dados.Pontos.Select(ponto => ponto.Fases).OfType<string>().Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        Unica(fases, "AMP_Fases", "fases", problemas);
         if (problemas.Count > 0) return new EntradaMontada(null, problemas);
 
         var entrada = new EntradaDeDimensionamento(
             dados.Numero!,
             tipo,
             dados.Pontos.Sum(ponto => ponto.PotenciaVA!.Value),
-            fases!,
-            decimal.Parse(tensao!, CultureInfo.InvariantCulture),
+            fases[0],
+            tensoes[0],
             dados.ComprimentoM!.Value,
             metodo!,
             isolacao!,
@@ -99,12 +99,11 @@ public static class EntradaDoCircuito
         return escolhido;
     }
 
-    private static string? Comum(IEnumerable<string> valores, string parametro, string nome, List<string> problemas)
+    // Lista com "; " porque a vírgula é o separador decimal dos números em texto.
+    private static void Unica(IReadOnlyList<string> distintos, string parametro, string nome, List<string> problemas)
     {
-        var distintos = valores.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
         if (distintos.Count == 0) problemas.Add($"nenhum ponto com {parametro}");
-        else if (distintos.Count > 1) problemas.Add($"pontos com {nome} diferentes ({string.Join(", ", distintos)})");
-        return distintos.Count == 1 ? distintos[0] : null;
+        else if (distintos.Count > 1) problemas.Add($"pontos com {nome} diferentes ({string.Join("; ", distintos)})");
     }
 }
 

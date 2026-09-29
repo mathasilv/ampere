@@ -68,7 +68,7 @@ public sealed class CatalogoDeCondutores
 
         return porSecao.TryGetValue(secaoMm2, out var diametro)
             ? DadoNormativo<decimal>.Com(diametro, _referencia)
-            : DadoNormativo<decimal>.Ausente(_referencia, $"sem diâmetro para {PerfilNormativo.Numero(secaoMm2)} mm² em '{tipo}'");
+            : DadoNormativo<decimal>.Ausente(_referencia, $"sem diâmetro para {NumeroEmTexto.Formatar(secaoMm2)} mm² em '{tipo}'");
     }
 }
 
