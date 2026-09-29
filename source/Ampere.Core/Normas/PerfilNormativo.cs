@@ -22,6 +22,14 @@ public sealed class PerfilNormativo
 
     private static readonly Lazy<PerfilNormativo> Oficial = new(() => Carregar(LerRecurso(RecursoNBR5410)));
 
+    private static readonly IReadOnlyDictionary<string, RegraNormativa> RegrasPorChave = new Dictionary<string, RegraNormativa>
+    {
+        ["corrente_de_projeto"] = RegraNormativa.CorrenteDeProjeto,
+        ["coordenacao_condutor_protecao"] = RegraNormativa.CoordenacaoCondutorProtecao,
+        ["queda_de_tensao"] = RegraNormativa.QuedaDeTensao
+    };
+
+    private readonly Dictionary<RegraNormativa, string> _regras = [];
     private readonly Tabela<IReadOnlyList<decimal>> _secoes;
     private readonly Tabela<IReadOnlyList<decimal>> _disjuntores;
     private readonly Tabela<IReadOnlyDictionary<string, int>> _condutoresCarregados;
@@ -89,6 +97,7 @@ public sealed class PerfilNormativo
         var ficticio = arquivo!.Meta!.Ficticio!.Value;
         var leitor = new Leitor(problemas);
         var perfil = new PerfilNormativo(arquivo.Perfil!.Trim(), ficticio, leitor, arquivo.Tabelas!);
+        perfil.LerRegras(arquivo.Regras, leitor, problemas);
 
         if (ficticio && !perfil.Nome.StartsWith("FICTICIO", StringComparison.Ordinal))
             problemas.Add("perfil fictício precisa começar com 'FICTICIO' no nome");
@@ -101,6 +110,9 @@ public sealed class PerfilNormativo
         if (problemas.Count > 0) throw new PerfilNormativoInvalidoException(problemas);
         return perfil;
     }
+
+    /// <summary>Item da norma que fundamenta a regra, ou TODO_NORMA.</summary>
+    public string ReferenciaDaRegra(RegraNormativa regra) => _regras[regra];
 
     public DadoNormativo<IReadOnlyList<decimal>> SecoesNominaisMm2() => Inteira(_secoes, "secoes_nominais_mm2");
 
@@ -158,6 +170,28 @@ public sealed class PerfilNormativo
     }
 
     internal static string Numero(decimal valor) => valor.ToString("0.############################", CultureInfo.InvariantCulture);
+
+    private void LerRegras(Dictionary<string, string>? regras, Leitor leitor, List<string> problemas)
+    {
+        foreach (var chave in (regras ?? []).Keys.Where(chave => !RegrasPorChave.ContainsKey(chave)))
+            problemas.Add($"regra desconhecida '{chave}'");
+
+        foreach (var (chave, regra) in RegrasPorChave)
+        {
+            var referencia = regras?.GetValueOrDefault(chave)?.Trim();
+            if (string.IsNullOrEmpty(referencia))
+            {
+                problemas.Add($"regra {chave} sem ref (use o item da norma ou TODO_NORMA)");
+                referencia = TodoNorma;
+            }
+            else
+            {
+                leitor.Referencias.Add(($"regra {chave}", referencia));
+            }
+
+            _regras[regra] = referencia;
+        }
+    }
 
     private static DadoNormativo<T> Inteira<T>(Tabela<T> tabela, string nome) =>
         tabela.Pendente ? Pendente<T>(nome) : DadoNormativo<T>.Com(tabela.Valores, tabela.Referencia);

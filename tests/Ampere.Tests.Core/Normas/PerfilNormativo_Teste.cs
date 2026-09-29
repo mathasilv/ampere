@@ -117,6 +117,23 @@ public class PerfilNormativo_Teste
     }
 
     [Test]
+    public async Task Regras_da_norma_tem_referencia_no_perfil()
+    {
+        await Assert.That(Ficticio.ReferenciaDaRegra(RegraNormativa.QuedaDeTensao)).IsEqualTo("FICTÍCIO: regra de queda");
+        await Assert.That(PerfilNormativo.NBR5410_2004.ReferenciaDaRegra(RegraNormativa.CoordenacaoCondutorProtecao)).IsEqualTo("TODO_NORMA");
+    }
+
+    [Test]
+    public async Task Regra_sem_referencia_e_rejeitada()
+    {
+        var json = PerfilFicticio.Json.Replace("\"queda_de_tensao\": \"FICTÍCIO: regra de queda\"", "\"queda_de_tensao\": \"\"");
+
+        await Assert.That(() => PerfilNormativo.Carregar(json))
+            .Throws<PerfilNormativoInvalidoException>()
+            .WithMessageContaining("regra queda_de_tensao sem ref");
+    }
+
+    [Test]
     public async Task Arquivo_sem_meta_e_rejeitado()
     {
         var json = PerfilFicticio.Json.Replace("\"$meta\"", "\"meta_errado\"");

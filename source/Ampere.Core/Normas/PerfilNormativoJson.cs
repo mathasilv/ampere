@@ -9,6 +9,7 @@ namespace Ampere.Core.Normas;
 internal sealed record ArquivoDePerfil(
     [property: JsonPropertyName("$meta")] MetaDoPerfil? Meta,
     string? Perfil,
+    Dictionary<string, string>? Regras,
     TabelasDoPerfil? Tabelas);
 
 internal sealed record MetaDoPerfil(string? Fonte, string? Versao, string? Data, bool? Ficticio, string? Situacao);

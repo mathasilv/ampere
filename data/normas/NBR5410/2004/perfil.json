@@ -7,6 +7,11 @@
     "situacao": "Esqueleto: toda tabela com ref TODO_NORMA e sem valores. Um valor só entra com o item da norma em 'ref' (AGENTS.md, regra 4); o carregador recusa valor sem fonte."
   },
   "perfil": "NBR5410:2004",
+  "regras": {
+    "corrente_de_projeto": "TODO_NORMA",
+    "coordenacao_condutor_protecao": "TODO_NORMA",
+    "queda_de_tensao": "TODO_NORMA"
+  },
   "tabelas": {
     "secoes_nominais_mm2": { "ref": "TODO_NORMA", "valores": [] },
     "correntes_nominais_disjuntor_a": { "ref": "TODO_NORMA", "valores": [] },

@@ -10,6 +10,11 @@ internal static class PerfilFicticio
         {
           "$meta": { "fonte": "fictício, só para testes", "versao": "0", "data": "2026-09-29", "ficticio": true },
           "perfil": "FICTICIO-TESTE",
+          "regras": {
+            "corrente_de_projeto": "FICTÍCIO: regra da corrente de projeto",
+            "coordenacao_condutor_protecao": "FICTÍCIO: regra de coordenação",
+            "queda_de_tensao": "FICTÍCIO: regra de queda"
+          },
           "tabelas": {
             "secoes_nominais_mm2": { "ref": "FICTÍCIO: seções", "valores": [1.5, 2.5, 4, 6, 10, 16, 25] },
             "correntes_nominais_disjuntor_a": { "ref": "FICTÍCIO: disjuntores", "valores": [10, 16, 20, 25, 32, 40, 50, 63] },
