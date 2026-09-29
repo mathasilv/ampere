@@ -19,12 +19,6 @@ public sealed class CatalogoDeParametros
 
     private static readonly Lazy<CatalogoDeParametros> CatalogoPadrao = new(CarregarPadrao);
 
-    private static readonly JsonSerializerOptions OpcoesDeLeitura = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow
-    };
-
     private static readonly Dictionary<string, TipoDeDadoDoParametro> TiposPorCodigo = new(StringComparer.Ordinal)
     {
         ["TEXT"] = TipoDeDadoDoParametro.Texto,
@@ -56,7 +50,7 @@ public sealed class CatalogoDeParametros
         ArquivoJson? arquivo;
         try
         {
-            arquivo = JsonSerializer.Deserialize<ArquivoJson>(json, OpcoesDeLeitura);
+            arquivo = JsonSerializer.Deserialize(json, CatalogoJsonContexto.Default.ArquivoJson);
         }
         catch (JsonException excecao)
         {
@@ -131,16 +125,26 @@ public sealed class CatalogoDeParametros
         }
     }
 
-    private sealed record ArquivoJson(
+    internal sealed record ArquivoJson(
         [property: JsonPropertyName("$meta")] JsonElement? Meta,
         string? Produto,
         string? GrupoRevit,
         IReadOnlyList<ParametroJson>? Parametros);
 
-    private sealed record ParametroJson(
+    internal sealed record ParametroJson(
         string? Guid,
         string? Nome,
         string? Tipo,
         string? Descricao,
         IReadOnlyList<string>? Categorias);
 }
+
+/// <summary>
+///     Leitura do catálogo gerada em compilação: sem reflexão no primeiro uso, o que corta o custo a frio do comando
+///     no Revit.
+/// </summary>
+[JsonSourceGenerationOptions(
+    PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
+    UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow)]
+[JsonSerializable(typeof(CatalogoDeParametros.ArquivoJson))]
+internal sealed partial class CatalogoJsonContexto : JsonSerializerContext;
