@@ -46,8 +46,33 @@
       ]
     },
     "correntes_nominais_disjuntor_a": {
-      "ref": "TODO_NORMA",
-      "valores": []
+      "ref": "Series preferenciais de disjuntores: ABNT NBR IEC 60898-1 (6 a 63 A, minidisjuntor) e IEC 60947-2 (caixa moldada, acima), adotadas pelos fabricantes nacionais (WEG, Schneider); decisao de produto registrada em data/DATA_GAPS.md (GAP-004)",
+      "valores": [
+        6,
+        10,
+        16,
+        20,
+        25,
+        32,
+        40,
+        50,
+        63,
+        70,
+        80,
+        100,
+        125,
+        150,
+        160,
+        200,
+        225,
+        250,
+        315,
+        400,
+        500,
+        630,
+        800,
+        1000
+      ]
     },
     "condutores_carregados": {
       "ref": "NBR 5410:2004, Tabelas 36-41 e 6.2.6.2 (neutro conta como carregado so com harmonicas >15%; sem harmonicas, nao conta)",
@@ -1470,8 +1495,10 @@
       }
     },
     "resistividade_ohm_mm2_por_m": {
-      "ref": "TODO_NORMA",
-      "valores": {}
+      "ref": "Condutividade do cobre eletrolitico a 20 C (1/56 O.mm2/m), conforme ABNT NBR IEC 60228; valor a 20 C — o uso do valor de servico (condutor aquecido) e decisao do projetista, registrada nas Simplificacoes do data/DATA_GAPS.md",
+      "valores": {
+        "Cobre": 0.0179
+      }
     },
     "ocupacao_maxima_eletroduto_pct": {
       "ref": "NBR 5410:2004, item 6.2.11.1.6, alinea a",
@@ -1482,8 +1509,14 @@
       }
     },
     "correntes_nominais_idr_a": {
-      "ref": "TODO_NORMA",
-      "valores": []
+      "ref": "Correntes nominais de IDR conforme catologos WEG/Schneider (25 a 100 A, DIN); decisao de produto registrada em data/DATA_GAPS.md (GAP-004)",
+      "valores": [
+        25,
+        40,
+        63,
+        80,
+        100
+      ]
     },
     "protecao_diferencial_por_local": {
       "ref": "TODO_NORMA",

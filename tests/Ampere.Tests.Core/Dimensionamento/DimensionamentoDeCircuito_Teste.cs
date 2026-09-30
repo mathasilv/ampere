@@ -309,13 +309,13 @@ public class DimensionamentoDeCircuito_Teste
 
         await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
         await Assert.That(resultado.CorrenteDeProjetoA).IsEqualTo(10m);
-        await Assert.That(resultado.SecaoMm2).IsNull();
+        await Assert.That(resultado.SecaoMm2).IsEqualTo(2.5m);
 
         var ultimo = resultado.Memoria!.Passos[^1];
         await Assert.That(ultimo.Resultado).IsNull();
         await Assert.That(ultimo.Referencia).IsEqualTo("TODO_NORMA");
-        await Assert.That(ultimo.Observacao).Contains("correntes_nominais_disjuntor_a sem dados oficiais (TODO_NORMA)");
-        await Assert.That(string.Join("\n", resultado.Problemas)).Contains("correntes_nominais_disjuntor_a sem dados oficiais (TODO_NORMA)");
+        await Assert.That(ultimo.Observacao).Contains("protecao_diferencial_por_local sem dados oficiais (TODO_NORMA)");
+        await Assert.That(string.Join("\n", resultado.Problemas)).Contains("protecao_diferencial_por_local sem dados oficiais (TODO_NORMA)");
     }
 
     [Test]
