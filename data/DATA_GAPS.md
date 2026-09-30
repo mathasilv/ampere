@@ -11,13 +11,17 @@ Testes que dependem de fonte pendente levam `[Property("Fonte", "TODO_NORMA")]` 
 dotnet test tests/Ampere.Tests.Core --list-tests --treenode-filter "/*/*/*/*[Fonte=TODO_NORMA]"
 ```
 
+## Fechados
+
+- GAP-001 — corrente de projeto IB: item 5.3.4.1 da NBR 5410:2004 (30/09/2026).
+
 ## Abertas (em uso no código)
 
 | ID | Pendência | Onde | Para fechar |
 |---|---|---|---|
-| GAP-001 | Item da NBR 5410:2004 que define a corrente de projeto I<sub>B</sub> e a tensão a adotar por esquema (F+N, 2F, 3F) | `CalculoDeCorrente.CorrenteDeProjetoMonofasica`; `CalculoDeCorrente_Teste` (valores de brinquedo); regra `corrente_de_projeto` do perfil, usada pelo `DimensionamentoDeCircuito` | Conferir no texto oficial, citar o item no perfil e trocar os valores de brinquedo por casos verificáveis |
+| GAP-001 | ✅ **FECHADO (30/09/2026)** — IB é a corrente de projeto do circuito, definida no item 5.3.4.1 (coordenação IB ≤ In ≤ Iz, I2 ≤ 1,45 Iz; Iz ver 6.2.5). Ref real no perfil. | | |
 | GAP-002 | Regras e limites da NBR 5410 para agrupar pontos em circuitos (quantidades e potências por local, circuitos independentes, separação entre tipos de carga) — especificação §3, F1.2 | `RegraDeAgrupamento` e `PlanejadorDeCircuitos`: hoje só limites informados pelo projetista, sem nenhum padrão | Citar itens e valores no perfil `NBR5410/2004`; o diálogo passa a sugeri-los, sempre editáveis |
-| GAP-003 | Todas as tabelas do perfil `data/normas/NBR5410/2004/perfil.json` (hoje esqueleto, `ref: TODO_NORMA` e sem valores) — ver lista abaixo | `PerfilNormativo.NBR5410_2004`; o motor de dimensionamento para e diz qual tabela falta | Preencher tabela por tabela com o item da norma em `ref`; o carregador recusa valor sem fonte |
+| GAP-003 | **Parcial (30/09/2026 — pacote 1 do texto oficial, E:/NBR-5410.pdf)**: preenchidas queda (6.2.7.1/6.2.7.2), temperatura-ar (Tabela 40, PVC e EPR/XLPE), agrupamento (Tabela 42 linha 1, em feixe) e ocupação (6.2.11.1.6-a: 53/31/40%). Pendentes: capacidade (Tabelas 36/37 — layout textual ambíguo, transcrever das páginas renderizadas), Tabela 40-solo, Tabela 47 valores, condutores carregados (nota do neutro, 6.2.6.2) | `PerfilNormativo.NBR5410_2004`; o motor de dimensionamento para e diz qual tabela falta | Preencher tabela por tabela com o item da norma em `ref`; o carregador recusa valor sem fonte |
 | GAP-004 | Catálogos de fabricante: diâmetro externo dos condutores por tipo e seção; tamanhos nominais e diâmetros internos dos eletrodutos | `data/catalogos/condutores.json` e `eletrodutos.json` (hoje `ref: TODO_CATALOGO` e sem tipos); o dimensionamento para no diâmetro do condutor | Usuário escolhe os fabricantes; preencher com a `ref` (fabricante, linha e edição do catálogo); o carregador recusa valor sem fonte |
 | GAP-005 | Fatores de demanda por tipo de carga (NBR 5410, quadro de cargas — F1.4) | Tabela `fator_de_demanda_por_tipo` e regra `demanda_do_quadro` do perfil; o motor já aceita fatores informados pelo projetista (que vencem o perfil) enquanto a tabela está vazia | Preencher a tabela com os itens/values oficiais; a memória passa a citar a norma em vez de "valor informado pelo projetista" |
 
@@ -30,11 +34,11 @@ dotnet test tests/Ampere.Tests.Core --list-tests --treenode-filter "/*/*/*/*[Fon
 | `condutores_carregados` | Nº de condutores carregados por configuração (F+N, 2F, 3F, 3F+N) | Regra da 5410 para neutro carregado |
 | `secao_minima_mm2` | Seção mínima por tipo de circuito (iluminação, força) | |
 | `capacidade_de_conducao_a` | Capacidade de condução por método, isolação, material, nº de condutores carregados e seção | Especificação cita tabelas 36/37 |
-| `fator_de_temperatura` | FCT por isolação e temperatura ambiente | Especificação cita a Tabela 40; o motor não interpola |
-| `fator_de_agrupamento` | FCA por número de circuitos agrupados | |
-| `queda_de_tensao_maxima_pct` | Limites de queda de tensão | A especificação diz "4% instalação total, 7% circuito terminal". **Conferir se não está invertido:** há indício de que o limite menor se aplica aos circuitos terminais |
+| `fator_de_temperatura` | ✅ PREENCHIDA (Tabela 40, ar; solo pendente) | Especificação cita a Tabela 40; o motor não interpola |
+| `fator_de_agrupamento` | ✅ PREENCHIDA (Tabela 42 linha 1; motor agora aceita faixas 9+) | |
+| `queda_de_tensao_maxima_pct` | ✅ PREENCHIDA (6.2.7.1/6.2.7.2): circuito_terminal 4, ponto_de_entrega 5, transformador/gerador 7 | A especificação diz "4% instalação total, 7% circuito terminal". **Conferir se não está invertido:** há indício de que o limite menor se aplica aos circuitos terminais |
 | `resistividade_ohm_mm2_por_m` | Resistividade do condutor na temperatura de serviço | Para a queda de tensão |
-| `ocupacao_maxima_eletroduto_pct` | Taxa máxima de ocupação por nº de condutores | A especificação diz "40% ≥ 2 condutores; 31%/53% nos casos da norma". **Conferir a que número de condutores cada taxa se aplica** |
+| `ocupacao_maxima_eletroduto_pct` | ✅ PREENCHIDA (6.2.11.1.6-a) | A especificação diz "40% ≥ 2 condutores; 31%/53% nos casos da norma". **Conferir a que número de condutores cada taxa se aplica** |
 | `correntes_nominais_idr_a` | Correntes nominais de IDR | Valores preferenciais da norma do dispositivo / fabricante |
 | `protecao_diferencial_por_local` | Locais em que o IDR é exigido: para cada local, os tipos de carga atingidos e a I<sub>Δn</sub> máxima | O vocabulário de locais é do perfil (quem classifica os ambientes do projeto usa esses nomes); local que não exige entra com `tipos_de_carga: []` |
 | `regras` (`coordenacao_condutor_protecao`, `queda_de_tensao`, `condutores_no_eletroduto`, `coordenacao_idr_disjuntor`) | Itens que definem a coordenação I<sub>B</sub> ≤ I<sub>n</sub> ≤ I<sub>Z</sub>, o critério de queda de tensão, os condutores que contam na ocupação do eletroduto e a corrente nominal do IDR frente ao disjuntor | Não são tabelas, mas a memória cita a `ref` de cada uma; `corrente_de_projeto` está no GAP-001 |

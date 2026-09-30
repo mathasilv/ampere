@@ -162,8 +162,14 @@ public sealed class PerfilNormativo
             : DadoNormativo<decimal>.Ausente(_temperatura.Referencia, $"temperatura {NumeroEmTexto.Formatar(temperaturaC)} °C não tabelada para {isolacao}");
     }
 
-    public DadoNormativo<decimal> FatorDeAgrupamento(int circuitos) =>
-        PorChave(_agrupamento, "fator_de_agrupamento", circuitos, $"sem fator para {circuitos} circuitos agrupados");
+    /// <summary>Fator de agrupamento; acima da maior faixa tabelada vale a maior (ex.: "19" = dezenove ou mais).</summary>
+    public DadoNormativo<decimal> FatorDeAgrupamento(int circuitos)
+    {
+        if (_agrupamento.Pendente) return Pendente<decimal>("fator_de_agrupamento");
+        if (circuitos < 1) return DadoNormativo<decimal>.Ausente(_agrupamento.Referencia, $"número de circuitos inválido ({circuitos})");
+
+        return PorChave(_agrupamento, "fator_de_agrupamento", Math.Min(circuitos, _agrupamento.Valores.Keys.Max()), $"sem fator para {circuitos} circuitos agrupados");
+    }
 
     public DadoNormativo<decimal> QuedaDeTensaoMaximaPct(string aplicacao) =>
         PorChave(_queda, "queda_de_tensao_maxima_pct", aplicacao, $"sem limite para '{aplicacao}'");

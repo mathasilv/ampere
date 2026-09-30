@@ -17,7 +17,16 @@ public class PerfilNormativo_Teste
         await Assert.That(oficial.SecoesNominaisMm2().Disponivel).IsFalse();
         await Assert.That(oficial.SecoesNominaisMm2().Referencia).IsEqualTo("TODO_NORMA");
         await Assert.That(oficial.CapacidadeDeConducaoA("B1", "PVC", "Cobre", 2, 2.5m).Disponivel).IsFalse();
-        await Assert.That(oficial.QuedaDeTensaoMaximaPct("circuito_terminal").Referencia).IsEqualTo("TODO_NORMA");
+        // Pacote 1 preenchido a partir do texto oficial (data/DATA_GAPS.md): queda, temperatura, agrupamento e ocupação têm ref real.
+        var queda = oficial.QuedaDeTensaoMaximaPct("circuito_terminal");
+        await Assert.That(queda.Disponivel).IsTrue();
+        await Assert.That(queda.Valor).IsEqualTo(4m);
+        await Assert.That(queda.Referencia).Contains("6.2.7");
+        var temperatura = oficial.FatorDeTemperatura("PVC", 40m);
+        await Assert.That(temperatura.Valor).IsEqualTo(0.87m);
+        await Assert.That(oficial.FatorDeAgrupamento(3).Valor).IsEqualTo(0.70m);
+        await Assert.That(oficial.FatorDeAgrupamento(25).Valor).IsEqualTo(0.38m);
+        await Assert.That(oficial.OcupacaoMaximaDeEletrodutoPct(3).Valor).IsEqualTo(40m);
         await Assert.That(oficial.CorrentesNominaisDeIdrA().Referencia).IsEqualTo("TODO_NORMA");
         await Assert.That(oficial.ProtecaoDiferencialPorLocal().Disponivel).IsFalse();
         await Assert.That(oficial.ProtecaoDiferencialPorLocal().Ausencia).Contains("protecao_diferencial_por_local sem dados oficiais (TODO_NORMA)");
@@ -164,7 +173,8 @@ public class PerfilNormativo_Teste
     public async Task Regras_da_norma_tem_referencia_no_perfil()
     {
         await Assert.That(Ficticio.ReferenciaDaRegra(RegraNormativa.QuedaDeTensao)).IsEqualTo("FICTÍCIO: regra de queda");
-        await Assert.That(PerfilNormativo.NBR5410_2004.ReferenciaDaRegra(RegraNormativa.CoordenacaoCondutorProtecao)).IsEqualTo("TODO_NORMA");
+        await Assert.That(PerfilNormativo.NBR5410_2004.ReferenciaDaRegra(RegraNormativa.CoordenacaoCondutorProtecao)).Contains("5.3.4.1");
+        await Assert.That(PerfilNormativo.NBR5410_2004.ReferenciaDaRegra(RegraNormativa.CoordenacaoIdrDisjuntor)).IsEqualTo("TODO_NORMA");
         await Assert.That(Ficticio.ReferenciaDaRegra(RegraNormativa.CoordenacaoIdrDisjuntor)).IsEqualTo("FICTÍCIO: regra IDR x disjuntor");
     }
 

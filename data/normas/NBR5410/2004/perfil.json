@@ -1,33 +1,131 @@
 {
   "$meta": {
-    "fonte": "ABNT NBR 5410:2004 — texto oficial ainda não disponível no projeto (data/DATA_GAPS.md, GAP-003)",
+    "fonte": "ABNT NBR 5410:2004 Versão Corrigida 17.03.2008 (texto oficial transcrita; E:/NBR-5410.pdf)",
     "versao": "2004",
-    "data": "2026-09-29",
+    "data": "2026-09-30",
     "ficticio": false,
-    "situacao": "Esqueleto: toda tabela com ref TODO_NORMA e sem valores. Um valor só entra com o item da norma em 'ref' (AGENTS.md, regra 4); o carregador recusa valor sem fonte."
+    "situacao": "Pacote 1 preenchido (itens 5.3.4.1, 6.2.7.1/2, 6.2.11.1.6; Tabelas 40-ar e 42-feixe). Pendentes: Tabelas 36/37 (capacidade), 47 (seção mínima), 40-solo, fatores de demanda, IDR — ver data/DATA_GAPS.md."
   },
   "perfil": "NBR5410:2004",
   "regras": {
-    "corrente_de_projeto": "TODO_NORMA",
-    "coordenacao_condutor_protecao": "TODO_NORMA",
-    "queda_de_tensao": "TODO_NORMA",
+    "corrente_de_projeto": "NBR 5410:2004, item 5.3.4.1 (IB é a corrente de projeto do circuito; Iz ver 6.2.5)",
+    "coordenacao_condutor_protecao": "NBR 5410:2004, item 5.3.4.1 (IB <= In <= Iz e I2 <= 1,45 Iz)",
+    "queda_de_tensao": "NBR 5410:2004, itens 6.2.7.1 e 6.2.7.2",
     "condutores_no_eletroduto": "TODO_NORMA",
     "coordenacao_idr_disjuntor": "TODO_NORMA",
     "demanda_do_quadro": "TODO_NORMA"
   },
   "tabelas": {
-    "secoes_nominais_mm2": { "ref": "TODO_NORMA", "valores": [] },
-    "correntes_nominais_disjuntor_a": { "ref": "TODO_NORMA", "valores": [] },
-    "condutores_carregados": { "ref": "TODO_NORMA", "valores": {} },
-    "secao_minima_mm2": { "ref": "TODO_NORMA", "valores": {} },
-    "capacidade_de_conducao_a": { "ref": "TODO_NORMA", "valores": [] },
-    "fator_de_temperatura": { "ref": "TODO_NORMA", "valores": [] },
-    "fator_de_agrupamento": { "ref": "TODO_NORMA", "valores": {} },
-    "queda_de_tensao_maxima_pct": { "ref": "TODO_NORMA", "valores": {} },
-    "resistividade_ohm_mm2_por_m": { "ref": "TODO_NORMA", "valores": {} },
-    "ocupacao_maxima_eletroduto_pct": { "ref": "TODO_NORMA", "valores": {} },
-    "correntes_nominais_idr_a": { "ref": "TODO_NORMA", "valores": [] },
-    "protecao_diferencial_por_local": { "ref": "TODO_NORMA", "valores": [] },
-    "fator_de_demanda_por_tipo": { "ref": "TODO_NORMA", "valores": {} }
+    "secoes_nominais_mm2": {
+      "ref": "TODO_NORMA",
+      "valores": []
+    },
+    "correntes_nominais_disjuntor_a": {
+      "ref": "TODO_NORMA",
+      "valores": []
+    },
+    "condutores_carregados": {
+      "ref": "TODO_NORMA",
+      "valores": {}
+    },
+    "secao_minima_mm2": {
+      "ref": "TODO_NORMA",
+      "valores": {}
+    },
+    "capacidade_de_conducao_a": {
+      "ref": "TODO_NORMA",
+      "valores": []
+    },
+    "fator_de_temperatura": {
+      "ref": "NBR 5410:2004, Tabela 40 (ar; 30 C = 1,0 e a referencia)",
+      "valores": [
+        {
+          "isolacao": "PVC",
+          "por_temperatura_c": {
+            "10": 1.22,
+            "15": 1.17,
+            "20": 1.12,
+            "25": 1.06,
+            "30": 1.0,
+            "35": 0.94,
+            "40": 0.87,
+            "45": 0.79,
+            "50": 0.71,
+            "55": 0.61,
+            "60": 0.5
+          }
+        },
+        {
+          "isolacao": "EPR ou XLPE",
+          "por_temperatura_c": {
+            "10": 1.15,
+            "15": 1.12,
+            "20": 1.08,
+            "25": 1.04,
+            "30": 1.0,
+            "35": 0.96,
+            "40": 0.91,
+            "45": 0.87,
+            "50": 0.82,
+            "55": 0.76,
+            "60": 0.71,
+            "65": 0.65,
+            "70": 0.58,
+            "75": 0.5,
+            "80": 0.41
+          }
+        }
+      ]
+    },
+    "fator_de_agrupamento": {
+      "ref": "NBR 5410:2004, Tabela 42, linha 1 (em feixe); faixas por limite superior",
+      "valores": {
+        "1": 1.0,
+        "2": 0.8,
+        "3": 0.7,
+        "4": 0.65,
+        "5": 0.6,
+        "6": 0.57,
+        "7": 0.54,
+        "8": 0.52,
+        "12": 0.5,
+        "16": 0.45,
+        "19": 0.41,
+        "20": 0.38
+      }
+    },
+    "queda_de_tensao_maxima_pct": {
+      "ref": "NBR 5410:2004, itens 6.2.7.1 e 6.2.7.2",
+      "valores": {
+        "circuito_terminal": 4,
+        "ponto_de_entrega": 5,
+        "transformador_proprio": 7,
+        "gerador": 7
+      }
+    },
+    "resistividade_ohm_mm2_por_m": {
+      "ref": "TODO_NORMA",
+      "valores": {}
+    },
+    "ocupacao_maxima_eletroduto_pct": {
+      "ref": "NBR 5410:2004, item 6.2.11.1.6, alinea a",
+      "valores": {
+        "1": 53,
+        "2": 31,
+        "3": 40
+      }
+    },
+    "correntes_nominais_idr_a": {
+      "ref": "TODO_NORMA",
+      "valores": []
+    },
+    "protecao_diferencial_por_local": {
+      "ref": "TODO_NORMA",
+      "valores": []
+    },
+    "fator_de_demanda_por_tipo": {
+      "ref": "TODO_NORMA",
+      "valores": {}
+    }
   }
 }
