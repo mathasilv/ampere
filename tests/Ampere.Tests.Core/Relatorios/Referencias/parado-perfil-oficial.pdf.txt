@@ -2,11 +2,11 @@
 56,7 [Titulo 56,7] Memória de cálculo — circuito IL-01
 80,2 [Rotulo 56,7] Perfil normativo: [Texto 150,4] NBR5410:2004
 91,2 [Rotulo 56,7] Identificador (AMP_MemoriaCalculoId):
-102,3 [Codigo 56,7] sha256:6bbef6c0a277d6d9b1d57dcd581528fbaf38ba6bd684bb2473d5681ce01eb917
+102,3 [Codigo 56,7] sha256:9a681dc58b7db83a24f52b2a0b733d53cafaecc38de2287b09d41da9aeac4844
 112,8 [Rotulo 56,7] Esquema do documento: [Texto 191,8] 1
-123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo interrompido no passo 2 (Condutores carregados): tabela condutores_carregados
-134,9 [Texto 56,7] sem dados oficiais (TODO_NORMA)
-145,9 [Rotulo 56,7] Referências pendentes (TODO_NORMA ou TODO_CATALOGO): [Texto 387,4] 1 passo (2), sem fonte oficial
+123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo interrompido no passo 5 (Seção mínima): tabela secao_minima_mm2 sem dados
+134,9 [Texto 56,7] oficiais (TODO_NORMA)
+145,9 [Rotulo 56,7] Referências pendentes (TODO_NORMA ou TODO_CATALOGO): [Texto 387,4] 1 passo (5), sem fonte oficial
 165 [Nota 56,7] Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O
 174,9 [Nota 56,7] documento JSON da memória guarda os valores completos.
 194,8 [Secao 56,7] Passos
@@ -16,8 +16,23 @@
 253,1 [Rotulo 68,7] Valores: [Texto 115,8] S = 200 VA; V = 127 V
 264,1 [Rotulo 68,7] Resultado: [Texto 129,2] 1,5748 A
 283,2 [TituloDoPasso 56,7] 2. Condutores carregados
-297,4 [Rotulo 68,7] Referência: [Texto 133] TODO_NORMA
-308,5 [Rotulo 68,7] Expressão: [Codigo 132,7] n = condutores carregados (F+N)
-319,5 [Rotulo 68,7] Resultado: [Texto 129,2] não calculado
-330,6 [Rotulo 68,7] Observação: [Texto 138,3] tabela condutores_carregados sem dados oficiais (TODO_NORMA)
+297,4 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabelas 36-41 e 6.2.6.2 (neutro conta como carregado so com
+308,5 [Texto 68,7] harmonicas >15%; sem harmonicas, nao conta)
+319,5 [Rotulo 68,7] Expressão: [Codigo 132,7] n = condutores carregados (F+N)
+330,6 [Rotulo 68,7] Resultado: [Texto 129,2] 2 condutores
+349,7 [TituloDoPasso 56,7] 3. Fator de correção de temperatura
+363,9 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabela 40 (ar; 30 C = 1,0 e a referencia)
+374,9 [Rotulo 68,7] Expressão: [Codigo 132,7] FCT = tabela (PVC; 30 °C)
+386 [Rotulo 68,7] Valores: [Texto 115,8] θ = 30 °C
+397,1 [Rotulo 68,7] Resultado: [Texto 129,2] 1
+416,1 [TituloDoPasso 56,7] 4. Fator de correção de agrupamento
+430,3 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabela 42, linha 1 (em feixe); faixas por limite superior
+441,4 [Rotulo 68,7] Expressão: [Codigo 132,7] FCA = tabela (1 circuito)
+452,5 [Rotulo 68,7] Valores: [Texto 115,8] circuitos = 1
+463,5 [Rotulo 68,7] Resultado: [Texto 129,2] 1
+482,6 [TituloDoPasso 56,7] 5. Seção mínima
+496,8 [Rotulo 68,7] Referência: [Texto 133] TODO_NORMA
+507,9 [Rotulo 68,7] Expressão: [Codigo 132,7] Smín = tabela (Iluminacao)
+518,9 [Rotulo 68,7] Resultado: [Texto 129,2] não calculado
+530 [Rotulo 68,7] Observação: [Texto 138,3] tabela secao_minima_mm2 sem dados oficiais (TODO_NORMA)
 776 [Rodape 194,5] Memória de cálculo — circuito IL-01 · página 1 de 1

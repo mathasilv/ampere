@@ -14,9 +14,14 @@ public class PerfilNormativo_Teste
 
         await Assert.That(oficial.Nome).IsEqualTo("NBR5410:2004");
         await Assert.That(oficial.Ficticio).IsFalse();
-        await Assert.That(oficial.SecoesNominaisMm2().Disponivel).IsFalse();
-        await Assert.That(oficial.SecoesNominaisMm2().Referencia).IsEqualTo("TODO_NORMA");
-        await Assert.That(oficial.CapacidadeDeConducaoA("B1", "PVC", "Cobre", 2, 2.5m).Disponivel).IsFalse();
+        // Pacote 2 do texto oficial: capacidade (Tabelas 36/37), condutores carregados e seções com ref real.
+        await Assert.That(oficial.SecoesNominaisMm2().Valor!.Count).IsEqualTo(24);
+        var capacidadeB1 = oficial.CapacidadeDeConducaoA("B1", "PVC", "Cobre", 2, 2.5m);
+        await Assert.That(capacidadeB1.Disponivel).IsTrue();
+        await Assert.That(capacidadeB1.Valor).IsEqualTo(24m);
+        var condutoresCarregados = oficial.CondutoresCarregados("F+N");
+        await Assert.That(condutoresCarregados.Valor).IsEqualTo(2);
+        await Assert.That(oficial.CapacidadeDeConducaoA("B1", "EPR ou XLPE", "Cobre", 2, 1.5m).Valor).IsEqualTo(23m);
         // Pacote 1 preenchido a partir do texto oficial (data/DATA_GAPS.md): queda, temperatura, agrupamento e ocupação têm ref real.
         var queda = oficial.QuedaDeTensaoMaximaPct("circuito_terminal");
         await Assert.That(queda.Disponivel).IsTrue();

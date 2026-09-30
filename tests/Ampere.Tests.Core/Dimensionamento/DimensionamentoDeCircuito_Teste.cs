@@ -314,8 +314,8 @@ public class DimensionamentoDeCircuito_Teste
         var ultimo = resultado.Memoria!.Passos[^1];
         await Assert.That(ultimo.Resultado).IsNull();
         await Assert.That(ultimo.Referencia).IsEqualTo("TODO_NORMA");
-        await Assert.That(ultimo.Observacao).Contains("condutores_carregados sem dados oficiais (TODO_NORMA)");
-        await Assert.That(string.Join("\n", resultado.Problemas)).Contains("condutores_carregados sem dados oficiais (TODO_NORMA)");
+        await Assert.That(ultimo.Observacao).Contains("secao_minima_mm2 sem dados oficiais (TODO_NORMA)");
+        await Assert.That(string.Join("\n", resultado.Problemas)).Contains("secao_minima_mm2 sem dados oficiais (TODO_NORMA)");
     }
 
     [Test]
