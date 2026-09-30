@@ -59,8 +59,11 @@
       }
     },
     "secao_minima_mm2": {
-      "ref": "TODO_NORMA",
-      "valores": {}
+      "ref": "NBR 5410:2004, item 6.2.6.1.1 e Tabela 47 (instalacoes fixas, condutores e cabos isolados, cobre; aluminio 16 mm2)",
+      "valores": {
+        "Iluminacao": 1.5,
+        "Forca": 2.5
+      }
     },
     "capacidade_de_conducao_a": {
       "ref": "NBR 5410:2004, Tabelas 36 e 37 (A1 a D; transcrita do texto oficial por coordenadas, validada contra IEC 60364-5-52)",

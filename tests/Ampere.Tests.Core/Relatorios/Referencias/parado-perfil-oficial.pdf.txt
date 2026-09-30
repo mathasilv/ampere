@@ -2,11 +2,11 @@
 56,7 [Titulo 56,7] Memória de cálculo — circuito IL-01
 80,2 [Rotulo 56,7] Perfil normativo: [Texto 150,4] NBR5410:2004
 91,2 [Rotulo 56,7] Identificador (AMP_MemoriaCalculoId):
-102,3 [Codigo 56,7] sha256:9a681dc58b7db83a24f52b2a0b733d53cafaecc38de2287b09d41da9aeac4844
+102,3 [Codigo 56,7] sha256:50b656f4f41a94f596f7489a361df4d318e8a401d8a6720f8aa16f37c99c8b1a
 112,8 [Rotulo 56,7] Esquema do documento: [Texto 191,8] 1
-123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo interrompido no passo 5 (Seção mínima): tabela secao_minima_mm2 sem dados
-134,9 [Texto 56,7] oficiais (TODO_NORMA)
-145,9 [Rotulo 56,7] Referências pendentes (TODO_NORMA ou TODO_CATALOGO): [Texto 387,4] 1 passo (5), sem fonte oficial
+123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo interrompido no passo 7 (Correntes nominais de disjuntor): tabela
+134,9 [Texto 56,7] correntes_nominais_disjuntor_a sem dados oficiais (TODO_NORMA)
+145,9 [Rotulo 56,7] Referências pendentes (TODO_NORMA ou TODO_CATALOGO): [Texto 387,4] 1 passo (7), sem fonte oficial
 165 [Nota 56,7] Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O
 174,9 [Nota 56,7] documento JSON da memória guarda os valores completos.
 194,8 [Secao 56,7] Passos
@@ -31,8 +31,20 @@
 452,5 [Rotulo 68,7] Valores: [Texto 115,8] circuitos = 1
 463,5 [Rotulo 68,7] Resultado: [Texto 129,2] 1
 482,6 [TituloDoPasso 56,7] 5. Seção mínima
-496,8 [Rotulo 68,7] Referência: [Texto 133] TODO_NORMA
-507,9 [Rotulo 68,7] Expressão: [Codigo 132,7] Smín = tabela (Iluminacao)
-518,9 [Rotulo 68,7] Resultado: [Texto 129,2] não calculado
-530 [Rotulo 68,7] Observação: [Texto 138,3] tabela secao_minima_mm2 sem dados oficiais (TODO_NORMA)
+496,8 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.2.6.1.1 e Tabela 47 (instalacoes fixas, condutores e cabos
+507,9 [Texto 68,7] isolados, cobre; aluminio 16 mm2)
+518,9 [Rotulo 68,7] Expressão: [Codigo 132,7] Smín = tabela (Iluminacao)
+530 [Rotulo 68,7] Resultado: [Texto 129,2] 1,5 mm²
+549 [TituloDoPasso 56,7] 6. Seção pela capacidade de condução
+563,3 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabelas 36 e 37 (A1 a D; transcrita do texto oficial por
+574,3 [Texto 68,7] coordenadas, validada contra IEC 60364-5-52)
+585,4 [Rotulo 68,7] Expressão: [Codigo 132,7] menor S ≥ Smín com IZ₀(S) · FCA · FCT ≥ IB
+596,4 [Rotulo 68,7] Valores: [Texto 115,8] Smín = 1,5 mm²; IB = 1,5748 A; FCA = 1; FCT = 1
+607,5 [Rotulo 68,7] Resultado: [Texto 129,2] 1,5 mm²
+618,5 [Rotulo 68,7] Observação: [Texto 138,3] seções nominais: NBR 5410:2004, Tabelas 36-39 (serie de secoes listada)
+637,6 [TituloDoPasso 56,7] 7. Correntes nominais de disjuntor
+651,8 [Rotulo 68,7] Referência: [Texto 133] TODO_NORMA
+662,9 [Rotulo 68,7] Expressão: [Codigo 132,7] In ∈ correntes nominais
+673,9 [Rotulo 68,7] Resultado: [Texto 129,2] não calculado
+685 [Rotulo 68,7] Observação: [Texto 138,3] tabela correntes_nominais_disjuntor_a sem dados oficiais (TODO_NORMA)
 776 [Rodape 194,5] Memória de cálculo — circuito IL-01 · página 1 de 1
