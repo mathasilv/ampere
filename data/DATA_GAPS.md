@@ -68,6 +68,12 @@ Não são valores de norma, mas decisões de engenharia do `DimensionamentoDeCir
   projetista prevalece; a memória registra o que a tabela daria e o resultado traz um aviso quando divergem.
 - O IDR é calculado antes do eletroduto: um impedimento no IDR deixa o eletroduto sem cálculo.
 
+## Descoberto na preparação do comando "Dimensionar" (30/09/2026)
+
+- **Local do ponto não tem parâmetro AMP_***: o vocabulário de locais da tabela de IDR (5.1.3.2.2) não chega ao Revit — o dimensionamento no documento interromperia na exigência de IDR (motor já trata com explicação). Próximo passo: decidir GUID novo `AMP_Local` no catálogo versionado (regra dos GUIDs congelados) ou padrão de projeto em `CondicoesDoProjeto`.
+- `AMP_ComprimentoRotaM` também não é gravado por nenhum comando (necessário à queda de tensão): definir origem (desenho da fiação? digitado?) antes do comando.
+- Adapter `IDocumentoDeDimensionamento` (ler circuitos/gravar resultados em AMP_*) é o elo restante; contratos no Core prontos (`DadosDoCircuito`, `CondicoesDoProjeto`, `ResultadoDoCircuito`).
+
 ## Previstas (ainda sem código)
 
 - Referência do exemplo de memória da especificação §6.4 (`"ref": "6410.4.2.1.2"`): o formato não
