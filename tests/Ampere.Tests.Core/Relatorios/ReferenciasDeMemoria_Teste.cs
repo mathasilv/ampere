@@ -32,7 +32,7 @@ public class ReferenciasDeMemoria_Teste
     [Arguments("tug-simples")]
     [Arguments("tug-queda-e-idr")]
     [Arguments("trifasico-idr-dispensado")]
-    [Arguments("parado-perfil-oficial")]
+    [Arguments("perfil-oficial-completo")]
     [Arguments("parado-catalogo-vazio")]
     public async Task Memoria_e_relatorio_iguais_aos_de_referencia(string cenario)
     {
@@ -55,8 +55,8 @@ public class ReferenciasDeMemoria_Teste
         "trifasico-idr-dispensado" => DimensionamentoDeCircuito.Dimensionar(
             Entrada("TUE-01", TipoDeCarga.TUE, 6600m, "3F+N", 220m, 15m, ["LOCAL-MOLHADO"], DecisaoDeIdr.Dispensado("motivo de teste")),
             Ficticio, CatalogosDeTeste),
-        "parado-perfil-oficial" => DimensionamentoDeCircuito.Dimensionar(
-            Entrada("IL-01", TipoDeCarga.Iluminacao, 200m, "F+N", 127m, 8m, ["LOCAL-SECO"]), PerfilNormativo.NBR5410_2004, CatalogosDeTeste),
+        "perfil-oficial-completo" => DimensionamentoDeCircuito.Dimensionar(
+            Entrada("IL-01", TipoDeCarga.Iluminacao, 200m, "F+N", 127m, 8m, ["Demais locais internos"]), PerfilNormativo.NBR5410_2004, CatalogosDeTeste),
         "parado-catalogo-vazio" => DimensionamentoDeCircuito.Dimensionar(
             Entrada("TUG-03", TipoDeCarga.TUG, 1270m, "F+N", 127m, 10m, ["LOCAL-SECO"]), Ficticio, CatalogosDeProduto.Padrao),
         _ => throw new ArgumentOutOfRangeException(nameof(cenario), cenario, "cenário sem definição")

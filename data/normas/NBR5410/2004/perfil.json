@@ -1519,8 +1519,43 @@
       ]
     },
     "protecao_diferencial_por_local": {
-      "ref": "TODO_NORMA",
-      "valores": []
+      "ref": "NBR 5410:2004, item 5.1.3.2.2 (alineas a-e: DR In <= 30 mA; nota 1: tomadas ate 32 A; casos da secao 9 verificados em 9.1); locais nao listados nao exigem",
+      "valores": [
+        {
+          "local": "Local com banheira ou chuveiro",
+          "tipos_de_carga": [
+            "Iluminacao",
+            "TUG",
+            "TUE",
+            "ArCondicionado",
+            "Motor"
+          ],
+          "sensibilidade_maxima_ma": 30
+        },
+        {
+          "local": "Area externa",
+          "tipos_de_carga": [
+            "TUG"
+          ],
+          "sensibilidade_maxima_ma": 30
+        },
+        {
+          "local": "Cozinha, lavanderia, area de servico ou garagem",
+          "tipos_de_carga": [
+            "Iluminacao",
+            "TUG",
+            "TUE",
+            "ArCondicionado",
+            "Motor"
+          ],
+          "sensibilidade_maxima_ma": 30
+        },
+        {
+          "local": "Demais locais internos",
+          "tipos_de_carga": [],
+          "sensibilidade_maxima_ma": null
+        }
+      ]
     },
     "fator_de_demanda_por_tipo": {
       "ref": "TODO_NORMA",

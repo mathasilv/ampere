@@ -1,10 +1,10 @@
 # Memória de cálculo — circuito IL-01
 
 - **Perfil normativo:** NBR5410:2004
-- **Identificador (AMP_MemoriaCalculoId):** `sha256:035a59237237820a8afd2c4552479fd8e1d134fe458a54d56b57176351317063`
+- **Identificador (AMP_MemoriaCalculoId):** `sha256:40a4343b50db3437472a33ff61f4dc7ed2bfd94c44c45a8e14c085f121597d23`
 - **Esquema do documento:** 1
-- **Situação:** cálculo interrompido no passo 12 (Exigência de IDR): tabela protecao_diferencial_por_local sem dados oficiais (TODO_NORMA)
-- **Referências pendentes (TODO_NORMA ou TODO_CATALOGO):** 1 passo (12), sem fonte oficial
+- **Situação:** cálculo completo (17 passos)
+- **Referências pendentes (TODO_NORMA ou TODO_CATALOGO):** 1 passo (13), sem fonte oficial
 
 > Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O documento JSON da memória guarda os valores completos.
 
@@ -88,7 +88,43 @@
 
 ### 12. Exigência de IDR
 
-- **Referência:** TODO_NORMA
+- **Referência:** NBR 5410:2004, item 5.1.3.2.2 (alineas a-e: DR In \<= 30 mA; nota 1: tomadas ate 32 A; casos da secao 9 verificados em 9.1); locais nao listados nao exigem
 - **Expressão:** `n = pontos em locais que exigem IDR para Iluminação`
-- **Resultado:** não calculado
-- **Observação:** tabela protecao_diferencial_por_local sem dados oficiais (TODO_NORMA)
+- **Valores:** total = 1 ponto
+- **Resultado:** 0 pontos
+- **Observação:** Demais locais internos (1 ponto): não exige
+
+### 13. Condutores no eletroduto
+
+- **Referência:** TODO_NORMA
+- **Expressão:** `n = F + N + PE`
+- **Resultado:** 3 condutores
+- **Observação:** neutro e proteção com o diâmetro da fase (conservador para a ocupação)
+
+### 14. Diâmetro externo do condutor
+
+- **Referência:** FICTÍCIO: catálogo de condutores
+- **Expressão:** `d = catálogo (FIO-TESTE; 1,5 mm²)`
+- **Resultado:** 3 mm
+
+### 15. Taxa máxima de ocupação
+
+- **Referência:** NBR 5410:2004, item 6.2.11.1.6, alinea a
+- **Expressão:** `taxa = tabela (3 condutores)`
+- **Resultado:** 40%
+
+### 16. Eletroduto adotado
+
+- **Referência:** FICTÍCIO: catálogo de eletrodutos
+- **Expressão:** `menor Di com n · d² / Di² · 100 ≤ taxa`
+- **Valores:** n = 3 condutores; d = 3 mm; taxa = 40%
+- **Resultado:** 10 mm
+- **Observação:** tamanho nominal A (ELETRODUTO-TESTE)
+
+### 17. Ocupação do eletroduto
+
+- **Referência:** NBR 5410:2004, item 6.2.11.1.6, alinea a
+- **Expressão:** `ocupação = n · d² / Di² · 100`
+- **Valores:** n = 3 condutores; d = 3 mm; Di = 10 mm
+- **Resultado:** 27%
+- **Observação:** só os condutores deste circuito: outros circuitos na mesma tubulação não entram

@@ -33,8 +33,8 @@ public class PerfilNormativo_Teste
         await Assert.That(oficial.FatorDeAgrupamento(25).Valor).IsEqualTo(0.38m);
         await Assert.That(oficial.OcupacaoMaximaDeEletrodutoPct(3).Valor).IsEqualTo(40m);
         await Assert.That(oficial.CorrentesNominaisDeIdrA().Valor!.Count).IsEqualTo(5);
-        await Assert.That(oficial.ProtecaoDiferencialPorLocal().Disponivel).IsFalse();
-        await Assert.That(oficial.ProtecaoDiferencialPorLocal().Ausencia).Contains("protecao_diferencial_por_local sem dados oficiais (TODO_NORMA)");
+        await Assert.That(oficial.ProtecaoDiferencialPorLocal().Valor!.Count).IsEqualTo(4);
+        await Assert.That(oficial.ProtecaoDiferencialPorLocal().Valor!["Local com banheira ou chuveiro"].SensibilidadeMaximaMa).IsEqualTo(30m);
     }
 
     [Test]

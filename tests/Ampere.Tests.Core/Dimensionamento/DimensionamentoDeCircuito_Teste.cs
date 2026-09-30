@@ -303,19 +303,16 @@ public class DimensionamentoDeCircuito_Teste
     }
 
     [Test]
-    public async Task Perfil_oficial_calcula_IB_e_para_na_primeira_tabela_sem_dados()
+    public async Task Perfil_oficial_dimensiona_o_circuito_completo()
     {
-        var resultado = DimensionamentoDeCircuito.Dimensionar(Entrada(), PerfilNormativo.NBR5410_2004, CatalogosFicticiosCarregados);
+        var resultado = DimensionamentoDeCircuito.Dimensionar(
+            Entrada(locais: ["Demais locais internos"]), PerfilNormativo.NBR5410_2004, CatalogosFicticiosCarregados);
 
-        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
         await Assert.That(resultado.CorrenteDeProjetoA).IsEqualTo(10m);
         await Assert.That(resultado.SecaoMm2).IsEqualTo(2.5m);
-
-        var ultimo = resultado.Memoria!.Passos[^1];
-        await Assert.That(ultimo.Resultado).IsNull();
-        await Assert.That(ultimo.Referencia).IsEqualTo("TODO_NORMA");
-        await Assert.That(ultimo.Observacao).Contains("protecao_diferencial_por_local sem dados oficiais (TODO_NORMA)");
-        await Assert.That(string.Join("\n", resultado.Problemas)).Contains("protecao_diferencial_por_local sem dados oficiais (TODO_NORMA)");
+        await Assert.That(resultado.DisjuntorA).IsEqualTo(10m);
+        await Assert.That(resultado.Problemas).IsEmpty();
     }
 
     [Test]
