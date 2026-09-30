@@ -1,0 +1,48 @@
+== página 1 de 1
+56,7 [Titulo 56,7] Memória de cálculo — quadro QD-03
+80,2 [Rotulo 56,7] Perfil normativo: [Texto 150,4] FICTICIO-TESTE
+91,2 [Rotulo 56,7] Identificador (AMP_MemoriaCalculoId):
+102,3 [Codigo 56,7] sha256:e3e98a9683e6858c22008ed2a7abc5b67c560aa2987ef7372549169c03edcc32
+112,8 [Rotulo 56,7] Esquema do documento: [Texto 191,8] 1
+123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo interrompido no passo 5 (Corrente de demanda do quadro): esquema '2F+N':
+134,9 [Texto 56,7] corrente não calculada
+145,9 [Rotulo 56,7] Atenção: [Texto 107,2] perfil fictício, só para testes
+165 [Nota 56,7] Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O
+174,9 [Nota 56,7] documento JSON da memória guarda os valores completos.
+202,8 [TituloDoPasso 56,7] Circuitos do quadro
+217 [Rotulo 68,7] IL-01 (Iluminação): [Texto 172,7] instalada 600 VA · fd 0,8 · demanda 480 VA
+228,1 [Rotulo 68,7] IL-02 (Iluminação): [Texto 172,7] instalada 400 VA · fd 0,8 · demanda 320 VA
+239,1 [Rotulo 68,7] TUG-01 (TUG): [Texto 148,7] instalada 1000 VA · fd 0,5 · demanda 500 VA
+250,2 [Rotulo 68,7] TUE-01 (TUE): [Texto 146] instalada 2000 VA · fd 1 · demanda 2000 VA
+261,2 [Rotulo 68,7] Total do quadro: [Texto 160,7] instalada 4000 VA · demanda 3300 VA · corrente não calculada
+280,3 [TituloDoPasso 56,7] Pendências
+294,5 [Rotulo 68,7] Aviso: [Texto 104,5] esquema desconhecido '2F+N' (use F+N, 2F, 3F ou 3F+N)
+305,6 [Rotulo 68,7] Aviso: [Texto 104,5] corrente de demanda não calculada (esquema '2F+N')
+316,6 [Secao 56,7] Passos
+338,6 [TituloDoPasso 56,7] 1. Demanda do tipo Iluminação
+352,8 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: fatores de demanda
+363,9 [Rotulo 68,7] Expressão: [Codigo 132,7] D = ΣPI × fd
+374,9 [Rotulo 68,7] Valores: [Texto 115,8] PI_Iluminacao = 1000 VA; fd = 0,8
+386 [Rotulo 68,7] Resultado: [Texto 129,2] 800 VA
+405,1 [TituloDoPasso 56,7] 2. Demanda do tipo TUG
+419,3 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: fatores de demanda
+430,3 [Rotulo 68,7] Expressão: [Codigo 132,7] D = ΣPI × fd
+441,4 [Rotulo 68,7] Valores: [Texto 115,8] PI_TUG = 1000 VA; fd = 0,5
+452,5 [Rotulo 68,7] Resultado: [Texto 129,2] 500 VA
+471,5 [TituloDoPasso 56,7] 3. Demanda do tipo TUE
+485,7 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: fatores de demanda
+496,8 [Rotulo 68,7] Expressão: [Codigo 132,7] D = ΣPI × fd
+507,9 [Rotulo 68,7] Valores: [Texto 115,8] PI_TUE = 2000 VA; fd = 1
+518,9 [Rotulo 68,7] Resultado: [Texto 129,2] 2000 VA
+538 [TituloDoPasso 56,7] 4. Demanda total do quadro
+552,2 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra de demanda do quadro
+563,3 [Rotulo 68,7] Expressão: [Codigo 132,7] D_total = Σ D_tipo
+574,3 [Rotulo 68,7] Valores: [Texto 115,8] D_Iluminacao = 800 VA; D_TUG = 500 VA; D_TUE = 2000 VA
+585,4 [Rotulo 68,7] Resultado: [Texto 129,2] 3300 VA
+604,4 [TituloDoPasso 56,7] 5. Corrente de demanda do quadro
+618,7 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra da corrente de projeto
+629,7 [Rotulo 68,7] Expressão: [Codigo 132,7] I = D_total / V
+640,8 [Rotulo 68,7] Valores: [Texto 115,8] D_total = 3300 VA
+651,8 [Rotulo 68,7] Resultado: [Texto 129,2] não calculado
+662,9 [Rotulo 68,7] Observação: [Texto 138,3] esquema '2F+N': corrente não calculada
+776 [Rodape 192,4] Memória de cálculo — quadro QD-03 · página 1 de 1

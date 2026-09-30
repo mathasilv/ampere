@@ -64,9 +64,17 @@ internal sealed class DiagramacaoDoRelatorio(IMedidorDeTexto medidor, Folha folh
         Espaco(8);
         Paragrafo([(conteudo.Nota, EstiloDeTexto.Nota)], 0);
         Espaco(10);
+        Secao(conteudo.Abertura);
         Paragrafo([("Passos", EstiloDeTexto.Secao)], 0);
+        Secao(conteudo.Passos);
 
-        foreach (var passo in conteudo.Passos)
+        var total = _paginas.Count;
+        return _paginas.Select((linhas, indice) => new PaginaDiagramada(linhas, Rodape(conteudo.Titulo, indice + 1, total))).ToList();
+    }
+
+    private void Secao(IEnumerable<SecaoDePasso> secoes)
+    {
+        foreach (var passo in secoes)
         {
             Espaco(8);
             var titulo = Quebrar([(passo.Titulo, EstiloDeTexto.TituloDoPasso)], folha.Margem, folha.LarguraUtil);
@@ -78,9 +86,6 @@ internal sealed class DiagramacaoDoRelatorio(IMedidorDeTexto medidor, Folha folh
             Espaco(2);
             foreach (var campo in campos) Colocar(campo);
         }
-
-        var total = _paginas.Count;
-        return _paginas.Select((linhas, indice) => new PaginaDiagramada(linhas, Rodape(conteudo.Titulo, indice + 1, total))).ToList();
     }
 
     private static List<(string Texto, EstiloDeTexto Estilo)> Trechos(Campo campo) =>

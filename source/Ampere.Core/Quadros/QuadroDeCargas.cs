@@ -142,9 +142,9 @@ public static class QuadroDeCargas
         {
             passos.AddRange(subtotais.Select(subtotal => new PassoDeCalculo(
                 subtotal.FonteDoFator,
-                $"Demanda do tipo {subtotal.Tipo}",
+                $"Demanda do tipo {CodigosDeTipoDeCarga.Codigo(subtotal.Tipo)}",
                 "D = ΣPI × fd",
-                [new ValorDoPasso($"PI_{subtotal.Tipo}", subtotal.PotenciaInstaladaVA, "VA"), new ValorDoPasso("fd", subtotal.Fator, "-")],
+                [new ValorDoPasso($"PI_{subtotal.Tipo}", subtotal.PotenciaInstaladaVA, "VA"), new ValorDoPasso("fd", subtotal.Fator, string.Empty)],
                 subtotal.DemandaVA,
                 "VA")));
             passos.Add(new PassoDeCalculo(

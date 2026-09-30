@@ -133,7 +133,7 @@ public class DiagramacaoDoRelatorio_Teste
 
     private static IEnumerable<LinhaDiagramada> Linhas(IReadOnlyList<PaginaDiagramada> paginas) => paginas.SelectMany(pagina => pagina.Linhas);
 
-    private static ConteudoDoRelatorio Conteudo(params SecaoDePasso[] passos) => new("Relatório de teste", [], "nota", passos);
+    private static ConteudoDoRelatorio Conteudo(params SecaoDePasso[] passos) => new("Relatório de teste", [], "nota", [], passos);
 
     private static SecaoDePasso Passo(string titulo, params Campo[] campos) => new(titulo, campos);
 

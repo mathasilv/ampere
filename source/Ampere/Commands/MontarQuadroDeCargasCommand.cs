@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Windows.Interop;
 using Ampere.Core.Normas;
 using Ampere.Core.Quadros;
@@ -52,9 +53,10 @@ public class MontarQuadroDeCargasCommand : ExternalCommand
 
         var cronometro = Stopwatch.StartNew();
         var resultados = QuadroDeCargasDoProjeto.Executar(porta, PerfilNormativo.NBR5410_2004, fatores);
+        var (pasta, gerados, errosDeDisco) = RelatoriosDosQuadros.Gravar(resultados, Path.GetFileNameWithoutExtension(documento.PathName));
         cronometro.Stop();
 
-        TaskDialog.Show(TituloDaJanela, ResumoDeQuadros.Montagem(resultados, PerfilNormativo.NBR5410_2004, cronometro.Elapsed));
+        TaskDialog.Show(TituloDaJanela, ResumoDeQuadros.Montagem(resultados, PerfilNormativo.NBR5410_2004, cronometro.Elapsed, pasta, gerados, errosDeDisco));
     }
 
     private void Cancelar(string mensagem)

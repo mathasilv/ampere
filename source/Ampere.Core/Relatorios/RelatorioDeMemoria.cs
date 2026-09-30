@@ -1,5 +1,6 @@
 using System.Text;
 using Ampere.Core.Memoria;
+using Ampere.Core.Quadros;
 using Ampere.Core.Relatorios.Pdf;
 
 namespace Ampere.Core.Relatorios;
@@ -23,9 +24,15 @@ public static class RelatorioDeMemoria
     /// <param name="identificadorGravado">
     ///     AMP_MemoriaCalculoId lido do elemento, se houver: o relatório avisa quando não confere com esta memória.
     /// </param>
-    public static string Markdown(MemoriaDeCalculo memoria, string? identificadorGravado = null)
+    public static string Markdown(MemoriaDeCalculo memoria, string? identificadorGravado = null) =>
+        Renderizar(ConteudoDoRelatorio.De(memoria, identificadorGravado));
+
+    /// <summary>O relatório do quadro de cargas: circuitos e totais antes dos passos da memória.</summary>
+    /// <exception cref="InvalidOperationException">Quadro incompleto (sem memória) não gera relatório.</exception>
+    public static string MarkdownDoQuadro(ResultadoDoQuadroDeCargas quadro) => Renderizar(ConteudoDoRelatorio.DeQuadro(quadro));
+
+    private static string Renderizar(ConteudoDoRelatorio conteudo)
     {
-        var conteudo = ConteudoDoRelatorio.De(memoria, identificadorGravado);
         var texto = new StringBuilder();
         void Linha(string linha = "") => texto.Append(linha).Append('\n');
         void Campo(Campo campo) => Linha($"- **{Escapar(campo.Rotulo)}:** {(campo.EhCodigo ? Codigo(campo.Texto) : Escapar(campo.Texto))}");
@@ -36,6 +43,14 @@ public static class RelatorioDeMemoria
         Linha();
         Linha($"> {Escapar(conteudo.Nota)}");
         Linha();
+        foreach (var secao in conteudo.Abertura)
+        {
+            Linha($"## {Escapar(secao.Titulo)}");
+            Linha();
+            foreach (var campo in secao.Campos) Campo(campo);
+            Linha();
+        }
+
         Linha("## Passos");
         foreach (var passo in conteudo.Passos)
         {
@@ -55,6 +70,11 @@ public static class RelatorioDeMemoria
     /// <exception cref="InvalidOperationException">Outro componente do processo já registrou um resolvedor de fontes do PDFsharp.</exception>
     public static byte[] Pdf(MemoriaDeCalculo memoria, string? identificadorGravado = null) =>
         PdfDoRelatorio.Gerar(ConteudoDoRelatorio.De(memoria, identificadorGravado), memoria.Hash());
+
+    /// <summary>O quadro de cargas em PDF, com o identificador da memória como Assunto.</summary>
+    /// <exception cref="InvalidOperationException">Quadro incompleto (sem memória) não gera relatório.</exception>
+    public static byte[] PdfDoQuadro(ResultadoDoQuadroDeCargas quadro) =>
+        PdfDoRelatorio.Gerar(ConteudoDoRelatorio.DeQuadro(quadro), quadro.Memoria!.Hash());
 
     // Barra invertida antes de todo caractere que o Markdown pode interpretar. O sublinhado entre letras ou dígitos
     // (TODO_NORMA, AMP_TipoCarga) não abre ênfase e fica como está, para o texto continuar pesquisável.

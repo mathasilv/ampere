@@ -1,6 +1,8 @@
+using Ampere.Core.Cargas;
 using Ampere.Core.Catalogos;
 using Ampere.Core.Memoria;
 using Ampere.Core.Normas;
+using Ampere.Core.Quadros;
 
 namespace Ampere.Core.Relatorios;
 
@@ -14,7 +16,12 @@ internal sealed record SecaoDePasso(string Titulo, IReadOnlyList<Campo> Campos);
 ///     O que o relatório diz, sem formato: o Markdown e o PDF desenham o mesmo conteúdo. Os textos são simples (sem
 ///     marcação); cada formato escapa ou mede o que precisar.
 /// </summary>
-internal sealed record ConteudoDoRelatorio(string Titulo, IReadOnlyList<Campo> Cabecalho, string Nota, IReadOnlyList<SecaoDePasso> Passos)
+internal sealed record ConteudoDoRelatorio(
+    string Titulo,
+    IReadOnlyList<Campo> Cabecalho,
+    string Nota,
+    IReadOnlyList<SecaoDePasso> Abertura,
+    IReadOnlyList<SecaoDePasso> Passos)
 {
     private const string NotaDeArredondamento =
         "Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). " +
@@ -27,7 +34,24 @@ internal sealed record ConteudoDoRelatorio(string Titulo, IReadOnlyList<Campo> C
         ["pontos"] = "ponto"
     };
 
-    public static ConteudoDoRelatorio De(MemoriaDeCalculo memoria, string? identificadorGravado)
+    public static ConteudoDoRelatorio De(MemoriaDeCalculo memoria, string? identificadorGravado) =>
+        Montar(memoria, identificadorGravado, $"Memória de cálculo — circuito {memoria.Circuito}", []);
+
+    /// <summary>Relatório do quadro de cargas: os circuitos e os totais antes dos passos da memória.</summary>
+    /// <exception cref="InvalidOperationException">Quadro incompleto (sem memória) não gera relatório.</exception>
+    public static ConteudoDoRelatorio DeQuadro(ResultadoDoQuadroDeCargas quadro)
+    {
+        if (quadro.Memoria is not { } memoria)
+            throw new InvalidOperationException($"O quadro {quadro.Nome} está incompleto (sem fator para algum tipo): relatório só de quadro montado.");
+
+        var campos = quadro.Linhas.Select(LinhaDoQuadro).Append(new Campo("Total do quadro", TotalDoQuadro(quadro))).ToList();
+        var abertura = new List<SecaoDePasso> { new("Circuitos do quadro", campos) };
+        if (quadro.Problemas.Count > 0)
+            abertura.Add(new SecaoDePasso("Pendências", quadro.Problemas.Select(problema => new Campo("Aviso", problema)).ToList()));
+        return Montar(memoria, null, $"Memória de cálculo — quadro {quadro.Nome}", abertura);
+    }
+
+    private static ConteudoDoRelatorio Montar(MemoriaDeCalculo memoria, string? identificadorGravado, string titulo, IReadOnlyList<SecaoDePasso> abertura)
     {
         var identificador = memoria.Hash();
         var cabecalho = new List<Campo>
@@ -55,7 +79,20 @@ internal sealed record ConteudoDoRelatorio(string Titulo, IReadOnlyList<Campo> C
             cabecalho.Add(new Campo("Atenção", $"o identificador gravado no elemento ({identificadorGravado.Trim()}) não confere com esta memória"));
 
         var passos = memoria.Passos.Select((passo, indice) => new SecaoDePasso($"{indice + 1}. {passo.Descricao}", Campos(passo))).ToList();
-        return new ConteudoDoRelatorio($"Memória de cálculo — circuito {memoria.Circuito}", cabecalho, NotaDeArredondamento, passos);
+        return new ConteudoDoRelatorio(titulo, cabecalho, NotaDeArredondamento, abertura, passos);
+    }
+
+    private static Campo LinhaDoQuadro(LinhaDoQuadroDeCargas linha) =>
+        new($"{linha.Numero} ({CodigosDeTipoDeCarga.Codigo(linha.Tipo)})", linha.DemandaVA is { } demanda
+            ? $"instalada {Quantidade(linha.PotenciaInstaladaVA, "VA")} · fd {Quantidade(linha.Fator!.Value, string.Empty)} · demanda {Quantidade(demanda, "VA")}"
+            : $"instalada {Quantidade(linha.PotenciaInstaladaVA, "VA")} · sem fator");
+
+    private static string TotalDoQuadro(ResultadoDoQuadroDeCargas quadro)
+    {
+        var texto = $"instalada {Quantidade(quadro.PotenciaInstaladaVA, "VA")}";
+        texto += quadro.DemandaVA is { } demanda ? $" · demanda {Quantidade(demanda, "VA")}" : " · demanda incompleta";
+        texto += quadro.CorrenteDeDemandaA is { } corrente ? $" · corrente {Quantidade(corrente, "A")}" : " · corrente não calculada";
+        return texto;
     }
 
     private static List<Campo> Campos(PassoDeCalculo passo)

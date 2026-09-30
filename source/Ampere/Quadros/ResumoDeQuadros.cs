@@ -10,7 +10,9 @@ internal static class ResumoDeQuadros
 {
     private const int MaximoDeLinhas = 8;
 
-    public static string Montagem(IReadOnlyList<ResultadoDoQuadro> resultados, PerfilNormativo perfil, TimeSpan tempo)
+    public static string Montagem(
+        IReadOnlyList<ResultadoDoQuadro> resultados, PerfilNormativo perfil, TimeSpan tempo,
+        string? pastaDosRelatorios = null, int relatoriosGerados = 0, IReadOnlyList<string>? errosDeGravacao = null)
     {
         var texto = new StringBuilder();
         if (resultados.Count == 0)
@@ -45,6 +47,20 @@ internal static class ResumoDeQuadros
             foreach (var grupo in problemas.GroupBy(problema => problema.Problema).OrderByDescending(grupo => grupo.Count()).Take(MaximoDeLinhas))
                 texto.AppendLine($"• {grupo.Key} ({grupo.Count()})");
             if (problemas.GroupBy(problema => problema.Problema).Count() > MaximoDeLinhas) texto.AppendLine($"• … e mais");
+        }
+
+        if (pastaDosRelatorios is { Length: > 0 })
+        {
+            texto.AppendLine();
+            texto.AppendLine($"Relatórios gravados: {relatoriosGerados}");
+            texto.AppendLine(pastaDosRelatorios);
+        }
+
+        if (errosDeGravacao is { Count: > 0 })
+        {
+            texto.AppendLine();
+            texto.AppendLine("Erros de gravação:");
+            foreach (var erro in errosDeGravacao.Take(MaximoDeLinhas)) texto.AppendLine($"• {erro}");
         }
 
         if (!string.IsNullOrEmpty(perfil.Nome)) texto.AppendLine().Append($"Perfil: {perfil.Nome}");
