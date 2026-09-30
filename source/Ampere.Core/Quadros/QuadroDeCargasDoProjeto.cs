@@ -31,6 +31,9 @@ public interface IDocumentoDeQuadros : IDocumentoTransacional
 
     /// <summary>Grava potência, fator e hash da memória nos circuitos; qualquer falha aborta a transação inteira.</summary>
     void GravarLinhas(IReadOnlyList<LinhaParaGravar> linhas);
+
+    /// <summary>Cria (substituindo se já existir) a tabela do quadro de cargas; devolve o nome da view criada.</summary>
+    string CriarTabelaDoQuadro(string nomeDoQuadro);
 }
 
 /// <summary>
@@ -119,5 +122,17 @@ public static class QuadroDeCargasDoProjeto
             .ToList();
         if (linhas.Count > 0) documento.EmUmaTransacao(NomeDaTransacao, () => documento.GravarLinhas(linhas));
         return linhas.Count;
+    }
+
+    /// <summary>
+    ///     Cria a tabela de cada quadro numa única transação: os circuitos com os AMP_* gravados, como view nativa do
+    ///     Revit (aparece no navegador de projeto, pode ir para prancha). Tabela já existente é recriada — o comando é
+    ///     idempotente.
+    /// </summary>
+    public static IReadOnlyList<string> CriarTabelas(IReadOnlyList<ResultadoDoQuadro> resultados, IDocumentoDeQuadros documento)
+    {
+        var nomes = new List<string>();
+        documento.EmUmaTransacao(NomeDaTransacao, () => nomes.AddRange(resultados.Select(resultado => documento.CriarTabelaDoQuadro(resultado.Nome))));
+        return nomes;
     }
 }

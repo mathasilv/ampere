@@ -107,6 +107,31 @@ public sealed class QuadroDeCargasNoRevit_Teste : TesteComProjetoEletrico
         await Assert.That(problemas).IsEmpty();
     }
 
+    [Test]
+    public async Task Cria_a_tabela_do_quadro_com_campos_filtro_e_ordenacao()
+    {
+        MontarQuadroComDoisCircuitos();
+        var porta = new DocumentoDeQuadrosRevit(Cenario.Documento);
+        var resultados = QuadroDeCargasDoProjeto.Executar(porta, PerfilNormativo.NBR5410_2004,
+            new Dictionary<TipoDeCarga, decimal> { [TipoDeCarga.Iluminacao] = 1m, [TipoDeCarga.TUG] = 0.5m });
+        QuadroDeCargasDoProjeto.Gravar(resultados, porta);
+
+        var nomes = QuadroDeCargasDoProjeto.CriarTabelas(resultados, porta);
+        var segunda = QuadroDeCargasDoProjeto.CriarTabelas(resultados, porta); // idempotente
+
+        await Assert.That(string.Join("|", nomes)).IsEqualTo("QD1 — quadro de cargas (Ampere)");
+        await Assert.That(segunda[0]).IsEqualTo(nomes[0]);
+        var tabela = new FilteredElementCollector(Cenario.Documento).OfClass(typeof(ViewSchedule)).Cast<ViewSchedule>()
+            .Single(view => view.Name == nomes[0]);
+        await Assert.That(tabela.Definition.CategoryId).IsEqualTo(new ElementId(BuiltInCategory.OST_ElectricalCircuit));
+        await Assert.That(tabela.Definition.GetFieldCount()).IsEqualTo(6);
+        await Assert.That(string.Join(",", Enumerable.Range(0, tabela.Definition.GetFieldCount())
+            .Select(indice => tabela.Definition.GetField(indice).ColumnHeading))).IsEqualTo(
+            "Nº,Tipo de carga,Potência instalada (VA),Fator de demanda,Memória de cálculo,Quadro");
+        await Assert.That(tabela.Definition.GetSortGroupFields().Count).IsEqualTo(1);
+        await Assert.That(tabela.Definition.GetFilters().Count).IsEqualTo(1);
+    }
+
     /// <summary>QD1 com IL-01 (3 × 62 VA) e TUG-01 (4 × 180 VA), classificados com F+N 127 V.</summary>
     private void MontarQuadroComDoisCircuitos()
     {

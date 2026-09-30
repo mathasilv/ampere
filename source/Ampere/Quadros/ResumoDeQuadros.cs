@@ -13,7 +13,7 @@ internal static class ResumoDeQuadros
     public static string Montagem(
         IReadOnlyList<ResultadoDoQuadro> resultados, PerfilNormativo perfil, TimeSpan tempo,
         string? pastaDosRelatorios = null, int relatoriosGerados = 0, IReadOnlyList<string>? errosDeGravacao = null,
-        int circuitosAtualizados = 0)
+        int circuitosAtualizados = 0, IReadOnlyList<string>? tabelasCriadas = null)
     {
         var texto = new StringBuilder();
         if (resultados.Count == 0)
@@ -51,6 +51,13 @@ internal static class ResumoDeQuadros
         }
 
         if (circuitosAtualizados > 0) texto.AppendLine($"Circuitos atualizados: {circuitosAtualizados} (um único desfazer)").AppendLine();
+
+        if (tabelasCriadas is { Count: > 0 })
+        {
+            texto.AppendLine($"Tabelas criadas (navegador de projeto): {tabelasCriadas.Count}");
+            foreach (var nome in tabelasCriadas) texto.AppendLine(nome);
+            texto.AppendLine();
+        }
 
         if (pastaDosRelatorios is { Length: > 0 })
         {

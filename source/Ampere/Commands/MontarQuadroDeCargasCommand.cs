@@ -64,11 +64,12 @@ public class MontarQuadroDeCargasCommand : ExternalCommand
             return;
         }
 
+        var tabelas = QuadroDeCargasDoProjeto.CriarTabelas(resultados, porta);
         var (pasta, gerados, errosDeDisco) = RelatoriosDosQuadros.Gravar(resultados, Path.GetFileNameWithoutExtension(documento.PathName));
         cronometro.Stop();
 
         TaskDialog.Show(TituloDaJanela, ResumoDeQuadros.Montagem(
-            resultados, PerfilNormativo.NBR5410_2004, cronometro.Elapsed, pasta, gerados, errosDeDisco, circuitosAtualizados));
+            resultados, PerfilNormativo.NBR5410_2004, cronometro.Elapsed, pasta, gerados, errosDeDisco, circuitosAtualizados, tabelas));
     }
 
     private void Cancelar(string mensagem)

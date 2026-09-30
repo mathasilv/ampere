@@ -40,6 +40,43 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
         }
     }
 
+    public string CriarTabelaDoQuadro(string nomeDoQuadro)
+    {
+        var nome = $"{nomeDoQuadro} — quadro de cargas (Ampere)";
+        foreach (var existente in new FilteredElementCollector(documento).OfClass(typeof(ViewSchedule)).Cast<ViewSchedule>()
+                     .Where(tabela => tabela.Name == nome).ToList())
+            documento.Delete(existente.Id);
+
+        var tabela = ViewSchedule.CreateSchedule(documento, new ElementId(BuiltInCategory.OST_ElectricalCircuit));
+        tabela.Name = nome;
+        var definicao = tabela.Definition;
+
+        var campo = Campo(definicao, ParametrosAmpere.NumeroCircuito, "Nº");
+        definicao.AddSortGroupField(new ScheduleSortGroupField(campo.FieldId, ScheduleSortOrder.Ascending));
+        Campo(definicao, ParametrosAmpere.TipoCarga, "Tipo de carga");
+        Campo(definicao, ParametrosAmpere.PotenciaInstaladaVA, "Potência instalada (VA)");
+        Campo(definicao, ParametrosAmpere.FatorDemanda, "Fator de demanda");
+        Campo(definicao, ParametrosAmpere.MemoriaCalculoId, "Memória de cálculo");
+
+        var doQuadro = Campo(definicao, ParametrosAmpere.Quadro, "Quadro");
+        doQuadro.IsHidden = true;
+        definicao.AddFilter(new ScheduleFilter(doQuadro.FieldId, ScheduleFilterType.Equal, nomeDoQuadro));
+
+        return nome;
+    }
+
+    private ScheduleField Campo(ScheduleDefinition definicao, DefinicaoDeParametro definicaoDoParametro, string titulo)
+    {
+        var idDoParametro = SharedParameterElement.Lookup(documento, definicaoDoParametro.Guid)?.Id
+                            ?? throw new InvalidOperationException($"{definicaoDoParametro.Nome} não existe no documento (rode 'Injetar parâmetros').");
+        var campoSchedulavel = definicao.GetSchedulableFields()
+            .SingleOrDefault(campo => campo.FieldType == ScheduleFieldType.Instance && campo.ParameterId == idDoParametro)
+            ?? throw new InvalidOperationException($"{definicaoDoParametro.Nome} não aparece como campo de tabela para circuitos.");
+        var campo = definicao.AddField(campoSchedulavel);
+        campo.ColumnHeading = titulo;
+        return campo;
+    }
+
     public IReadOnlyList<QuadroLido> LerQuadrosComCircuitos() =>
         new FilteredElementCollector(documento)
             .OfCategory(BuiltInCategory.OST_ElectricalEquipment)
