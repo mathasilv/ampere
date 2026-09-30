@@ -19,6 +19,7 @@ dotnet test tests/Ampere.Tests.Core --list-tests --treenode-filter "/*/*/*/*[Fon
 | GAP-002 | Regras e limites da NBR 5410 para agrupar pontos em circuitos (quantidades e potências por local, circuitos independentes, separação entre tipos de carga) — especificação §3, F1.2 | `RegraDeAgrupamento` e `PlanejadorDeCircuitos`: hoje só limites informados pelo projetista, sem nenhum padrão | Citar itens e valores no perfil `NBR5410/2004`; o diálogo passa a sugeri-los, sempre editáveis |
 | GAP-003 | Todas as tabelas do perfil `data/normas/NBR5410/2004/perfil.json` (hoje esqueleto, `ref: TODO_NORMA` e sem valores) — ver lista abaixo | `PerfilNormativo.NBR5410_2004`; o motor de dimensionamento para e diz qual tabela falta | Preencher tabela por tabela com o item da norma em `ref`; o carregador recusa valor sem fonte |
 | GAP-004 | Catálogos de fabricante: diâmetro externo dos condutores por tipo e seção; tamanhos nominais e diâmetros internos dos eletrodutos | `data/catalogos/condutores.json` e `eletrodutos.json` (hoje `ref: TODO_CATALOGO` e sem tipos); o dimensionamento para no diâmetro do condutor | Usuário escolhe os fabricantes; preencher com a `ref` (fabricante, linha e edição do catálogo); o carregador recusa valor sem fonte |
+| GAP-005 | Fatores de demanda por tipo de carga (NBR 5410, quadro de cargas — F1.4) | Tabela `fator_de_demanda_por_tipo` e regra `demanda_do_quadro` do perfil; o motor já aceita fatores informados pelo projetista (que vencem o perfil) enquanto a tabela está vazia | Preencher a tabela com os itens/values oficiais; a memória passa a citar a norma em vez de "valor informado pelo projetista" |
 
 ### GAP-003 — tabelas do perfil NBR5410:2004 a preencher
 
@@ -65,6 +66,5 @@ Não são valores de norma, mas decisões de engenharia do `DimensionamentoDeCir
 
 ## Previstas (ainda sem código)
 
-- Fatores de demanda por tipo de carga (quadro de cargas, F1.4).
 - Referência do exemplo de memória da especificação §6.4 (`"ref": "6410.4.2.1.2"`): o formato não
   corresponde a um item conhecido da norma; não reutilizar sem conferir.

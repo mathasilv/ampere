@@ -29,7 +29,8 @@ public sealed class PerfilNormativo
         ["coordenacao_condutor_protecao"] = RegraNormativa.CoordenacaoCondutorProtecao,
         ["queda_de_tensao"] = RegraNormativa.QuedaDeTensao,
         ["condutores_no_eletroduto"] = RegraNormativa.CondutoresNoEletroduto,
-        ["coordenacao_idr_disjuntor"] = RegraNormativa.CoordenacaoIdrDisjuntor
+        ["coordenacao_idr_disjuntor"] = RegraNormativa.CoordenacaoIdrDisjuntor,
+        ["demanda_do_quadro"] = RegraNormativa.DemandaDoQuadro
     };
 
     private readonly Dictionary<RegraNormativa, string> _regras = [];
@@ -45,6 +46,7 @@ public sealed class PerfilNormativo
     private readonly Tabela<IReadOnlyDictionary<int, decimal>> _ocupacao;
     private readonly Tabela<IReadOnlyList<decimal>> _idr;
     private readonly Tabela<IReadOnlyDictionary<string, ProtecaoDiferencialDoLocal>> _protecaoDiferencial;
+    private readonly Tabela<IReadOnlyDictionary<string, decimal>> _fatorDeDemanda;
 
     private PerfilNormativo(string nome, bool ficticio, Leitor leitor, TabelasDoPerfil tabelas)
     {
@@ -71,6 +73,8 @@ public sealed class PerfilNormativo
         _idr = leitor.Lista("correntes_nominais_idr_a", tabelas.CorrentesNominaisIdrA);
         _protecaoDiferencial = leitor.Ler<List<LinhaDeProtecaoDiferencialJson>, IReadOnlyDictionary<string, ProtecaoDiferencialDoLocal>>(
             "protecao_diferencial_por_local", tabelas.ProtecaoDiferencialPorLocal, valores => valores.Count == 0, leitor.ProtecaoDiferencial);
+        _fatorDeDemanda = leitor.Ler<Dictionary<string, decimal>, IReadOnlyDictionary<string, decimal>>(
+            "fator_de_demanda_por_tipo", tabelas.FatorDeDemandaPorTipo, valores => valores.Count == 0, leitor.Fracao);
     }
 
     /// <summary>Nome do perfil, gravado em AMP_PerfilNorma (ex.: "NBR5410:2004").</summary>
@@ -186,6 +190,10 @@ public sealed class PerfilNormativo
     public DadoNormativo<IReadOnlyDictionary<string, ProtecaoDiferencialDoLocal>> ProtecaoDiferencialPorLocal() =>
         Inteira(_protecaoDiferencial, "protecao_diferencial_por_local");
 
+    /// <summary>Fator de demanda de um tipo de carga, para o quadro de cargas (F1.4).</summary>
+    public DadoNormativo<decimal> FatorDeDemanda(string tipoDeCarga) =>
+        PorChave(_fatorDeDemanda, "fator_de_demanda_por_tipo", tipoDeCarga, $"sem fator de demanda para '{tipoDeCarga}'");
+
     private void LerRegras(Dictionary<string, string>? regras, Leitor leitor, List<string> problemas)
     {
         foreach (var chave in (regras ?? []).Keys.Where(chave => !RegrasPorChave.ContainsKey(chave)))
@@ -300,6 +308,19 @@ public sealed class PerfilNormativo
 
                 return resultado;
             });
+
+        /// <summary>Fatores no intervalo (0, 1]: fator de demanda não é zero nem majora a potência instalada.</summary>
+        public IReadOnlyDictionary<string, decimal> Fracao(Dictionary<string, decimal> valores, string nome)
+        {
+            var resultado = new Dictionary<string, decimal>(StringComparer.Ordinal);
+            foreach (var (chave, valor) in valores)
+            {
+                if (valor <= 0 || valor > 1m) problemas.Add($"{nome}: fator de '{chave}' fora do intervalo (0, 1]");
+                else resultado[chave] = valor;
+            }
+
+            return resultado;
+        }
 
         public IReadOnlyDictionary<decimal, decimal> PorDecimal(string nome, Dictionary<string, decimal>? valores)
         {

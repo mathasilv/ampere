@@ -19,5 +19,8 @@ public enum RegraNormativa
     CondutoresNoEletroduto,
 
     /// <summary>Corrente nominal do IDR coordenada com o disjuntor do circuito ("coordenacao_idr_disjuntor").</summary>
-    CoordenacaoIdrDisjuntor
+    CoordenacaoIdrDisjuntor,
+
+    /// <summary>Demanda do quadro de cargas: fator de demanda por tipo de carga aplicado à potência instalada ("demanda_do_quadro").</summary>
+    DemandaDoQuadro
 }
