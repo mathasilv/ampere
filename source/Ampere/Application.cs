@@ -34,5 +34,12 @@ public class Application : ExternalApplication
             .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
             .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
             .SetToolTip("Agrupa os pontos selecionados em circuitos numerados no quadro escolhido (um único desfazer).");
+
+        var quadros = Application.CreatePanel("Quadros", "Ampere");
+
+        quadros.AddPushButton<MontarQuadroDeCargasCommand>("Montar quadro\nde cargas")
+            .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
+            .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
+            .SetToolTip("Monta demanda por tipo de carga e corrente de demanda dos quadros com circuitos (somente leitura).");
     }
 }

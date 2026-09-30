@@ -1,0 +1,51 @@
+<Window
+    x:Class="Ampere.Views.QuadroDeCargasView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:viewModels="clr-namespace:Ampere.ViewModels"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance viewModels:QuadroDeCargasViewModel}"
+    Title="Montar quadro de cargas"
+    SizeToContent="WidthAndHeight"
+    ResizeMode="NoResize"
+    WindowStartupLocation="CenterOwner"
+    ShowInTaskbar="False">
+    <StackPanel Margin="16" Width="420">
+        <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" Margin="0,0,0,4" />
+        <TextBlock TextWrapping="Wrap" Foreground="DarkGoldenrod" Margin="0,0,0,8"
+                   Text="Os fatores de demanda da NBR 5410 ainda não têm fonte oficial no Ampere (TODO_NORMA): preencha conforme o seu projeto." />
+
+        <Grid Margin="0,0,0,2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="130" />
+                <ColumnDefinition Width="90" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="Tipo de carga" Foreground="Gray" />
+            <TextBlock Grid.Column="1" Text="Fator (0–1]" Foreground="Gray" />
+        </Grid>
+        <ItemsControl ItemsSource="{Binding Linhas}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type viewModels:LinhaDeFator}">
+                    <Grid Margin="0,2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="130" />
+                            <ColumnDefinition Width="90" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{Binding Nome}" VerticalAlignment="Center" />
+                        <TextBox Grid.Column="1" Text="{Binding Texto, UpdateSourceTrigger=PropertyChanged}" />
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <TextBlock Margin="0,10,0,0" TextWrapping="Wrap" Foreground="Gray" Text="{Binding Dica}" />
+        <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" Foreground="Firebrick" Text="{Binding Problemas}" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Montar" IsDefault="True" Width="110" Margin="0,0,8,0" Click="Confirmar" />
+            <Button Content="Cancelar" IsCancel="True" Width="96" />
+        </StackPanel>
+    </StackPanel>
+</Window>
