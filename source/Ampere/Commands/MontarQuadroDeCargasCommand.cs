@@ -15,11 +15,11 @@ namespace Ampere.Commands;
 
 /// <summary>
 ///     Monta o quadro de cargas de todos os quadros com circuitos do projeto: demanda por tipo de carga, corrente de
-///     demanda e memória de cálculo (exibida no resumo; os relatórios vêm na sequência). Somente leitura — nada é
-///     gravado no documento.
+///     demanda e memória de cálculo. Grava potência, fator aplicado e o hash da memória nos circuitos (um único
+///     desfazer) e salva os relatórios em Documentos\Ampere\{projeto}.
 /// </summary>
 [UsedImplicitly]
-[Transaction(TransactionMode.ReadOnly)]
+[Transaction(TransactionMode.Manual)]
 public class MontarQuadroDeCargasCommand : ExternalCommand
 {
     // O Revit 2027 já prefixa o nome do add-in ("Ampere - ").
@@ -53,10 +53,22 @@ public class MontarQuadroDeCargasCommand : ExternalCommand
 
         var cronometro = Stopwatch.StartNew();
         var resultados = QuadroDeCargasDoProjeto.Executar(porta, PerfilNormativo.NBR5410_2004, fatores);
+        int circuitosAtualizados;
+        try
+        {
+            circuitosAtualizados = QuadroDeCargasDoProjeto.Gravar(resultados, porta);
+        }
+        catch (InvalidOperationException excecao)
+        {
+            Cancelar($"Nada foi gravado (a operação foi desfeita):{Environment.NewLine}{excecao.Message}");
+            return;
+        }
+
         var (pasta, gerados, errosDeDisco) = RelatoriosDosQuadros.Gravar(resultados, Path.GetFileNameWithoutExtension(documento.PathName));
         cronometro.Stop();
 
-        TaskDialog.Show(TituloDaJanela, ResumoDeQuadros.Montagem(resultados, PerfilNormativo.NBR5410_2004, cronometro.Elapsed, pasta, gerados, errosDeDisco));
+        TaskDialog.Show(TituloDaJanela, ResumoDeQuadros.Montagem(
+            resultados, PerfilNormativo.NBR5410_2004, cronometro.Elapsed, pasta, gerados, errosDeDisco, circuitosAtualizados));
     }
 
     private void Cancelar(string mensagem)

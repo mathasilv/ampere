@@ -17,14 +17,20 @@ public sealed record QuadroLido(long Id, string Nome, IReadOnlyList<CircuitoLido
 /// <summary>Resultado do quadro de cargas de um quadro do documento.</summary>
 public sealed record ResultadoDoQuadro(long Id, string Nome, ResultadoDoQuadroDeCargas Quadro);
 
+/// <summary>Uma linha a gravar no circuito do quadro (potência, fator aplicado e o hash da memória do quadro).</summary>
+public sealed record LinhaParaGravar(long QuadroId, string NumeroDoCircuito, decimal PotenciaVA, decimal? Fator, string? HashDaMemoria);
+
 /// <summary>
 ///     Porta para os quadros e circuitos de um documento no caso de uso do quadro de cargas (implementada pelo
-///     adapter Revit). Somente leitura — montar quadro não altera o documento.
+///     adapter Revit).
 /// </summary>
-public interface IDocumentoDeQuadros
+public interface IDocumentoDeQuadros : IDocumentoTransacional
 {
     /// <summary>Quadros com circuitos atribuídos; quadro sem circuito fica de fora.</summary>
     IReadOnlyList<QuadroLido> LerQuadrosComCircuitos();
+
+    /// <summary>Grava potência, fator e hash da memória nos circuitos; qualquer falha aborta a transação inteira.</summary>
+    void GravarLinhas(IReadOnlyList<LinhaParaGravar> linhas);
 }
 
 /// <summary>
@@ -37,6 +43,8 @@ public interface IDocumentoDeQuadros
 /// </remarks>
 public static class QuadroDeCargasDoProjeto
 {
+    /// <summary>Nome da transação de gravação, que aparece no menu Desfazer do Revit.</summary>
+    public const string NomeDaTransacao = "Ampere: montar quadro de cargas";
     public static IReadOnlyList<ResultadoDoQuadro> Executar(
         IDocumentoDeQuadros documento,
         PerfilNormativo perfil,
@@ -96,5 +104,20 @@ public static class QuadroDeCargasDoProjeto
         }
 
         return resultados;
+    }
+
+    /// <summary>
+    ///     Grava os resultados nos circuitos numa única transação — um único desfazer: potência instalada do circuito,
+    ///     fator aplicado e o hash da memória do quadro (é ela que justifica o fator). Linha sem fator grava a potência
+    ///     e limpa o que havia; qualquer recusa do Revit aborta tudo.
+    /// </summary>
+    public static int Gravar(IReadOnlyList<ResultadoDoQuadro> resultados, IDocumentoDeQuadros documento)
+    {
+        var linhas = resultados
+            .SelectMany(resultado => resultado.Quadro.Linhas.Select(linha => new LinhaParaGravar(
+                resultado.Id, linha.Numero, linha.PotenciaInstaladaVA, linha.Fator, resultado.Quadro.Memoria?.Hash())))
+            .ToList();
+        if (linhas.Count > 0) documento.EmUmaTransacao(NomeDaTransacao, () => documento.GravarLinhas(linhas));
+        return linhas.Count;
     }
 }

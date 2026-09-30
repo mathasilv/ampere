@@ -14,6 +14,32 @@ namespace Ampere.Revit.Quadros;
 /// </remarks>
 public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQuadros
 {
+    public void EmUmaTransacao(string nome, Action acao) => TransacaoRevit.Executar(documento, nome, acao);
+
+    public void GravarLinhas(IReadOnlyList<LinhaParaGravar> linhas)
+    {
+        var sistemasPorQuadro = new Dictionary<long, Dictionary<string, ElectricalSystem>>();
+        foreach (var grupo in linhas.GroupBy(linha => linha.QuadroId))
+        {
+            var painel = documento.GetElement(new ElementId(grupo.Key)) as FamilyInstance
+                         ?? throw new InvalidOperationException($"O quadro {grupo.Key} não existe no documento.");
+            sistemasPorQuadro[grupo.Key] = SistemasDeForca(painel).Where(sistema =>
+                    ParametrosAmpere.LerTexto(sistema, ParametrosAmpere.NumeroCircuito) is { Length: > 0 } numero)
+                .ToDictionary(sistema => ParametrosAmpere.LerTexto(sistema, ParametrosAmpere.NumeroCircuito)!, StringComparer.Ordinal);
+        }
+
+        foreach (var linha in linhas)
+        {
+            if (!sistemasPorQuadro[linha.QuadroId].TryGetValue(linha.NumeroDoCircuito, out var sistema))
+                throw new InvalidOperationException($"Circuito {linha.NumeroDoCircuito} não encontrado no quadro para gravar o resultado.");
+
+            ParametrosAmpere.GravarNumero(sistema, ParametrosAmpere.PotenciaInstaladaVA,
+                UnitUtils.ConvertToInternalUnits((double)linha.PotenciaVA, UnitTypeId.VoltAmperes));
+            if (linha.Fator is { } fator) ParametrosAmpere.GravarNumero(sistema, ParametrosAmpere.FatorDemanda, (double)fator);
+            if (linha.HashDaMemoria is { } hash) ParametrosAmpere.GravarTexto(sistema, ParametrosAmpere.MemoriaCalculoId, hash);
+        }
+    }
+
     public IReadOnlyList<QuadroLido> LerQuadrosComCircuitos() =>
         new FilteredElementCollector(documento)
             .OfCategory(BuiltInCategory.OST_ElectricalEquipment)

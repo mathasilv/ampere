@@ -12,7 +12,8 @@ internal static class ResumoDeQuadros
 
     public static string Montagem(
         IReadOnlyList<ResultadoDoQuadro> resultados, PerfilNormativo perfil, TimeSpan tempo,
-        string? pastaDosRelatorios = null, int relatoriosGerados = 0, IReadOnlyList<string>? errosDeGravacao = null)
+        string? pastaDosRelatorios = null, int relatoriosGerados = 0, IReadOnlyList<string>? errosDeGravacao = null,
+        int circuitosAtualizados = 0)
     {
         var texto = new StringBuilder();
         if (resultados.Count == 0)
@@ -48,6 +49,8 @@ internal static class ResumoDeQuadros
                 texto.AppendLine($"• {grupo.Key} ({grupo.Count()})");
             if (problemas.GroupBy(problema => problema.Problema).Count() > MaximoDeLinhas) texto.AppendLine($"• … e mais");
         }
+
+        if (circuitosAtualizados > 0) texto.AppendLine($"Circuitos atualizados: {circuitosAtualizados} (um único desfazer)").AppendLine();
 
         if (pastaDosRelatorios is { Length: > 0 })
         {

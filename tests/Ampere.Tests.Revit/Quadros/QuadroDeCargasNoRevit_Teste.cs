@@ -1,4 +1,5 @@
 using Ampere.Core.Cargas;
+using Ampere.Core.Parametros;
 using Ampere.Core.Circuitos;
 using Ampere.Core.Normas;
 using Ampere.Core.Quadros;
@@ -78,6 +79,34 @@ public sealed class QuadroDeCargasNoRevit_Teste : TesteComProjetoEletrico
         await Assert.That(quadro.Problemas.Any(problema => problema.Contains("TODO_NORMA"))).IsTrue();
     }
 
+    [Test]
+    public async Task Grava_potencia_fator_e_hash_da_memoria_nos_circuitos()
+    {
+        MontarQuadroComDoisCircuitos();
+        var porta = new DocumentoDeQuadrosRevit(Cenario.Documento);
+        var resultados = QuadroDeCargasDoProjeto.Executar(porta, PerfilNormativo.NBR5410_2004,
+            new Dictionary<TipoDeCarga, decimal> { [TipoDeCarga.Iluminacao] = 1m, [TipoDeCarga.TUG] = 0.5m });
+
+        var atualizados = QuadroDeCargasDoProjeto.Gravar(resultados, porta);
+
+        await Assert.That(atualizados).IsEqualTo(2);
+        var hash = resultados[0].Quadro.Memoria!.Hash();
+        var problemas = new List<string>();
+        foreach (var sistema in Cenario.Quadro.MEPModel.GetAssignedElectricalSystems())
+        {
+            var numero = Texto(sistema, "AMP_NumeroCircuito");
+            var potencia = UnitUtils.ConvertFromInternalUnits(Parametro(sistema, "AMP_PotenciaInstaladaVA").AsDouble(), UnitTypeId.VoltAmperes);
+            var fator = Parametro(sistema, "AMP_FatorDemanda").AsDouble();
+            var memoria = Texto(sistema, "AMP_MemoriaCalculoId");
+            var esperados = numero == "IL-01" ? (186m, 1m) : numero == "TUG-01" ? (720m, 0.5m) : throw new InvalidOperationException($"circuito inesperado {numero}");
+            if (Math.Abs(potencia - (double)esperados.Item1) > 1e-6) problemas.Add($"{numero}: potência {potencia} VA");
+            if (Math.Abs(fator - (double)esperados.Item2) > 1e-9) problemas.Add($"{numero}: fator {fator}");
+            if (memoria != hash) problemas.Add($"{numero}: hash '{memoria}'");
+        }
+
+        await Assert.That(problemas).IsEmpty();
+    }
+
     /// <summary>QD1 com IL-01 (3 × 62 VA) e TUG-01 (4 × 180 VA), classificados com F+N 127 V.</summary>
     private void MontarQuadroComDoisCircuitos()
     {
@@ -93,4 +122,9 @@ public sealed class QuadroDeCargasNoRevit_Teste : TesteComProjetoEletrico
         var resultado = ClassificacaoEmLote.Executar(ids, new ClassificacaoDeCarga(tipo, PotenciaVA: potenciaVA, TensaoV: 127m, Fases: "F+N"), Porta);
         if (resultado.Classificados != ids.Count) throw new InvalidOperationException($"Classificação do cenário incompleta ({tipo}).");
     }
+
+    private static Parameter Parametro(Element elemento, string nome) =>
+        elemento.get_Parameter(CatalogoDeParametros.Padrao.Parametros.Single(parametro => parametro.Nome == nome).Guid);
+
+    private static string? Texto(Element elemento, string nome) => Parametro(elemento, nome)?.AsString();
 }
