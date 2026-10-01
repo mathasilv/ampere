@@ -6,6 +6,7 @@ namespace Ampere.Core.Diagramas;
 /// <summary>Circuito como aparece no unifilar: identificação, carga e o que o 'Dimensionar circuitos' gravou (nulo = não calculado).</summary>
 /// <param name="Descricao">Nome da carga do circuito (descrição livre do projetista).</param>
 /// <param name="Fases">Configuração (F+N, 2F, 3F, ...).</param>
+/// <param name="FasesNoQuadro">Fases do quadro que o circuito ocupa (rótulos do Revit, ex.: A, B); nulo se não lidas.</param>
 public sealed record CircuitoDoUnifilar(
     string Numero,
     string? Descricao,
@@ -17,10 +18,17 @@ public sealed record CircuitoDoUnifilar(
     decimal? SecaoMm2,
     decimal? IdrNominalA,
     decimal? IdrSensibilidadeMa,
-    decimal? QuedaPct);
+    decimal? QuedaPct,
+    IReadOnlyList<string>? FasesNoQuadro = null);
+
+/// <summary>O circuito que alimenta o quadro, como o 'Dimensionar alimentadores' o gravou (nulo = não calculado).</summary>
+/// <param name="Origem">Equipamento de onde ele sai (ex.: QGBT).</param>
+public sealed record AlimentadorDoUnifilar(string? Origem, decimal? DisjuntorA, decimal? SecaoMm2, decimal? IdrNominalA, decimal? IdrSensibilidadeMa, decimal? QuedaPct);
 
 /// <summary>Quadro com os circuitos, na ordem em que aparecem no diagrama.</summary>
-public sealed record QuadroDoUnifilar(string Nome, IReadOnlyList<CircuitoDoUnifilar> Circuitos);
+/// <param name="Alimentacao">Esquema e tensão do quadro (ex.: "3F+N 220/127 V"); nulo se o quadro não tem sistema de distribuição.</param>
+/// <param name="Alimentador">O circuito que alimenta o quadro; nulo se o quadro não tem alimentador no modelo.</param>
+public sealed record QuadroDoUnifilar(string Nome, IReadOnlyList<CircuitoDoUnifilar> Circuitos, string? Alimentacao = null, AlimentadorDoUnifilar? Alimentador = null);
 
 /// <summary>Alinhamento horizontal de um texto em relação ao ponto de inserção.</summary>
 public enum AlinhamentoDoTexto
@@ -80,8 +88,9 @@ public static class DiagramasDoProjeto
 }
 
 /// <summary>
-///     Diagrama unifilar de um quadro: alimentação, barramento e uma derivação por circuito com disjuntor, IDR (se houver),
-///     seção do condutor, queda de tensão e a identificação da carga.
+///     Diagrama unifilar de um quadro: alimentação (o alimentador, se dimensionado, e o esquema do quadro), barramento e
+///     uma derivação por circuito com disjuntor, IDR (se houver), seção do condutor, queda de tensão e a identificação da
+///     carga, com a fase que ocupa no quadro.
 /// </summary>
 /// <remarks>
 ///     Representação esquemática, sem simbologia normativa: dispositivos são caixas com o valor por cima. Os valores são os
@@ -108,7 +117,7 @@ public static class DiagramaUnifilar
         // Alimentação e barramento.
         var fimDoBarramento = quadro.Circuitos.Count == 0 ? -22m : PrimeiraDerivacao - (quadro.Circuitos.Count - 1) * Espacamento - 3m;
         elementos.Add(new Segmento(XBarramento, -12m, XBarramento, -20m));
-        elementos.Add(new Texto(XBarramento + 2m, -16m, "alimentação", AlinhamentoDoTexto.Esquerda, AlturaPequena));
+        elementos.Add(new Texto(XBarramento + 2m, -16m, Alimentacao(quadro), AlinhamentoDoTexto.Esquerda, AlturaPequena));
         elementos.Add(new Segmento(XBarramento, -20m, XBarramento, fimDoBarramento, Grosso: true));
 
         for (var indice = 0; indice < quadro.Circuitos.Count; indice++)
@@ -155,6 +164,35 @@ public static class DiagramaUnifilar
         elementos.Add(new Texto(92m, y - 0.8m, Identificacao(circuito), AlinhamentoDoTexto.Esquerda, AlturaNormal));
     }
 
+    // Sem alimentador nem sistema de distribuição, só "alimentação" (o desenho de antes, sem valor presumido).
+    private static string Alimentacao(QuadroDoUnifilar quadro)
+    {
+        var partes = new List<string>();
+        if (quadro.Alimentador is { } alimentador)
+        {
+            partes.Add(alimentador.Origem is { Length: > 0 } origem ? $"alimentador (de {origem})" : "alimentador");
+            if (alimentador.DisjuntorA is { } disjuntor)
+            {
+                partes.Add($"{Numero(disjuntor)} A");
+                if (alimentador.IdrSensibilidadeMa is { } sensibilidade)
+                    partes.Add(alimentador.IdrNominalA is { } nominal ? $"IDR {Numero(nominal)} A {Numero(sensibilidade)} mA" : $"IDR {Numero(sensibilidade)} mA");
+                if (alimentador.SecaoMm2 is { } secao) partes.Add($"{Numero(secao)} mm²");
+                if (alimentador.QuedaPct is { } queda) partes.Add($"ΔV {Numero(Math.Round(queda, 2, MidpointRounding.AwayFromZero))}%");
+            }
+            else
+            {
+                partes.Add("não dimensionado");
+            }
+        }
+        else
+        {
+            partes.Add("alimentação");
+        }
+
+        if (quadro.Alimentacao is { Length: > 0 } esquema) partes.Add(esquema);
+        return string.Join(" — ", partes);
+    }
+
     private static void Caixa(List<ElementoDoDesenho> elementos, decimal x, decimal y)
     {
         elementos.Add(new Segmento(x, y - 2m, x + 8m, y - 2m));
@@ -171,6 +209,7 @@ public static class DiagramaUnifilar
         var alimentacao = string.Join(" ", new[] { circuito.Fases, circuito.TensaoV is { } tensao ? $"{Numero(tensao)} V" : null }.OfType<string>());
         if (alimentacao.Length > 0) partes.Add(alimentacao);
         if (circuito.PotenciaVA is { } potencia) partes.Add($"{Numero(potencia)} VA");
+        if (circuito.FasesNoQuadro is { Count: > 0 } fases) partes.Add($"fase {string.Join("-", fases)}");
         return string.Join(" — ", partes);
     }
 

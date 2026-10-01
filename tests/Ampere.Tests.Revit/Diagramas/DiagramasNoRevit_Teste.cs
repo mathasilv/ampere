@@ -38,6 +38,10 @@ public sealed class DiagramasNoRevit_Teste : TesteComProjetoEletrico
         await Assert.That(circuitos[0].IdrSensibilidadeMa).IsNull();
         await Assert.That(circuitos[1].IdrSensibilidadeMa).IsEqualTo(30m);
         await Assert.That(Math.Round(circuitos[1].PotenciaVA!.Value, 6)).IsEqualTo(720m);
+        // QD1 do cenário: 120/208 Wye, sem alimentador no modelo; cada circuito F+N numa das fases.
+        await Assert.That(quadros[0].Alimentacao).IsEqualTo("3F+N 208/120 V");
+        await Assert.That(quadros[0].Alimentador).IsNull();
+        await Assert.That(circuitos.All(circuito => circuito.FasesNoQuadro is { Count: 1 })).IsTrue();
     }
 
     [Test]

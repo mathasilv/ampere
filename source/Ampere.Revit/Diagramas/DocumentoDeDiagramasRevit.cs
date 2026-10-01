@@ -1,5 +1,7 @@
+using Ampere.Core;
 using Ampere.Core.Diagramas;
 using Ampere.Core.Parametros;
+using Ampere.Revit.Quadros;
 using Autodesk.Revit.DB.Electrical;
 
 namespace Ampere.Revit.Diagramas;
@@ -24,16 +26,51 @@ public sealed class DocumentoDeDiagramasRevit(Document documento) : IDocumentoDe
 
     public void EmUmaTransacao(string nome, Action acao) => TransacaoRevit.Executar(documento, nome, acao);
 
-    public IReadOnlyList<QuadroDoUnifilar> LerQuadros() =>
-        new FilteredElementCollector(documento)
+    public IReadOnlyList<QuadroDoUnifilar> LerQuadros()
+    {
+        var rotulos = LeituraDoPainel.RotulosDasFases(documento);
+        return new FilteredElementCollector(documento)
             .OfCategory(BuiltInCategory.OST_ElectricalEquipment)
             .OfClass(typeof(FamilyInstance))
             .Cast<FamilyInstance>()
             .Select(painel => (Painel: painel, Sistemas: SistemasDeForca(painel)))
             .Where(par => par.Sistemas.Count > 0)
-            .Select(par => new QuadroDoUnifilar(NomeDoPainel(par.Painel), par.Sistemas.Select(LerCircuito).OrderBy(circuito => circuito.Numero, StringComparer.Ordinal).ToList()))
+            .Select(par => new QuadroDoUnifilar(
+                LeituraDoPainel.Nome(par.Painel),
+                par.Sistemas.Select(sistema => LerCircuito(sistema) with { FasesNoQuadro = LeituraDoPainel.FasesNoQuadro(sistema, rotulos) })
+                    .OrderBy(circuito => circuito.Numero, StringComparer.Ordinal).ToList(),
+                Alimentacao(par.Painel, rotulos),
+                Alimentador(par.Painel)))
             .OrderBy(quadro => quadro.Nome, StringComparer.CurrentCulture)
             .ToList();
+    }
+
+    // Esquema e tensões do quadro, como no quadro de cargas (ex.: "3F+N 220/127 V").
+    private string? Alimentacao(FamilyInstance painel, string[] rotulos) =>
+        LeituraDoPainel.Alimentacao(documento, painel, rotulos) is { } alimentacao
+            ? alimentacao.FaseNeutro is { } faseNeutro && alimentacao.Esquema != "F+N"
+                ? $"{alimentacao.Esquema} {Formatar(alimentacao.TensaoV)}/{Formatar(faseNeutro)} V"
+                : $"{alimentacao.Esquema} {Formatar(alimentacao.TensaoV)} V"
+            : null;
+
+    // O circuito de que o quadro é carga, com o que o 'Dimensionar alimentadores' gravou (0 = não calculado).
+    private static AlimentadorDoUnifilar? Alimentador(FamilyInstance painel)
+    {
+        var alimentador = painel.MEPModel?.GetElectricalSystems()?
+            .Where(sistema => sistema.SystemType == ElectricalSystemType.PowerCircuit)
+            .MinBy(sistema => sistema.Id.Value);
+        if (alimentador is null) return null;
+
+        return new AlimentadorDoUnifilar(
+            alimentador.BaseEquipment is { } origem ? LeituraDoPainel.Nome(origem) : null,
+            Numero(alimentador, ParametrosAmpere.DisjuntorNominalA),
+            Numero(alimentador, ParametrosAmpere.BitolaCondutorMm2),
+            Numero(alimentador, ParametrosAmpere.IdrNominalA),
+            Numero(alimentador, ParametrosAmpere.IdrSensibilidadeMa),
+            Numero(alimentador, ParametrosAmpere.QuedaTensaoPct));
+    }
+
+    private static string Formatar(decimal volts) => NumeroEmTexto.FormatarParaLeitura(Math.Round(volts, 0, MidpointRounding.AwayFromZero));
 
     public string DesenharUnifilar(string nomeDoQuadro, DesenhoDoUnifilar desenho)
     {
@@ -135,6 +172,4 @@ public sealed class DocumentoDeDiagramasRevit(Document documento) : IDocumentoDe
     private static decimal? Numero(Element elemento, DefinicaoDeParametro definicao) =>
         ParametrosAmpere.Ler(elemento, definicao) is { HasValue: true } parametro && parametro.AsDouble() is var valor and not 0d ? (decimal)valor : null;
 
-    private static string NomeDoPainel(FamilyInstance painel) =>
-        painel.get_Parameter(BuiltInParameter.RBS_ELEC_PANEL_NAME)?.AsString() is { Length: > 0 } nome ? nome : painel.Name;
 }

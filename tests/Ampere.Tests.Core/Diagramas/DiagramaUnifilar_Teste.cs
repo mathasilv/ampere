@@ -36,6 +36,31 @@ public class DiagramaUnifilar_Teste
     }
 
     [Test]
+    public async Task Alimentador_e_fases_aparecem_quando_o_modelo_os_tem()
+    {
+        var quadro = Qd1 with
+        {
+            Circuitos = [Qd1.Circuitos[0] with { FasesNoQuadro = ["A"] }, Qd1.Circuitos[2] with { FasesNoQuadro = ["B", "C"] }],
+            Alimentacao = "3F+N 220/127 V",
+            Alimentador = new AlimentadorDoUnifilar("QGBT", 40m, 10m, null, null, 1.23456m)
+        };
+
+        var textos = Textos(DiagramaUnifilar.Montar(quadro));
+
+        await Assert.That(textos).Contains("alimentador (de QGBT) — 40 A — 10 mm² — ΔV 1,23% — 3F+N 220/127 V");
+        await Assert.That(textos).Contains("IL-01 — Iluminação sala e quartos — Iluminação — F+N 127 V — 600 VA — fase A");
+        await Assert.That(textos).Contains("TUE-01 — Chuveiro — TUE — 2F 220 V — 5978,26 VA — fase B-C");
+    }
+
+    [Test]
+    public async Task Alimentador_nao_dimensionado_aparece_sem_valor_presumido()
+    {
+        var textos = Textos(DiagramaUnifilar.Montar(Qd1 with { Alimentador = new AlimentadorDoUnifilar(null, null, null, null, null, null) }));
+
+        await Assert.That(textos).Contains("alimentador — não dimensionado");
+    }
+
+    [Test]
     public async Task Circuito_sem_dimensionamento_aparece_como_nao_dimensionado_sem_valor_presumido()
     {
         var textos = Textos(DiagramaUnifilar.Montar(Qd1));
