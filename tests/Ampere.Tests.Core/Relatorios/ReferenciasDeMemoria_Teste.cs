@@ -34,6 +34,7 @@ public class ReferenciasDeMemoria_Teste
     [Arguments("trifasico-idr-dispensado")]
     [Arguments("perfil-oficial-completo")]
     [Arguments("parado-catalogo-vazio")]
+    [Arguments("decisoes-do-projetista")]
     public async Task Memoria_e_relatorio_iguais_aos_de_referencia(string cenario)
     {
         var memoria = Dimensionar(cenario).Memoria!;
@@ -59,8 +60,19 @@ public class ReferenciasDeMemoria_Teste
             Entrada("IL-01", TipoDeCarga.Iluminacao, 200m, "F+N", 127m, 8m, ["Demais locais internos"]), PerfilNormativo.NBR5410_2004, CatalogosDeTeste),
         "parado-catalogo-vazio" => DimensionamentoDeCircuito.Dimensionar(
             Entrada("TUG-03", TipoDeCarga.TUG, 1270m, "F+N", 127m, 10m, ["LOCAL-SECO"]), Ficticio, CatalogosDeProduto.Padrao),
+        "decisoes-do-projetista" => DimensionamentoDeCircuito.Dimensionar(ComDecisoesDoProjetista(), Ficticio, CatalogosDeTeste),
         _ => throw new ArgumentOutOfRangeException(nameof(cenario), cenario, "cenário sem definição")
     };
+
+    // Pelo mapeamento do circuito (EntradaDoCircuito), para a memória registrar as origens como no Revit: seção mínima,
+    // disjuntor, IDR, temperatura e agrupamento decididos pelo projetista.
+    private static EntradaDeDimensionamento ComDecisoesDoProjetista() =>
+        EntradaDoCircuito.Montar(
+            new DadosDoCircuito(4, "TUG-04", "TUG", 20m, "B1", "PVC",
+                [new DadosDoPonto(41, 700m, 127m, "F+N", "LOCAL-MOLHADO", "TUG"), new DadosDoPonto(42, 570m, 127m, "F+N", "LOCAL-SECO", "TUG")],
+                Decisoes: new DecisoesDoProjetista(4m, 25m, "Exigir", 30m, "circuito no forro, padrão da obra", 40m, 2m)),
+            new CondicoesDoProjeto(30m, 1, "Cobre", TipoDeCondutorPadrao: CatalogosFicticios.TipoDeCondutor, TipoDeEletroduto: CatalogosFicticios.TipoDeEletroduto))
+        .Entrada!;
 
     private static EntradaDeDimensionamento Entrada(
         string circuito, TipoDeCarga tipo, decimal potenciaVA, string fases, decimal tensaoV, decimal comprimentoM,

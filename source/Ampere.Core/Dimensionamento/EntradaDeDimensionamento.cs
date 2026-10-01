@@ -22,6 +22,11 @@ namespace Ampere.Core.Dimensionamento;
 /// <param name="LocaisDosPontos">Local de cada ponto do circuito, no vocabulário da tabela de IDR do perfil (nulo = sem local).</param>
 /// <param name="IdrDoProjetista">Decisão do projetista sobre o IDR; prevalece sobre a tabela por local.</param>
 /// <param name="OrigemDoComprimento">De onde veio o comprimento (ex.: informado pelo projetista), registrado na memória.</param>
+/// <param name="SecaoMinimaDoProjetistaMm2">Seção mínima decidida pelo projetista: piso do cálculo (a seção pode subir, nunca descer).</param>
+/// <param name="DisjuntorDoProjetistaA">In decidida pelo projetista: fixa, verificada em IB ≤ In ≤ IZ (a seção sobe até atender).</param>
+/// <param name="Justificativa">Justificativa das decisões do projetista, registrada na memória.</param>
+/// <param name="OrigemDaTemperatura">De onde veio a temperatura quando não é a do projeto, registrado na memória.</param>
+/// <param name="OrigemDoAgrupamento">De onde veio o número de circuitos agrupados quando não é o do projeto.</param>
 public sealed record EntradaDeDimensionamento(
     string Circuito,
     TipoDeCarga Tipo,
@@ -38,7 +43,12 @@ public sealed record EntradaDeDimensionamento(
     string? TipoDeEletroduto,
     IReadOnlyList<string?> LocaisDosPontos,
     DecisaoDeIdr? IdrDoProjetista = null,
-    string? OrigemDoComprimento = null)
+    string? OrigemDoComprimento = null,
+    decimal? SecaoMinimaDoProjetistaMm2 = null,
+    decimal? DisjuntorDoProjetistaA = null,
+    string? Justificativa = null,
+    string? OrigemDaTemperatura = null,
+    string? OrigemDoAgrupamento = null)
 {
     /// <summary>Problemas que impedem dimensionar; vazio se a entrada estiver válida.</summary>
     public IReadOnlyList<string> Validar()
@@ -55,6 +65,8 @@ public sealed record EntradaDeDimensionamento(
         if (string.IsNullOrWhiteSpace(Isolacao)) problemas.Add("isolação não informada");
         if (string.IsNullOrWhiteSpace(Material)) problemas.Add("material do condutor não informado");
         if (CircuitosAgrupados < 1) problemas.Add("circuitos agrupados deve ser pelo menos 1");
+        if (SecaoMinimaDoProjetistaMm2 is <= 0m) problemas.Add("seção mínima do projetista deve ser positiva");
+        if (DisjuntorDoProjetistaA is <= 0m) problemas.Add("disjuntor do projetista deve ser positivo");
         if (LocaisDosPontos.Count == 0) problemas.Add("circuito sem pontos (locais dos pontos vazio)");
         if (IdrDoProjetista is { Exigir: true, SensibilidadeMa: not > 0 }) problemas.Add("IDR exigido pelo projetista sem sensibilidade positiva");
         if (IdrDoProjetista is { Exigir: false, SensibilidadeMa: not null }) problemas.Add("IDR dispensado pelo projetista não leva sensibilidade");

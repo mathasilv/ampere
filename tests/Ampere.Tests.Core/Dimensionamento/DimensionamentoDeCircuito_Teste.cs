@@ -152,6 +152,134 @@ public class DimensionamentoDeCircuito_Teste
     }
 
     [Test]
+    public async Task Secao_minima_do_projetista_eleva_o_piso_e_a_memoria_registra_a_justificativa()
+    {
+        var resultado = Dimensionar(Entrada() with { SecaoMinimaDoProjetistaMm2 = 4m, Justificativa = "padrão da obra" });
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
+        await Assert.That(resultado.SecaoMm2).IsEqualTo(4m);
+        await Assert.That(resultado.DisjuntorA).IsEqualTo(10m);
+        await Assert.That(PassoDe(resultado, "Seção mínima do projetista").Resultado).IsEqualTo(4m);
+        await Assert.That(PassoDe(resultado, "Seção mínima do projetista").Observacao)
+            .IsEqualTo("decisão do projetista (justificativa: padrão da obra); o cálculo pode adotar seção maior, nunca menor");
+        await Assert.That(PassoDe(resultado, "Seção pela capacidade de condução").Valores[0].Valor).IsEqualTo(4m);
+        await Assert.That(resultado.Avisos).IsEmpty();
+    }
+
+    [Test]
+    public async Task Secao_minima_do_projetista_abaixo_da_norma_vale_a_da_norma_com_aviso()
+    {
+        var resultado = Dimensionar(Entrada() with { SecaoMinimaDoProjetistaMm2 = 1.5m });
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
+        await Assert.That(resultado.SecaoMm2).IsEqualTo(2.5m);
+        await Assert.That(PassoDe(resultado, "Seção mínima do projetista").Observacao)
+            .IsEqualTo("decisão do projetista (sem justificativa informada); abaixo da seção mínima da norma (2,5 mm²), que prevalece");
+        await Assert.That(resultado.Avisos).IsEquivalentTo(["seção mínima do projetista (1,5 mm²) abaixo da mínima da norma (2,5 mm²): vale a da norma"]);
+    }
+
+    [Test]
+    public async Task Secao_minima_do_projetista_fora_das_nominais_para_com_explicacao()
+    {
+        var resultado = Dimensionar(Entrada() with { SecaoMinimaDoProjetistaMm2 = 3m });
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
+        await Assert.That(resultado.SecaoMm2).IsNull();
+        await Assert.That(resultado.Problemas).IsEquivalentTo(["3 mm² não é seção nominal do perfil (1,5; 2,5; 4; 6; 10; 16; 25)"]);
+    }
+
+    [Test]
+    public async Task Disjuntor_do_projetista_e_verificado_e_adotado()
+    {
+        var resultado = Dimensionar(Entrada() with { DisjuntorDoProjetistaA = 20m, Justificativa = "seletividade" });
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
+        await Assert.That(resultado.SecaoMm2).IsEqualTo(2.5m);
+        await Assert.That(resultado.CapacidadeDeConducaoA).IsEqualTo(20m);
+        await Assert.That(resultado.DisjuntorA).IsEqualTo(20m);
+        await Assert.That(PassoDe(resultado, "Disjuntor do projetista").Expressao).IsEqualTo("IB ≤ In (IZ ≥ In verificado na seção)");
+        await Assert.That(PassoDe(resultado, "Disjuntor").Expressao).IsEqualTo("In do projetista, com IB ≤ In ≤ IZ");
+        await Assert.That(PassoDe(resultado, "Disjuntor").Observacao).IsEqualTo("decisão do projetista, verificada (justificativa: seletividade)");
+    }
+
+    [Test]
+    public async Task Disjuntor_do_projetista_eleva_a_secao_ate_IZ_atender()
+    {
+        var resultado = Dimensionar(Entrada() with { DisjuntorDoProjetistaA = 25m });
+
+        await Assert.That(resultado.SecaoMm2).IsEqualTo(4m);
+        await Assert.That(resultado.CapacidadeDeConducaoA).IsEqualTo(30m);
+        await Assert.That(resultado.DisjuntorA).IsEqualTo(25m);
+        await Assert.That(PassoDe(resultado, "Seção pela capacidade de condução").Expressao)
+            .IsEqualTo("menor S ≥ Smín com IZ₀(S) · FCA · FCT ≥ In do projetista");
+    }
+
+    [Test]
+    public async Task IDR_acompanha_o_disjuntor_do_projetista()
+    {
+        var resultado = Dimensionar(Entrada(locais: ["LOCAL-MOLHADO"]) with { DisjuntorDoProjetistaA = 32m });
+
+        await Assert.That(resultado.SecaoMm2).IsEqualTo(6m);
+        await Assert.That(resultado.DisjuntorA).IsEqualTo(32m);
+        await Assert.That(resultado.IdrNominalA).IsEqualTo(40m);
+    }
+
+    [Test]
+    [Arguments(15, "In = 15 A fora das correntes nominais do perfil (10; 16; 20; 25; 32; 40; 50; 63)")]
+    [Arguments(10, "In = 10 A do projetista abaixo de IB = 15 A")]
+    public async Task Disjuntor_do_projetista_invalido_para_com_explicacao(decimal disjuntorA, string problema)
+    {
+        var resultado = Dimensionar(Entrada(potenciaVA: 1905m) with { DisjuntorDoProjetistaA = disjuntorA });
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
+        await Assert.That(resultado.SecaoMm2).IsNull();
+        await Assert.That(resultado.DisjuntorA).IsNull();
+        await Assert.That(resultado.Problemas).IsEquivalentTo([problema]);
+    }
+
+    [Test]
+    public async Task Disjuntor_do_projetista_acima_de_qualquer_IZ_para_com_explicacao()
+    {
+        var resultado = Dimensionar(Entrada(temperaturaC: 40m, circuitosAgrupados: 3) with { DisjuntorDoProjetistaA = 63m });
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
+        await Assert.That(resultado.Problemas).IsEquivalentTo(["nenhuma seção do perfil atende In = 63 A (maior seção: 25 mm²)"]);
+    }
+
+    [Test]
+    public async Task Decisao_numerica_nao_positiva_e_entrada_invalida()
+    {
+        var resultado = Dimensionar(Entrada() with { SecaoMinimaDoProjetistaMm2 = 0m, DisjuntorDoProjetistaA = -10m });
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.EntradaInvalida);
+        await Assert.That(resultado.Problemas).IsEquivalentTo(
+            ["seção mínima do projetista deve ser positiva", "disjuntor do projetista deve ser positivo"]);
+    }
+
+    [Test]
+    public async Task Origem_da_temperatura_e_do_agrupamento_vai_para_a_memoria_dos_fatores()
+    {
+        var resultado = Dimensionar(Entrada(temperaturaC: 40m, circuitosAgrupados: 2) with
+        {
+            OrigemDaTemperatura = "origem da temperatura",
+            OrigemDoAgrupamento = "origem do agrupamento"
+        });
+
+        await Assert.That(PassoDe(resultado, "Fator de correção de temperatura").Observacao).IsEqualTo("θ: origem da temperatura");
+        await Assert.That(PassoDe(resultado, "Fator de correção de agrupamento").Observacao).IsEqualTo("circuitos: origem do agrupamento");
+        await Assert.That(resultado.Memoria!.Hash()).IsNotEqualTo(Dimensionar(Entrada(temperaturaC: 40m, circuitosAgrupados: 2)).Memoria!.Hash());
+    }
+
+    [Test]
+    public async Task Sem_decisoes_a_memoria_nao_ganha_passos_do_projetista()
+    {
+        var resultado = Dimensionar(Entrada());
+
+        await Assert.That(resultado.Memoria!.Passos.Where(passo => passo.Descricao.Contains("projetista"))).IsEmpty();
+        await Assert.That(PassoDe(resultado, "Fator de correção de temperatura").Observacao).IsNull();
+    }
+
+    [Test]
     public async Task Eletroduto_e_o_menor_tamanho_dentro_da_ocupacao_maxima()
     {
         var resultado = Dimensionar(Entrada());

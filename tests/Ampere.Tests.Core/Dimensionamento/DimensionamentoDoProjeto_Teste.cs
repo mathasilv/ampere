@@ -237,7 +237,7 @@ public class DimensionamentoDoProjeto_Teste
     public async Task Local_dos_pontos_e_decisao_do_projetista_chegam_ao_motor()
     {
         var molhado = Circuito(1, "TUG-01", "TUG", Ponto(11, 600m), Ponto(12, 600m, local: "LOCAL-MOLHADO"));
-        var dispensado = Circuito(2, "TUG-02", "TUG", Ponto(21, 600m, local: "LOCAL-MOLHADO")) with { IdrDoProjetista = DecisaoDeIdr.Dispensado() };
+        var dispensado = Circuito(2, "TUG-02", "TUG", Ponto(21, 600m, local: "LOCAL-MOLHADO")) with { Decisoes = new DecisoesDoProjetista(Idr: "Dispensar") };
 
         var resultados = DimensionamentoDoProjeto.Executar([1, 2], Condicoes, Ficticio, Catalogos, new DocumentoDeDimensionamentoFalso([molhado, dispensado]));
 

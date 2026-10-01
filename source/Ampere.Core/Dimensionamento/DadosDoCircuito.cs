@@ -21,7 +21,7 @@ public sealed record ComprimentoDoRevit(decimal Metros, string Caminho);
 /// <param name="Isolacao">AMP_MaterialIsolacao.</param>
 /// <param name="Pontos">Pontos de carga do circuito.</param>
 /// <param name="TipoDeCondutor">AMP_TipoCondutor.</param>
-/// <param name="IdrDoProjetista">Decisão do projetista sobre o IDR do circuito, se houver.</param>
+/// <param name="Decisoes">Decisões do projetista no circuito (AMP_* de entrada), se houver.</param>
 /// <param name="ComprimentoNoRevit">Comprimento calculado pelo Revit, usado quando AMP_ComprimentoRotaM está vazio.</param>
 /// <param name="Quadro">AMP_Quadro do circuito (só para identificar o circuito nos relatórios e no resumo).</param>
 public sealed record DadosDoCircuito(
@@ -33,9 +33,40 @@ public sealed record DadosDoCircuito(
     string? Isolacao,
     IReadOnlyList<DadosDoPonto> Pontos,
     string? TipoDeCondutor = null,
-    DecisaoDeIdr? IdrDoProjetista = null,
+    DecisoesDoProjetista? Decisoes = null,
     ComprimentoDoRevit? ComprimentoNoRevit = null,
     string? Quadro = null);
+
+/// <summary>
+///     Decisões do projetista no circuito, como o adapter as lê: parâmetros AMP_* de entrada, que o dimensionamento
+///     nunca escreve (nulo = parâmetro vazio).
+/// </summary>
+/// <remarks>
+///     Numérico 0 = sem decisão: o Revit não devolve parâmetro numérico a "sem valor", então zerar é o único jeito de o
+///     projetista desfazer a decisão.
+/// </remarks>
+/// <param name="SecaoMinimaMm2">AMP_SecaoMinimaProjetistaMm2: piso da seção (o cálculo pode subir, nunca descer).</param>
+/// <param name="DisjuntorA">AMP_DisjuntorProjetistaA: In fixa, verificada em IB ≤ In ≤ IZ.</param>
+/// <param name="Idr">AMP_IDR_DecisaoProjetista: "Exigir" ou "Dispensar" (vazio = tabela por local).</param>
+/// <param name="IdrSensibilidadeMa">AMP_IDR_SensibilidadeProjetistaMa: IΔn do IDR exigido.</param>
+/// <param name="Justificativa">AMP_JustificativaProjetista, registrada na memória.</param>
+/// <param name="TemperaturaAmbienteC">AMP_TemperaturaAmbienteC: no lugar da temperatura do projeto.</param>
+/// <param name="CircuitosAgrupados">AMP_CircuitosAgrupados: no lugar do agrupamento do projeto (inteiro, incluindo o circuito).</param>
+public sealed record DecisoesDoProjetista(
+    decimal? SecaoMinimaMm2 = null,
+    decimal? DisjuntorA = null,
+    string? Idr = null,
+    decimal? IdrSensibilidadeMa = null,
+    string? Justificativa = null,
+    decimal? TemperaturaAmbienteC = null,
+    decimal? CircuitosAgrupados = null)
+{
+    /// <summary>Valor de AMP_IDR_DecisaoProjetista que exige IDR no circuito.</summary>
+    public const string ExigirIdr = "Exigir";
+
+    /// <summary>Valor de AMP_IDR_DecisaoProjetista que dispensa o IDR do circuito.</summary>
+    public const string DispensarIdr = "Dispensar";
+}
 
 /// <summary>
 ///     Condições do projeto que não são parâmetros do circuito, informadas pelo projetista.
@@ -59,7 +90,8 @@ public sealed record CondicoesDoProjeto(
 /// <summary>
 ///     Monta a entrada do dimensionamento a partir dos dados do circuito: potência = soma dos pontos; tensão e fases =
 ///     o valor comum dos pontos que o informam (valores diferentes são problema, nunca um deles escolhido); comprimento =
-///     AMP_ComprimentoRotaM ou, vazio, o calculado pelo Revit.
+///     AMP_ComprimentoRotaM ou, vazio, o calculado pelo Revit; decisões do projetista (seção mínima, disjuntor, IDR,
+///     temperatura e agrupamento do circuito) passam ao motor, que as verifica e registra na memória.
 /// </summary>
 /// <remarks>
 ///     Comprimentos arredondados ao milímetro: a conversão de unidades do Revit (pés) deixa resíduo de ponto flutuante,
@@ -87,6 +119,7 @@ public static class EntradaDoCircuito
         Unica(tensoes.Select(NumeroEmTexto.Formatar).ToList(), "AMP_TensaoCircuitoV", "tensões", problemas);
         var fases = dados.Pontos.Select(ponto => ponto.Fases).OfType<string>().Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
         Unica(fases, "AMP_Fases", "fases", problemas);
+        var decisoes = Decisoes(dados.Decisoes ?? new DecisoesDoProjetista(), condicoes, problemas);
         if (problemas.Count > 0) return new EntradaMontada(null, problemas);
 
         var entrada = new EntradaDeDimensionamento(
@@ -99,14 +132,102 @@ public static class EntradaDoCircuito
             metodo!,
             isolacao!,
             condicoes.Material,
-            condicoes.TemperaturaAmbienteC,
-            condicoes.CircuitosAgrupados,
+            decisoes.TemperaturaAmbienteC,
+            decisoes.CircuitosAgrupados,
             tipoDeCondutor,
             Escolher(condicoes.TipoDeEletroduto, null),
             dados.Pontos.Select(ponto => ponto.Local).ToList(),
-            dados.IdrDoProjetista,
-            origemDoComprimento);
+            decisoes.Idr,
+            origemDoComprimento,
+            decisoes.SecaoMinimaMm2,
+            decisoes.DisjuntorA,
+            decisoes.Justificativa,
+            decisoes.OrigemDaTemperatura,
+            decisoes.OrigemDoAgrupamento);
         return new EntradaMontada(entrada, []);
+    }
+
+    private sealed record DecisoesMontadas(
+        decimal? SecaoMinimaMm2,
+        decimal? DisjuntorA,
+        DecisaoDeIdr? Idr,
+        string? Justificativa,
+        decimal TemperaturaAmbienteC,
+        string? OrigemDaTemperatura,
+        int CircuitosAgrupados,
+        string? OrigemDoAgrupamento);
+
+    // Numérico 0 = sem decisão (o Revit não esvazia parâmetro numérico). Decisão incoerente é problema de dados, nunca
+    // interpretada: o projetista corrige o parâmetro e roda de novo.
+    private static DecisoesMontadas Decisoes(DecisoesDoProjetista decisoes, CondicoesDoProjeto condicoes, List<string> problemas)
+    {
+        var justificativa = string.IsNullOrWhiteSpace(decisoes.Justificativa) ? null : decisoes.Justificativa.Trim();
+        var secao = Positivo(decisoes.SecaoMinimaMm2, "AMP_SecaoMinimaProjetistaMm2", problemas);
+        var disjuntor = Positivo(decisoes.DisjuntorA, "AMP_DisjuntorProjetistaA", problemas);
+        var idr = Idr(decisoes, justificativa, problemas);
+        var porque = justificativa is null ? "sem justificativa informada" : $"justificativa: {justificativa}";
+
+        var (temperatura, origemDaTemperatura) = decisoes.TemperaturaAmbienteC is { } doCircuito and not 0m
+            ? (doCircuito, $"AMP_TemperaturaAmbienteC do circuito (o projeto usa {NumeroEmTexto.Formatar(condicoes.TemperaturaAmbienteC)} °C; {porque})")
+            : (condicoes.TemperaturaAmbienteC, (string?)null);
+
+        var (agrupados, origemDoAgrupamento) = (condicoes.CircuitosAgrupados, (string?)null);
+        if (decisoes.CircuitosAgrupados is { } informados and not 0m)
+        {
+            if (informados < 1m || informados > int.MaxValue || informados != decimal.Truncate(informados))
+                problemas.Add($"AMP_CircuitosAgrupados deve ser um número inteiro de circuitos, pelo menos 1 ('{NumeroEmTexto.Formatar(informados)}'; 0 = o do projeto)");
+            else
+                (agrupados, origemDoAgrupamento) = ((int)informados,
+                    $"AMP_CircuitosAgrupados do circuito (o projeto usa {condicoes.CircuitosAgrupados}; {porque})");
+        }
+
+        return new DecisoesMontadas(secao, disjuntor, idr, justificativa, temperatura, origemDaTemperatura, agrupados, origemDoAgrupamento);
+    }
+
+    private static decimal? Positivo(decimal? valor, string parametro, List<string> problemas)
+    {
+        if (valor is not { } informado || informado == 0m) return null;
+        if (informado < 0m) problemas.Add($"{parametro} negativo ('{NumeroEmTexto.Formatar(informado)}'; 0 = sem decisão)");
+        return informado;
+    }
+
+    private static DecisaoDeIdr? Idr(DecisoesDoProjetista decisoes, string? justificativa, List<string> problemas)
+    {
+        const string Decisao = "AMP_IDR_DecisaoProjetista";
+        const string Sensibilidade = "AMP_IDR_SensibilidadeProjetistaMa";
+        var sensibilidade = decisoes.IdrSensibilidadeMa is { } valor and not 0m ? valor : (decimal?)null;
+        var texto = decisoes.Idr?.Trim();
+
+        if (string.IsNullOrEmpty(texto))
+        {
+            if (sensibilidade is not null) problemas.Add($"{Sensibilidade} preenchida sem {Decisao} = {DecisoesDoProjetista.ExigirIdr}");
+            return null;
+        }
+
+        if (string.Equals(texto, DecisoesDoProjetista.DispensarIdr, StringComparison.OrdinalIgnoreCase))
+        {
+            if (sensibilidade is null) return DecisaoDeIdr.Dispensado(justificativa);
+            problemas.Add($"{Decisao} = {DecisoesDoProjetista.DispensarIdr} com {Sensibilidade} preenchida: zere a sensibilidade ou exija o IDR");
+            return null;
+        }
+
+        if (!string.Equals(texto, DecisoesDoProjetista.ExigirIdr, StringComparison.OrdinalIgnoreCase))
+        {
+            problemas.Add($"{Decisao} '{texto}' desconhecido: use {DecisoesDoProjetista.ExigirIdr} ou {DecisoesDoProjetista.DispensarIdr} (vazio = tabela por local)");
+            return null;
+        }
+
+        switch (sensibilidade)
+        {
+            case null:
+                problemas.Add($"{Decisao} = {DecisoesDoProjetista.ExigirIdr} sem {Sensibilidade}: informe a IΔn, em mA");
+                return null;
+            case < 0m:
+                problemas.Add($"{Sensibilidade} negativa ('{NumeroEmTexto.Formatar(sensibilidade.Value)}'; 0 = sem decisão)");
+                return null;
+            default:
+                return DecisaoDeIdr.Exigido(sensibilidade.Value, justificativa);
+        }
     }
 
     // AMP_ComprimentoRotaM = 0 conta como vazio: o Revit não devolve parâmetro numérico a "sem valor", então zerar é o

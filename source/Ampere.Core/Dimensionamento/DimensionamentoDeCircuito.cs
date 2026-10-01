@@ -24,6 +24,10 @@ namespace Ampere.Core.Dimensionamento;
 ///         <item>Eletroduto: menor tamanho do catálogo com n · d² / Di² dentro da taxa máxima, contando só os condutores
 ///         do próprio circuito (fases, neutro e proteção, todos com o diâmetro da fase). Diâmetros vêm dos catálogos de
 ///         fabricante; catálogo sem dados interrompe o cálculo como tabela TODO_NORMA.</item>
+///         <item>Decisões do projetista (seção mínima, disjuntor): verificadas, nunca aceitas às cegas. A seção do
+///         projetista é piso (abaixo da mínima da norma, vale a da norma, com aviso); o disjuntor do projetista é fixo, e a
+///         seção sobe até IZ ≥ In. Seção fora das nominais ou In fora da série ou abaixo de IB interrompe o cálculo. A
+///         memória registra cada decisão com a justificativa.</item>
 ///         <item>Aritmética em <c>decimal</c> e memória determinística.</item>
 ///     </list>
 /// </remarks>
@@ -82,16 +86,20 @@ public static class DimensionamentoDeCircuito
                 $"n = condutores carregados ({entrada.Fases})", [], "condutores");
             _condutoresCarregados = condutores;
             _fct = Consultar(perfil.FatorDeTemperatura(entrada.MetodoDeInstalacao, entrada.Isolacao, entrada.TemperaturaAmbienteC), "Fator de correção de temperatura",
-                $"FCT = tabela ({entrada.Isolacao}; {Numero(entrada.TemperaturaAmbienteC)} °C)", [new ValorDoPasso("θ", entrada.TemperaturaAmbienteC, "°C")], string.Empty);
+                $"FCT = tabela ({entrada.Isolacao}; {Numero(entrada.TemperaturaAmbienteC)} °C)", [new ValorDoPasso("θ", entrada.TemperaturaAmbienteC, "°C")], string.Empty,
+                entrada.OrigemDaTemperatura is { Length: > 0 } origemDaTemperatura ? $"θ: {origemDaTemperatura}" : null);
             _fca = Consultar(perfil.FatorDeAgrupamento(entrada.CircuitosAgrupados), "Fator de correção de agrupamento",
-                $"FCA = tabela ({Contagem(entrada.CircuitosAgrupados, "circuito", "circuitos")})", [new ValorDoPasso("circuitos", entrada.CircuitosAgrupados, string.Empty)], string.Empty);
+                $"FCA = tabela ({Contagem(entrada.CircuitosAgrupados, "circuito", "circuitos")})", [new ValorDoPasso("circuitos", entrada.CircuitosAgrupados, string.Empty)], string.Empty,
+                entrada.OrigemDoAgrupamento is { Length: > 0 } origemDoAgrupamento ? $"circuitos: {origemDoAgrupamento}" : null);
 
             var tipoDeCircuito = entrada.Tipo == TipoDeCarga.Iluminacao ? "Iluminacao" : "Forca";
             var secaoMinima = Consultar(perfil.SecaoMinimaMm2(tipoDeCircuito), "Seção mínima", $"Smín = tabela ({tipoDeCircuito})", [], "mm²");
             var secoes = Exigir(perfil.SecoesNominaisMm2(), "Seções nominais", "S ∈ seções nominais", "mm²");
-            var candidatas = secoes.Where(secao => secao >= secaoMinima).ToList();
+            var piso = SecaoMinimaDoProjetista(secaoMinima, secoes);
+            var candidatas = secoes.Where(secao => secao >= piso).ToList();
 
-            var indice = SecaoPelaCapacidade(ib, candidatas, secaoMinima, secoes);
+            var disjuntorDoProjetista = DisjuntorDoProjetista(ib);
+            var indice = SecaoPelaCapacidade(ib, disjuntorDoProjetista, candidatas, piso, secoes);
             var disjuntores = Exigir(perfil.CorrentesNominaisDeDisjuntorA(), "Correntes nominais de disjuntor", "In ∈ correntes nominais", "A");
             var resistividade = Consultar(perfil.ResistividadeOhmMm2PorM(entrada.Material), "Resistividade do condutor",
                 $"ρ = tabela ({entrada.Material})", [], "Ω·mm²/m");
@@ -104,11 +112,15 @@ public static class DimensionamentoDeCircuito
             {
                 var secao = candidatas[indice];
                 var (capacidadeDeTabela, capacidade, referenciaDaCapacidade) = Capacidade(secao);
-                decimal? disjuntor = disjuntores.Where(corrente => corrente >= ib && corrente <= capacidade).Select(corrente => (decimal?)corrente).FirstOrDefault();
+                decimal? disjuntor = disjuntorDoProjetista is { } fixo
+                    ? (fixo <= capacidade ? fixo : null)
+                    : disjuntores.Where(corrente => corrente >= ib && corrente <= capacidade).Select(corrente => (decimal?)corrente).FirstOrDefault();
                 var queda = fator * resistividade * entrada.ComprimentoM * ib / (secao * entrada.TensaoV) * 100m;
 
                 var motivo = disjuntor is null
-                    ? $"nenhum disjuntor entre IB = {Numero(ib)} A e IZ = {Numero(capacidade)} A"
+                    ? disjuntorDoProjetista is { } exigido
+                        ? $"IZ = {Numero(capacidade)} A abaixo do In = {Numero(exigido)} A do disjuntor do projetista"
+                        : $"nenhum disjuntor entre IB = {Numero(ib)} A e IZ = {Numero(capacidade)} A"
                     : queda > limite
                         ? $"queda de tensão {Numero(queda)}% acima do limite de {Numero(limite)}%"
                         : null;
@@ -118,9 +130,12 @@ public static class DimensionamentoDeCircuito
                     Passo(referenciaDaCapacidade, "Capacidade de condução da seção adotada", "IZ = IZ₀(S) · FCA · FCT",
                         [new ValorDoPasso("S", secao, "mm²"), new ValorDoPasso("IZ₀", capacidadeDeTabela, "A"), new ValorDoPasso("FCA", _fca!.Value, string.Empty), new ValorDoPasso("FCT", _fct!.Value, string.Empty)],
                         capacidade, "A", elevacoes.Count > 0 ? string.Join("; ", elevacoes) : null);
-                    Passo(perfil.ReferenciaDaRegra(RegraNormativa.CoordenacaoCondutorProtecao), "Disjuntor", "menor In com IB ≤ In ≤ IZ",
+                    Passo(perfil.ReferenciaDaRegra(RegraNormativa.CoordenacaoCondutorProtecao), "Disjuntor",
+                        disjuntorDoProjetista is null ? "menor In com IB ≤ In ≤ IZ" : "In do projetista, com IB ≤ In ≤ IZ",
                         [new ValorDoPasso("IB", ib, "A"), new ValorDoPasso("IZ", capacidade, "A")], disjuntor, "A",
-                        $"correntes nominais: {perfil.CorrentesNominaisDeDisjuntorA().Referencia}");
+                        disjuntorDoProjetista is null
+                            ? $"correntes nominais: {perfil.CorrentesNominaisDeDisjuntorA().Referencia}"
+                            : $"decisão do projetista, verificada ({Justificativa()})");
                     Passo(perfil.ReferenciaDaRegra(RegraNormativa.QuedaDeTensao), "Queda de tensão", "ΔV% = k · ρ · L · IB / (S · V) · 100",
                         [new ValorDoPasso("k", fator, string.Empty), new ValorDoPasso("ρ", resistividade, "Ω·mm²/m"), new ValorDoPasso("L", entrada.ComprimentoM, "m"),
                          new ValorDoPasso("IB", ib, "A"), new ValorDoPasso("S", secao, "mm²"), new ValorDoPasso("V", entrada.TensaoV, "V")],
@@ -307,25 +322,75 @@ public static class DimensionamentoDeCircuito
             _ocupacao = ocupacao;
         }
 
-        private int SecaoPelaCapacidade(decimal ib, List<decimal> candidatas, decimal secaoMinima, IReadOnlyList<decimal> secoes)
+        /// <summary>Piso da seção: a mínima da norma ou, se maior, a do projetista (que precisa ser seção nominal).</summary>
+        private decimal SecaoMinimaDoProjetista(decimal secaoMinima, IReadOnlyList<decimal> secoes)
         {
+            if (entrada.SecaoMinimaDoProjetistaMm2 is not { } doProjetista) return secaoMinima;
+
+            const string Descricao = "Seção mínima do projetista";
+            const string Expressao = "S ≥ S do projetista";
+            var referencia = perfil.SecoesNominaisMm2().Referencia;
+            if (!secoes.Contains(doProjetista))
+                Parar(referencia, Descricao, Expressao, "mm²", $"{Numero(doProjetista)} mm² não é seção nominal do perfil ({string.Join("; ", secoes.Select(Numero))})");
+
+            if (doProjetista < secaoMinima)
+            {
+                Passo(referencia, Descricao, Expressao, [], doProjetista, "mm²",
+                    $"decisão do projetista ({Justificativa()}); abaixo da seção mínima da norma ({Numero(secaoMinima)} mm²), que prevalece");
+                _avisos.Add($"seção mínima do projetista ({Numero(doProjetista)} mm²) abaixo da mínima da norma ({Numero(secaoMinima)} mm²): vale a da norma");
+                return secaoMinima;
+            }
+
+            Passo(referencia, Descricao, Expressao, [], doProjetista, "mm²",
+                $"decisão do projetista ({Justificativa()}); o cálculo pode adotar seção maior, nunca menor");
+            return doProjetista;
+        }
+
+        /// <summary>In do projetista, se houver: da série do perfil e não abaixo de IB.</summary>
+        private decimal? DisjuntorDoProjetista(decimal ib)
+        {
+            if (entrada.DisjuntorDoProjetistaA is not { } doProjetista) return null;
+
+            const string Descricao = "Disjuntor do projetista";
+            var referencia = perfil.ReferenciaDaRegra(RegraNormativa.CoordenacaoCondutorProtecao);
+            var serie = Exigir(perfil.CorrentesNominaisDeDisjuntorA(), "Correntes nominais de disjuntor", "In ∈ correntes nominais", "A");
+            if (!serie.Contains(doProjetista))
+                Parar(referencia, Descricao, "In ∈ correntes nominais", "A", $"In = {Numero(doProjetista)} A fora das correntes nominais do perfil ({string.Join("; ", serie.Select(Numero))})");
+            if (doProjetista < ib)
+                Parar(referencia, Descricao, "IB ≤ In", "A", $"In = {Numero(doProjetista)} A do projetista abaixo de IB = {Numero(ib)} A");
+
+            Passo(referencia, Descricao, "IB ≤ In (IZ ≥ In verificado na seção)", [new ValorDoPasso("IB", ib, "A")], doProjetista, "A",
+                $"decisão do projetista ({Justificativa()}); a seção sobe até IZ ≥ In");
+            return doProjetista;
+        }
+
+        private int SecaoPelaCapacidade(decimal ib, decimal? disjuntorDoProjetista, List<decimal> candidatas, decimal secaoMinima, IReadOnlyList<decimal> secoes)
+        {
+            // Com disjuntor do projetista, a seção precisa de IZ ≥ In (e In ≥ IB já foi verificado).
+            var alvo = disjuntorDoProjetista ?? ib;
+            var (expressao, nome) = disjuntorDoProjetista is null
+                ? ("menor S ≥ Smín com IZ₀(S) · FCA · FCT ≥ IB", "IB")
+                : ("menor S ≥ Smín com IZ₀(S) · FCA · FCT ≥ In do projetista", "In");
             var referencia = PerfilNormativo.TodoNorma;
             for (var indice = 0; indice < candidatas.Count; indice++)
             {
                 var (_, capacidade, referenciaDaTabela) = Capacidade(candidatas[indice]);
                 referencia = referenciaDaTabela;
-                if (capacidade < ib) continue;
+                if (capacidade < alvo) continue;
 
-                Passo(referencia, "Seção pela capacidade de condução", "menor S ≥ Smín com IZ₀(S) · FCA · FCT ≥ IB",
-                    [new ValorDoPasso("Smín", secaoMinima, "mm²"), new ValorDoPasso("IB", ib, "A"), new ValorDoPasso("FCA", _fca!.Value, string.Empty), new ValorDoPasso("FCT", _fct!.Value, string.Empty)],
+                Passo(referencia, "Seção pela capacidade de condução", expressao,
+                    [new ValorDoPasso("Smín", secaoMinima, "mm²"), new ValorDoPasso(nome, alvo, "A"), new ValorDoPasso("FCA", _fca!.Value, string.Empty), new ValorDoPasso("FCT", _fct!.Value, string.Empty)],
                     candidatas[indice], "mm²", $"seções nominais: {perfil.SecoesNominaisMm2().Referencia}");
                 return indice;
             }
 
             var maior = candidatas.Count > 0 ? candidatas[^1] : (secoes.Count > 0 ? secoes[^1] : 0m);
-            return Parar<int>(referencia, "Seção pela capacidade de condução", "menor S ≥ Smín com IZ₀(S) · FCA · FCT ≥ IB", "mm²",
-                $"nenhuma seção do perfil atende IB = {Numero(ib)} A (maior seção: {Numero(maior)} mm²)");
+            return Parar<int>(referencia, "Seção pela capacidade de condução", expressao, "mm²",
+                $"nenhuma seção do perfil atende {nome} = {Numero(alvo)} A (maior seção: {Numero(maior)} mm²)");
         }
+
+        private string Justificativa() =>
+            string.IsNullOrWhiteSpace(entrada.Justificativa) ? "sem justificativa informada" : $"justificativa: {entrada.Justificativa.Trim()}";
 
         private (decimal DeTabela, decimal Corrigida, string Referencia) Capacidade(decimal secao)
         {
@@ -340,10 +405,11 @@ public static class DimensionamentoDeCircuito
             return (dado.Valor, dado.Valor * _fca!.Value * _fct!.Value, dado.Referencia);
         }
 
-        private decimal Consultar(DadoNormativo<decimal> dado, string descricao, string expressao, IReadOnlyList<ValorDoPasso> valores, string unidade)
+        private decimal Consultar(DadoNormativo<decimal> dado, string descricao, string expressao, IReadOnlyList<ValorDoPasso> valores, string unidade,
+            string? observacao = null)
         {
             if (!dado.Disponivel) Parar(dado.Referencia, descricao, expressao, unidade, dado.Ausencia!);
-            Passo(dado.Referencia, descricao, expressao, valores, dado.Valor, unidade);
+            Passo(dado.Referencia, descricao, expressao, valores, dado.Valor, unidade, observacao);
             return dado.Valor;
         }
 
