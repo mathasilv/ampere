@@ -31,6 +31,7 @@ public static class CondicoesEmJson
             escritor.WriteStartObject();
             escritor.WriteNumber("versao", Versao);
             escritor.WriteNumber("temperatura_ambiente_c", condicoes.TemperaturaAmbienteC);
+            if (condicoes.TemperaturaDoSoloC is { } solo) escritor.WriteNumber("temperatura_do_solo_c", solo);
             escritor.WriteNumber("circuitos_agrupados", condicoes.CircuitosAgrupados);
             escritor.WriteString("material", condicoes.Material);
             Opcional(escritor, "metodo_de_instalacao_padrao", condicoes.MetodoDeInstalacaoPadrao);
@@ -59,6 +60,13 @@ public static class CondicoesEmJson
             if (!Numero(raiz, "circuitos_agrupados", out var agrupados) || agrupados < 1 || agrupados > int.MaxValue || agrupados != decimal.Truncate(agrupados))
                 return null;
             if (Texto(raiz, "material") is not { } material) return null;
+            // Opcional, acrescentado sem mudar a versão: quem não o conhece o ignora; presente, precisa ser número.
+            decimal? solo = null;
+            if (raiz.TryGetProperty("temperatura_do_solo_c", out _))
+            {
+                if (!Numero(raiz, "temperatura_do_solo_c", out var lida)) return null;
+                solo = lida;
+            }
 
             return new CondicoesDoProjeto(
                 temperatura,
@@ -67,7 +75,8 @@ public static class CondicoesEmJson
                 Texto(raiz, "metodo_de_instalacao_padrao"),
                 Texto(raiz, "isolacao_padrao"),
                 Texto(raiz, "tipo_de_condutor_padrao"),
-                Texto(raiz, "tipo_de_eletroduto"));
+                Texto(raiz, "tipo_de_eletroduto"),
+                solo);
         }
         catch (JsonException)
         {

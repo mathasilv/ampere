@@ -6,12 +6,13 @@ namespace Ampere.Core.Entradas;
 /// <summary>
 ///     Converte os campos do diálogo "Dimensionar circuitos" em <see cref="CondicoesDoProjeto" />. Temperatura, circuitos
 ///     agrupados e material são obrigatórios — o Ampere não presume a condição de instalação; os padrões de método,
-///     isolação e tipos são opcionais (vazio = cada circuito usa o seu AMP_*).
+///     isolação e tipos são opcionais (vazio = cada circuito usa o seu AMP_*), como a temperatura do solo (vazio = as
+///     linhas enterradas precisam de AMP_TemperaturaAmbienteC no circuito).
 /// </summary>
 public static class EntradaDeCondicoes
 {
     public static CondicoesDigitadas Interpretar(
-        string? temperaturaC, string? circuitosAgrupados, string? material, string? metodoPadrao, string? isolacaoPadrao,
+        string? temperaturaC, string? temperaturaDoSoloC, string? circuitosAgrupados, string? material, string? metodoPadrao, string? isolacaoPadrao,
         string? tipoDeCondutorPadrao, string? tipoDeEletroduto, CultureInfo cultura)
     {
         var problemas = new List<string>();
@@ -19,6 +20,9 @@ public static class EntradaDeCondicoes
         var temperatura = NumeroDigitado.Interpretar(temperaturaC, cultura);
         if (temperatura.Problema is not null) problemas.Add($"temperatura ambiente: {temperatura.Problema}");
         else if (temperatura.Valor is null) problemas.Add("informe a temperatura ambiente (°C)");
+
+        var solo = NumeroDigitado.Interpretar(temperaturaDoSoloC, cultura);
+        if (solo.Problema is not null) problemas.Add($"temperatura do solo: {solo.Problema}");
 
         int? agrupados = null;
         var numeroDeCircuitos = NumeroDigitado.Interpretar(circuitosAgrupados, cultura);
@@ -38,7 +42,8 @@ public static class EntradaDeCondicoes
             Opcional(metodoPadrao),
             Opcional(isolacaoPadrao),
             Opcional(tipoDeCondutorPadrao),
-            Opcional(tipoDeEletroduto)), []);
+            Opcional(tipoDeEletroduto),
+            solo.Valor), []);
     }
 
     private static string? Opcional(string? texto) => string.IsNullOrWhiteSpace(texto) ? null : texto.Trim();

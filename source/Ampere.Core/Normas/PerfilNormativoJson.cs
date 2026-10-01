@@ -28,19 +28,27 @@ internal sealed record TabelasDoPerfil(
     TabelaJson<List<decimal>>? CorrentesNominaisIdrA,
     TabelaJson<List<decimal>>? SensibilidadesNominaisIdrMa,
     TabelaJson<List<LinhaDeProtecaoDiferencialJson>>? ProtecaoDiferencialPorLocal,
-    TabelaJson<Dictionary<string, decimal>>? FatorDeDemandaPorTipo);
+    TabelaJson<Dictionary<string, decimal>>? FatorDeDemandaPorTipo,
+    TabelaJson<List<string>>? MetodosComEletroduto = null,
+    TabelaDeAgrupamentoJson? FatorDeAgrupamentoEnterrado = null);
 
 internal sealed record TabelaJson<T>(string? Ref, T? Valores);
 
+/// <summary>Tabela de agrupamento própria de alguns métodos (ex.: Tabela 44, linhas enterradas): chave = número exato de circuitos.</summary>
+internal sealed record TabelaDeAgrupamentoJson(string? Ref, List<string>? Metodos, Dictionary<string, decimal>? Valores);
+
+/// <param name="Ref">Referência só desta linha (ex.: a coluna da Tabela 38), no lugar da ref da tabela.</param>
 internal sealed record LinhaDeCapacidadeJson(
     string? Metodo,
     string? Isolacao,
     string? Material,
     int? CondutoresCarregados,
-    Dictionary<string, decimal>? PorSecaoMm2);
+    Dictionary<string, decimal>? PorSecaoMm2,
+    string? Ref = null);
 
 /// <param name="Metodos">Métodos de instalação a que a linha se aplica (ex.: a Tabela 40 do ar não vale para o D, enterrado); ausente = todos.</param>
-internal sealed record LinhaDeTemperaturaJson(string? Isolacao, Dictionary<string, decimal>? PorTemperaturaC, List<string>? Metodos = null);
+/// <param name="Ref">Referência só desta linha (ex.: a coluna do solo da Tabela 40), no lugar da ref da tabela.</param>
+internal sealed record LinhaDeTemperaturaJson(string? Isolacao, Dictionary<string, decimal>? PorTemperaturaC, List<string>? Metodos = null, string? Ref = null);
 
 internal sealed record LinhaDeProtecaoDiferencialJson(string? Local, List<string>? TiposDeCarga, decimal? SensibilidadeMaximaMa);
 

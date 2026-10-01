@@ -23,7 +23,10 @@ namespace Ampere.Core.Dimensionamento;
 ///         local ou local fora da tabela, sem decisão do projetista, interrompe o cálculo.</item>
 ///         <item>Eletroduto: menor tamanho do catálogo com n · d² / Di² dentro da taxa máxima, contando só os condutores
 ///         do próprio circuito (fases, neutro e proteção, todos com o diâmetro da fase). Diâmetros vêm dos catálogos de
-///         fabricante; catálogo sem dados interrompe o cálculo como tabela TODO_NORMA.</item>
+///         fabricante; catálogo sem dados interrompe o cálculo como tabela TODO_NORMA. Só nos métodos que o perfil diz
+///         levarem eletroduto (<see cref="PerfilNormativo.ComEletroduto" />).</item>
+///         <item>Linha enterrada (<see cref="PerfilNormativo.Enterrado" />): a temperatura da entrada é a do solo e o
+///         agrupamento sai da tabela própria do método.</item>
 ///         <item>Decisões do projetista (seção mínima, disjuntor): verificadas, nunca aceitas às cegas. A seção do
 ///         projetista é piso (abaixo da mínima da norma, vale a da norma, com aviso); o disjuntor do projetista é fixo, e a
 ///         seção sobe até IZ ≥ In. Seção fora das nominais ou In fora da série ou abaixo de IB interrompe o cálculo. A
@@ -86,10 +89,11 @@ public static class DimensionamentoDeCircuito
                 $"n = condutores carregados ({entrada.Fases})", [], "condutores");
             _condutoresCarregados = condutores;
             IsolacaoDoCondutor();
+            var noSolo = perfil.Enterrado(entrada.MetodoDeInstalacao) ? " no solo" : string.Empty;
             _fct = Consultar(perfil.FatorDeTemperatura(entrada.MetodoDeInstalacao, entrada.Isolacao, entrada.TemperaturaAmbienteC), "Fator de correção de temperatura",
-                $"FCT = tabela ({entrada.Isolacao}; {Numero(entrada.TemperaturaAmbienteC)} °C)", [new ValorDoPasso("θ", entrada.TemperaturaAmbienteC, "°C")], string.Empty,
+                $"FCT = tabela ({entrada.Isolacao}; {Numero(entrada.TemperaturaAmbienteC)} °C{noSolo})", [new ValorDoPasso("θ", entrada.TemperaturaAmbienteC, "°C")], string.Empty,
                 entrada.OrigemDaTemperatura is { Length: > 0 } origemDaTemperatura ? $"θ: {origemDaTemperatura}" : null);
-            _fca = Consultar(perfil.FatorDeAgrupamento(entrada.CircuitosAgrupados), "Fator de correção de agrupamento",
+            _fca = Consultar(perfil.FatorDeAgrupamento(entrada.MetodoDeInstalacao, entrada.CircuitosAgrupados), "Fator de correção de agrupamento",
                 $"FCA = tabela ({LinhaDoAgrupamento(entrada.CircuitosAgrupados)})", [new ValorDoPasso("circuitos", entrada.CircuitosAgrupados, string.Empty)], string.Empty,
                 entrada.OrigemDoAgrupamento is { Length: > 0 } origemDoAgrupamento ? $"circuitos: {origemDoAgrupamento}" : null);
 
@@ -147,7 +151,8 @@ public static class DimensionamentoDeCircuito
                     _disjuntor = disjuntor;
                     _queda = queda;
                     Idr(disjuntor!.Value);
-                    Eletroduto(secao);
+                    // C, E, F e G (sobre parede ou ao ar livre) não têm eletroduto: a memória termina no IDR.
+                    if (perfil.ComEletroduto(entrada.MetodoDeInstalacao)) Eletroduto(secao);
                     return;
                 }
 
@@ -461,7 +466,7 @@ public static class DimensionamentoDeCircuito
         private string LinhaDoAgrupamento(int circuitos)
         {
             var contagem = Contagem(circuitos, "circuito", "circuitos");
-            return perfil.FaixaDeAgrupamento(circuitos) switch
+            return perfil.FaixaDeAgrupamento(entrada.MetodoDeInstalacao, circuitos) switch
             {
                 { Fim: null } faixa => $"{contagem}: faixa de {faixa.Inicio} ou mais",
                 { } faixa when faixa.Fim > faixa.Inicio => $"{contagem}: faixa de {faixa.Inicio} a {faixa.Fim}",

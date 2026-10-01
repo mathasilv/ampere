@@ -48,6 +48,31 @@ public class DecisoesDoProjetista_Teste
     }
 
     [Test]
+    [Property("Fonte", "NBR 5410:2004, Tabela 40 (solo)")]
+    public async Task Linha_enterrada_usa_a_temperatura_do_solo_do_projeto_ou_a_do_circuito()
+    {
+        var oficial = PerfilNormativo.NBR5410_2004;
+        var dados = new DadosDoCircuito(1, "TUG-01", "TUG", 10m, "D", "PVC", [new DadosDoPonto(11, 1270m, 127m, "F+N", "Demais locais internos", "TUG")]);
+
+        var doProjeto = EntradaDoCircuito.Montar(dados, Condicoes with { TemperaturaDoSoloC = 25m }, oficial).Entrada!;
+        var doCircuito = EntradaDoCircuito.Montar(dados with { Decisoes = new DecisoesDoProjetista(TemperaturaAmbienteC: 35m, Justificativa: "solo exposto") },
+            Condicoes with { TemperaturaDoSoloC = 25m }, oficial).Entrada!;
+        var semSolo = EntradaDoCircuito.Montar(dados, Condicoes, oficial);
+
+        await Assert.That(doProjeto.TemperaturaAmbienteC).IsEqualTo(25m);
+        await Assert.That(doProjeto.OrigemDaTemperatura).IsEqualTo("temperatura do solo das condições do projeto (linha enterrada)");
+        await Assert.That(doCircuito.TemperaturaAmbienteC).IsEqualTo(35m);
+        await Assert.That(doCircuito.OrigemDaTemperatura).IsEqualTo(
+            "AMP_TemperaturaAmbienteC do circuito, a do solo na linha enterrada (o projeto usa 25 °C no solo; justificativa: solo exposto)");
+        await Assert.That(semSolo.Entrada).IsNull();
+        await Assert.That(semSolo.Problemas).IsEquivalentTo(
+            ["linha enterrada sem temperatura do solo: informe-a nas condições do projeto ou em AMP_TemperaturaAmbienteC do circuito"]);
+        // Fora do solo, a temperatura do solo do projeto não entra.
+        await Assert.That(EntradaDoCircuito.Montar(dados with { MetodoDeInstalacao = "B1" }, Condicoes with { TemperaturaDoSoloC = 25m }, oficial).Entrada!.TemperaturaAmbienteC)
+            .IsEqualTo(30m);
+    }
+
+    [Test]
     public async Task Secao_e_disjuntor_do_projetista_chegam_ao_motor()
     {
         var montada = Montar(new DecisoesDoProjetista(SecaoMinimaMm2: 4m, DisjuntorA: 20m, Justificativa: "padrão da obra"));
@@ -113,7 +138,7 @@ public class DecisoesDoProjetista_Teste
         var dados = new DadosDoCircuito(1, "TUG-01", "TUG", 10m, "B1", "PVC", [new DadosDoPonto(11, 1270m, 127m, "F+N", "LOCAL-SECO", "TUG")],
             ProblemasDeLeitura: ["AMP_DisjuntorProjetistaA fora da faixa (1E+300): corrija o valor"]);
 
-        var montada = EntradaDoCircuito.Montar(dados, Condicoes);
+        var montada = EntradaDoCircuito.Montar(dados, Condicoes, Ficticio);
 
         await Assert.That(montada.Entrada).IsNull();
         await Assert.That(montada.Problemas).IsEquivalentTo(["AMP_DisjuntorProjetistaA fora da faixa (1E+300): corrija o valor"]);
@@ -122,7 +147,7 @@ public class DecisoesDoProjetista_Teste
     private static EntradaMontada Montar(DecisoesDoProjetista? decisoes) =>
         EntradaDoCircuito.Montar(
             new DadosDoCircuito(1, "TUG-01", "TUG", 10m, "B1", "PVC", [new DadosDoPonto(11, 1270m, 127m, "F+N", "LOCAL-SECO", "TUG")], Decisoes: decisoes),
-            Condicoes);
+            Condicoes, Ficticio);
 
     private static Ampere.Core.Memoria.MemoriaDeCalculo Memoria(EntradaMontada montada) =>
         DimensionamentoDeCircuito.Dimensionar(montada.Entrada!, Ficticio, Catalogos).Memoria!;

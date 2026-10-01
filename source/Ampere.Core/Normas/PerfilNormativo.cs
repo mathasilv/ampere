@@ -48,6 +48,9 @@ public sealed class PerfilNormativo
     private readonly Tabela<IReadOnlyList<decimal>> _sensibilidadesDeIdr;
     private readonly Tabela<IReadOnlyDictionary<string, ProtecaoDiferencialDoLocal>> _protecaoDiferencial;
     private readonly Tabela<IReadOnlyDictionary<string, decimal>> _fatorDeDemanda;
+    private readonly Tabela<IReadOnlyList<string>>? _metodosComEletroduto;
+    private readonly Tabela<IReadOnlyDictionary<int, decimal>>? _agrupamentoEnterrado;
+    private readonly IReadOnlyList<string> _metodosEnterrados = [];
 
     private PerfilNormativo(string nome, bool ficticio, Leitor leitor, TabelasDoPerfil tabelas)
     {
@@ -65,7 +68,8 @@ public sealed class PerfilNormativo
         _temperatura = leitor.Ler<List<LinhaDeTemperaturaJson>, IReadOnlyList<LinhaDeTemperatura>>(
             "fator_de_temperatura", tabelas.FatorDeTemperatura, valores => valores.Count == 0,
             (valores, nome1) => valores
-                .Select(linha => new LinhaDeTemperatura(linha.Isolacao ?? string.Empty, leitor.Metodos(nome1, linha.Metodos), leitor.PorDecimal(nome1, linha.PorTemperaturaC)))
+                .Select(linha => new LinhaDeTemperatura(linha.Isolacao ?? string.Empty, leitor.Metodos(nome1, linha.Metodos), leitor.PorDecimal(nome1, linha.PorTemperaturaC),
+                    leitor.RefDaLinha($"{nome1} ({linha.Isolacao}{(linha.Metodos is { } metodos ? $"; {string.Join(", ", metodos)}" : string.Empty)})", linha.Ref)))
                 .ToList());
         _agrupamento = leitor.PorInteiro("fator_de_agrupamento", tabelas.FatorDeAgrupamento);
         _queda = leitor.PorTexto("queda_de_tensao_maxima_pct", tabelas.QuedaDeTensaoMaximaPct);
@@ -77,6 +81,19 @@ public sealed class PerfilNormativo
             "protecao_diferencial_por_local", tabelas.ProtecaoDiferencialPorLocal, valores => valores.Count == 0, leitor.ProtecaoDiferencial);
         _fatorDeDemanda = leitor.Ler<Dictionary<string, decimal>, IReadOnlyDictionary<string, decimal>>(
             "fator_de_demanda_por_tipo", tabelas.FatorDeDemandaPorTipo, valores => valores.Count == 0, leitor.Fracao);
+
+        // Opcionais: sem elas, todo método leva eletroduto e usa a tabela geral de agrupamento (perfis anteriores).
+        if (tabelas.MetodosComEletroduto is { } comEletroduto)
+        {
+            _metodosComEletroduto = leitor.Ler<List<string>, IReadOnlyList<string>>("metodos_com_eletroduto", comEletroduto, valores => valores.Count == 0,
+                (valores, nome1) => leitor.Metodos(nome1, valores)!);
+        }
+
+        if (tabelas.FatorDeAgrupamentoEnterrado is { } enterrado)
+        {
+            _agrupamentoEnterrado = leitor.PorInteiro("fator_de_agrupamento_enterrado", new TabelaJson<Dictionary<string, decimal>>(enterrado.Ref, enterrado.Valores));
+            _metodosEnterrados = leitor.Metodos("fator_de_agrupamento_enterrado", enterrado.Metodos ?? [])!;
+        }
 
         // Só o que o motor consegue levar adiante: método com fator de temperatura, material com resistividade.
         IReadOnlyList<LinhaDeCapacidade> capacidade = _capacidade.Pendente ? [] : _capacidade.Valores;
@@ -167,10 +184,24 @@ public sealed class PerfilNormativo
             linha.Metodo == metodo && linha.Isolacao == isolacao && linha.Material == material && linha.CondutoresCarregados == condutoresCarregados);
         if (linha is null) return DadoNormativo<decimal>.Ausente(_capacidade.Referencia, $"sem linha para {descricao}");
 
+        var referencia = linha.Referencia ?? _capacidade.Referencia;
         return linha.PorSecao.TryGetValue(secaoMm2, out var capacidade)
-            ? DadoNormativo<decimal>.Com(capacidade, _capacidade.Referencia)
-            : DadoNormativo<decimal>.Ausente(_capacidade.Referencia, $"sem valor para {NumeroEmTexto.Formatar(secaoMm2)} mm² ({descricao})");
+            ? DadoNormativo<decimal>.Com(capacidade, referencia)
+            : DadoNormativo<decimal>.Ausente(referencia, $"sem valor para {NumeroEmTexto.Formatar(secaoMm2)} mm² ({descricao})");
     }
+
+    /// <summary>
+    ///     O método de instalação leva eletroduto? Sem a tabela metodos_com_eletroduto no perfil (ou pendente), todos levam.
+    ///     Pela NBR 5410, C, E, F e G são cabos sobre parede ou ao ar livre: o motor não dimensiona eletroduto para eles.
+    /// </summary>
+    public bool ComEletroduto(string metodo) =>
+        _metodosComEletroduto is not { Pendente: false } tabela || tabela.Valores.Contains(metodo, StringComparer.Ordinal);
+
+    /// <summary>
+    ///     Linha enterrada: o método tem tabela de agrupamento própria (fator_de_agrupamento_enterrado) e a temperatura que
+    ///     vale para ele é a do solo.
+    /// </summary>
+    public bool Enterrado(string metodo) => _metodosEnterrados.Contains(metodo, StringComparer.Ordinal);
 
     /// <param name="metodo">Método de instalação: a linha precisa valer para ele (a Tabela 40 do ar não vale para linha enterrada).</param>
     public DadoNormativo<decimal> FatorDeTemperatura(string metodo, string isolacao, decimal temperaturaC)
@@ -183,16 +214,31 @@ public sealed class PerfilNormativo
         if (linha is null)
             return DadoNormativo<decimal>.Ausente(_temperatura.Referencia, $"sem fatores de temperatura para o método {metodo} ({isolacao}) no perfil");
 
+        var referencia = linha.Referencia ?? _temperatura.Referencia;
         return linha.PorTemperatura.TryGetValue(temperaturaC, out var fator)
-            ? DadoNormativo<decimal>.Com(fator, _temperatura.Referencia)
-            : DadoNormativo<decimal>.Ausente(_temperatura.Referencia, $"temperatura {NumeroEmTexto.Formatar(temperaturaC)} °C não tabelada para {isolacao}");
+            ? DadoNormativo<decimal>.Com(fator, referencia)
+            : DadoNormativo<decimal>.Ausente(referencia, $"temperatura {NumeroEmTexto.Formatar(temperaturaC)} °C não tabelada para {isolacao}");
     }
 
     /// <summary>
-    ///     Fator de agrupamento. As chaves da tabela são o início de cada faixa (ex.: "9" = 9 a 11, até a próxima chave; a
-    ///     última vale dali em diante): vale a maior faixa que não passa do número de circuitos.
+    ///     Fator de agrupamento. Na tabela geral, as chaves são o início de cada faixa (ex.: "9" = 9 a 11, até a próxima
+    ///     chave; a última vale dali em diante): vale a maior faixa que não passa do número de circuitos. Na das linhas
+    ///     enterradas, a chave é o número exato de circuitos: acima da última, não há fator.
     /// </summary>
-    public DadoNormativo<decimal> FatorDeAgrupamento(int circuitos)
+    public DadoNormativo<decimal> FatorDeAgrupamento(string metodo, int circuitos)
+    {
+        if (!Enterrado(metodo)) return FatorDeAgrupamento(circuitos);
+
+        var tabela = _agrupamentoEnterrado!;
+        if (tabela.Pendente) return Pendente<decimal>("fator_de_agrupamento_enterrado");
+        if (circuitos < 1) return DadoNormativo<decimal>.Ausente(tabela.Referencia, $"número de circuitos inválido ({circuitos})");
+        return tabela.Valores.TryGetValue(circuitos, out var fator)
+            ? DadoNormativo<decimal>.Com(fator, tabela.Referencia)
+            : DadoNormativo<decimal>.Ausente(tabela.Referencia,
+                $"sem fator para {circuitos} circuitos em linha enterrada (método {metodo}; a tabela vai até {tabela.Valores.Keys.Max()} circuitos)");
+    }
+
+    private DadoNormativo<decimal> FatorDeAgrupamento(int circuitos)
     {
         if (_agrupamento.Pendente) return Pendente<decimal>("fator_de_agrupamento");
         if (circuitos < 1) return DadoNormativo<decimal>.Ausente(_agrupamento.Referencia, $"número de circuitos inválido ({circuitos})");
@@ -202,8 +248,17 @@ public sealed class PerfilNormativo
             : DadoNormativo<decimal>.Ausente(_agrupamento.Referencia, $"sem fator para {circuitos} circuitos agrupados");
     }
 
-    /// <summary>Faixa da tabela de agrupamento que vale para o número de circuitos (fim nulo = "ou mais"); nula sem tabela ou sem faixa.</summary>
-    public (int Inicio, int? Fim)? FaixaDeAgrupamento(int circuitos)
+    /// <summary>
+    ///     Faixa da tabela de agrupamento que vale para o método e o número de circuitos (fim nulo = "ou mais"); nula sem
+    ///     tabela ou sem faixa. Linha enterrada: a faixa é o próprio número, se tabelado.
+    /// </summary>
+    public (int Inicio, int? Fim)? FaixaDeAgrupamento(string metodo, int circuitos)
+    {
+        if (!Enterrado(metodo)) return FaixaDeAgrupamento(circuitos);
+        return _agrupamentoEnterrado is { Pendente: false } tabela && tabela.Valores.ContainsKey(circuitos) ? (circuitos, circuitos) : null;
+    }
+
+    private (int Inicio, int? Fim)? FaixaDeAgrupamento(int circuitos)
     {
         if (_agrupamento.Pendente || circuitos < 1) return null;
 
@@ -299,10 +354,13 @@ public sealed class PerfilNormativo
 
     private sealed record Tabela<T>(string Referencia, T Valores, bool Pendente);
 
-    private sealed record LinhaDeCapacidade(string Metodo, string Isolacao, string Material, int CondutoresCarregados, IReadOnlyDictionary<decimal, decimal> PorSecao);
+    /// <param name="Referencia">Ref própria da linha (ex.: a coluna da Tabela 38); nula = a da tabela.</param>
+    private sealed record LinhaDeCapacidade(
+        string Metodo, string Isolacao, string Material, int CondutoresCarregados, IReadOnlyDictionary<decimal, decimal> PorSecao, string? Referencia);
 
     /// <param name="Metodos">Métodos a que a linha se aplica; nulo = todos.</param>
-    private sealed record LinhaDeTemperatura(string Isolacao, IReadOnlyList<string>? Metodos, IReadOnlyDictionary<decimal, decimal> PorTemperatura)
+    /// <param name="Referencia">Ref própria da linha; nula = a da tabela.</param>
+    private sealed record LinhaDeTemperatura(string Isolacao, IReadOnlyList<string>? Metodos, IReadOnlyDictionary<decimal, decimal> PorTemperatura, string? Referencia)
     {
         public bool Vale(string metodo) => Metodos is null || Metodos.Contains(metodo, StringComparer.Ordinal);
     }
@@ -407,7 +465,23 @@ public sealed class PerfilNormativo
                 problemas.Add($"{nome}: linha sem método, isolação, material ou condutores carregados");
 
             return new LinhaDeCapacidade(linha.Metodo ?? string.Empty, linha.Isolacao ?? string.Empty, linha.Material ?? string.Empty,
-                linha.CondutoresCarregados ?? 0, PorDecimal(nome, linha.PorSecaoMm2));
+                linha.CondutoresCarregados ?? 0, PorDecimal(nome, linha.PorSecaoMm2),
+                RefDaLinha($"{nome} ({linha.Metodo}, {linha.Isolacao}, {linha.Material}, {linha.CondutoresCarregados})", linha.Ref));
+        }
+
+        /// <summary>Ref própria de uma linha: ausente = a da tabela; presente, precisa ser fonte (nem vazia nem TODO_NORMA).</summary>
+        public string? RefDaLinha(string linha, string? referencia)
+        {
+            if (referencia is null) return null;
+            var texto = referencia.Trim();
+            if (texto.Length == 0 || texto == TodoNorma)
+            {
+                problemas.Add($"{linha}: ref da linha vazia ou TODO_NORMA (linha com valores precisa de fonte)");
+                return null;
+            }
+
+            Referencias.Add((linha, texto));
+            return texto;
         }
 
         public IReadOnlyDictionary<string, ProtecaoDiferencialDoLocal> ProtecaoDiferencial(List<LinhaDeProtecaoDiferencialJson> linhas, string nome)

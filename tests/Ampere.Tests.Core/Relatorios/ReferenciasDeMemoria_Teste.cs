@@ -82,7 +82,8 @@ public class ReferenciasDeMemoria_Teste
             new DadosDoCircuito(4, "TUG-04", "TUG", 20m, "B1", "PVC",
                 [new DadosDoPonto(41, 700m, 127m, "F+N", "LOCAL-MOLHADO", "TUG"), new DadosDoPonto(42, 570m, 127m, "F+N", "LOCAL-SECO", "TUG")],
                 Decisoes: new DecisoesDoProjetista(4m, 25m, "Exigir", 30m, "circuito no forro, padrão da obra", 40m, 2m)),
-            new CondicoesDoProjeto(30m, 1, "Cobre", TipoDeCondutorPadrao: CatalogosFicticios.TipoDeCondutor, TipoDeEletroduto: CatalogosFicticios.TipoDeEletroduto))
+            new CondicoesDoProjeto(30m, 1, "Cobre", TipoDeCondutorPadrao: CatalogosFicticios.TipoDeCondutor, TipoDeEletroduto: CatalogosFicticios.TipoDeEletroduto),
+            Ficticio)
         .Entrada!;
 
     private static EntradaDeDimensionamento Entrada(

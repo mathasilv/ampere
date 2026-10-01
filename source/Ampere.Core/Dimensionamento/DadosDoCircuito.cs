@@ -1,4 +1,5 @@
 using Ampere.Core.Cargas;
+using Ampere.Core.Normas;
 
 namespace Ampere.Core.Dimensionamento;
 
@@ -52,7 +53,7 @@ public sealed record DadosDoCircuito(
 /// <param name="Idr">AMP_IDR_DecisaoProjetista: "Exigir" ou "Dispensar" (vazio = tabela por local).</param>
 /// <param name="IdrSensibilidadeMa">AMP_IDR_SensibilidadeProjetistaMa: IΔn do IDR exigido.</param>
 /// <param name="Justificativa">AMP_JustificativaProjetista, registrada na memória.</param>
-/// <param name="TemperaturaAmbienteC">AMP_TemperaturaAmbienteC: no lugar da temperatura do projeto.</param>
+/// <param name="TemperaturaAmbienteC">AMP_TemperaturaAmbienteC: no lugar da temperatura do projeto (em linha enterrada, a do solo).</param>
 /// <param name="CircuitosAgrupados">AMP_CircuitosAgrupados: no lugar do agrupamento do projeto (inteiro, incluindo o circuito).</param>
 public sealed record DecisoesDoProjetista(
     decimal? SecaoMinimaMm2 = null,
@@ -73,13 +74,14 @@ public sealed record DecisoesDoProjetista(
 /// <summary>
 ///     Condições do projeto que não são parâmetros do circuito, informadas pelo projetista.
 /// </summary>
-/// <param name="TemperaturaAmbienteC">Temperatura ambiente, em °C.</param>
+/// <param name="TemperaturaAmbienteC">Temperatura ambiente (do ar), em °C.</param>
 /// <param name="CircuitosAgrupados">Circuitos agrupados (para o FCA).</param>
 /// <param name="Material">Material dos condutores, ex.: Cobre.</param>
 /// <param name="MetodoDeInstalacaoPadrao">Usado quando o circuito não tem AMP_MetodoInstalacao.</param>
 /// <param name="IsolacaoPadrao">Usada quando o circuito não tem AMP_MaterialIsolacao.</param>
 /// <param name="TipoDeCondutorPadrao">Usado quando o circuito não tem AMP_TipoCondutor; sem nenhum dos dois, o cálculo para no eletroduto.</param>
 /// <param name="TipoDeEletroduto">Tipo de eletroduto do catálogo usado no projeto; sem ele, o cálculo para no eletroduto.</param>
+/// <param name="TemperaturaDoSoloC">Temperatura do solo, em °C, para as linhas enterradas (método D); sem ela, o circuito enterrado precisa de AMP_TemperaturaAmbienteC.</param>
 public sealed record CondicoesDoProjeto(
     decimal TemperaturaAmbienteC,
     int CircuitosAgrupados,
@@ -87,7 +89,8 @@ public sealed record CondicoesDoProjeto(
     string? MetodoDeInstalacaoPadrao = null,
     string? IsolacaoPadrao = null,
     string? TipoDeCondutorPadrao = null,
-    string? TipoDeEletroduto = null);
+    string? TipoDeEletroduto = null,
+    decimal? TemperaturaDoSoloC = null);
 
 /// <summary>
 ///     Monta a entrada do dimensionamento a partir dos dados do circuito: potência = soma dos pontos; tensão e fases =
@@ -102,7 +105,8 @@ public sealed record CondicoesDoProjeto(
 /// </remarks>
 public static class EntradaDoCircuito
 {
-    public static EntradaMontada Montar(DadosDoCircuito dados, CondicoesDoProjeto condicoes)
+    /// <param name="perfil">Diz se o método é de linha enterrada (a temperatura passa a ser a do solo).</param>
+    public static EntradaMontada Montar(DadosDoCircuito dados, CondicoesDoProjeto condicoes, PerfilNormativo perfil)
     {
         var problemas = new List<string>(dados.ProblemasDeLeitura ?? []);
         if (string.IsNullOrWhiteSpace(dados.Numero)) problemas.Add("sem AMP_NumeroCircuito (rode 'Criar circuitos')");
@@ -121,7 +125,7 @@ public static class EntradaDoCircuito
         Unica(tensoes.Select(NumeroEmTexto.Formatar).ToList(), "AMP_TensaoCircuitoV", "tensões", problemas);
         var fases = dados.Pontos.Select(ponto => ponto.Fases).OfType<string>().Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
         Unica(fases, "AMP_Fases", "fases", problemas);
-        var decisoes = Decisoes(dados.Decisoes ?? new DecisoesDoProjetista(), condicoes, problemas);
+        var decisoes = Decisoes(dados.Decisoes ?? new DecisoesDoProjetista(), condicoes, metodo is not null && perfil.Enterrado(metodo), problemas);
         if (problemas.Count > 0) return new EntradaMontada(null, problemas);
 
         var entrada = new EntradaDeDimensionamento(
@@ -160,8 +164,9 @@ public static class EntradaDoCircuito
         string? OrigemDoAgrupamento);
 
     // Numérico 0 = sem decisão (o Revit não esvazia parâmetro numérico). Decisão incoerente é problema de dados, nunca
-    // interpretada: o projetista corrige o parâmetro e roda de novo.
-    internal static DecisoesMontadas Decisoes(DecisoesDoProjetista decisoes, CondicoesDoProjeto condicoes, List<string> problemas)
+    // interpretada: o projetista corrige o parâmetro e roda de novo. Linha enterrada: a temperatura é a do solo — a do
+    // circuito ou a do projeto; sem nenhuma das duas, problema (a do ar nunca vale como a do solo).
+    internal static DecisoesMontadas Decisoes(DecisoesDoProjetista decisoes, CondicoesDoProjeto condicoes, bool enterrado, List<string> problemas)
     {
         var justificativa = string.IsNullOrWhiteSpace(decisoes.Justificativa) ? null : decisoes.Justificativa.Trim();
         var secao = Positivo(decisoes.SecaoMinimaMm2, "AMP_SecaoMinimaProjetistaMm2", problemas);
@@ -169,9 +174,25 @@ public static class EntradaDoCircuito
         var idr = Idr(decisoes, justificativa, problemas);
         var porque = justificativa is null ? "sem justificativa informada" : $"justificativa: {justificativa}";
 
-        var (temperatura, origemDaTemperatura) = decisoes.TemperaturaAmbienteC is { } doCircuito and not 0m
-            ? (doCircuito, $"AMP_TemperaturaAmbienteC do circuito (o projeto usa {NumeroEmTexto.Formatar(condicoes.TemperaturaAmbienteC)} °C; {porque})")
-            : (condicoes.TemperaturaAmbienteC, (string?)null);
+        var (temperatura, origemDaTemperatura) = (condicoes.TemperaturaAmbienteC, (string?)null);
+        if (!enterrado)
+        {
+            if (decisoes.TemperaturaAmbienteC is { } doCircuito and not 0m)
+                (temperatura, origemDaTemperatura) = (doCircuito, $"AMP_TemperaturaAmbienteC do circuito (o projeto usa {NumeroEmTexto.Formatar(condicoes.TemperaturaAmbienteC)} °C; {porque})");
+        }
+        else if (decisoes.TemperaturaAmbienteC is { } doSolo and not 0m)
+        {
+            var doProjeto = condicoes.TemperaturaDoSoloC is { } solo ? $"o projeto usa {NumeroEmTexto.Formatar(solo)} °C no solo" : "o projeto não tem temperatura do solo";
+            (temperatura, origemDaTemperatura) = (doSolo, $"AMP_TemperaturaAmbienteC do circuito, a do solo na linha enterrada ({doProjeto}; {porque})");
+        }
+        else if (condicoes.TemperaturaDoSoloC is { } solo)
+        {
+            (temperatura, origemDaTemperatura) = (solo, "temperatura do solo das condições do projeto (linha enterrada)");
+        }
+        else
+        {
+            problemas.Add("linha enterrada sem temperatura do solo: informe-a nas condições do projeto ou em AMP_TemperaturaAmbienteC do circuito");
+        }
 
         var (agrupados, origemDoAgrupamento) = (condicoes.CircuitosAgrupados, (string?)null);
         if (decisoes.CircuitosAgrupados is { } informados and not 0m)

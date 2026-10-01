@@ -1,3 +1,4 @@
+using System.Globalization;
 using Ampere.Core.Cargas;
 using Ampere.Core.Normas;
 using TUnit.Assertions.Enums;
@@ -30,8 +31,8 @@ public class PerfilNormativo_Teste
         await Assert.That(queda.Referencia).Contains("6.2.7");
         var temperatura = oficial.FatorDeTemperatura("B1", "PVC", 40m);
         await Assert.That(temperatura.Valor).IsEqualTo(0.87m);
-        await Assert.That(oficial.FatorDeAgrupamento(3).Valor).IsEqualTo(0.70m);
-        await Assert.That(oficial.FatorDeAgrupamento(25).Valor).IsEqualTo(0.38m);
+        await Assert.That(oficial.FatorDeAgrupamento("B1", 3).Valor).IsEqualTo(0.70m);
+        await Assert.That(oficial.FatorDeAgrupamento("B1", 25).Valor).IsEqualTo(0.38m);
         await Assert.That(oficial.OcupacaoMaximaDeEletrodutoPct(3).Valor).IsEqualTo(40m);
         await Assert.That(oficial.CorrentesNominaisDeIdrA().Valor!.Count).IsEqualTo(5);
         await Assert.That(oficial.SensibilidadesNominaisDeIdrMa().Valor).IsEquivalentTo([6m, 10m, 30m, 100m, 300m, 500m]);
@@ -51,7 +52,7 @@ public class PerfilNormativo_Teste
     [Arguments(40, 0.38)]
     public async Task Fator_de_agrupamento_oficial_pela_faixa_de_circuitos(int circuitos, decimal fator)
     {
-        await Assert.That(PerfilNormativo.NBR5410_2004.FatorDeAgrupamento(circuitos).Valor).IsEqualTo(fator);
+        await Assert.That(PerfilNormativo.NBR5410_2004.FatorDeAgrupamento("B1", circuitos).Valor).IsEqualTo(fator);
     }
 
     [Test]
@@ -59,10 +60,10 @@ public class PerfilNormativo_Teste
     {
         var oficial = PerfilNormativo.NBR5410_2004;
 
-        await Assert.That(oficial.FaixaDeAgrupamento(5)).IsEqualTo((5, (int?)5));
-        await Assert.That(oficial.FaixaDeAgrupamento(13)).IsEqualTo((12, (int?)15));
-        await Assert.That(oficial.FaixaDeAgrupamento(25)).IsEqualTo((20, (int?)null));
-        await Assert.That(oficial.FaixaDeAgrupamento(0)).IsNull();
+        await Assert.That(oficial.FaixaDeAgrupamento("B1", 5)).IsEqualTo((5, (int?)5));
+        await Assert.That(oficial.FaixaDeAgrupamento("B1", 13)).IsEqualTo((12, (int?)15));
+        await Assert.That(oficial.FaixaDeAgrupamento("B1", 25)).IsEqualTo((20, (int?)null));
+        await Assert.That(oficial.FaixaDeAgrupamento("B1", 0)).IsNull();
     }
 
     [Test]
@@ -70,7 +71,7 @@ public class PerfilNormativo_Teste
     {
         var aPartirDe2 = PerfilNormativo.Carregar(PerfilFicticio.Json.Replace("\"valores\": { \"1\": 1, \"2\": 0.8, \"3\": 0.7 }", "\"valores\": { \"2\": 0.8, \"3\": 0.7 }"));
 
-        var fator = aPartirDe2.FatorDeAgrupamento(1);
+        var fator = aPartirDe2.FatorDeAgrupamento("B1", 1);
 
         await Assert.That(fator.Disponivel).IsFalse();
         await Assert.That(fator.Ausencia).IsEqualTo("sem fator para 1 circuitos agrupados");
@@ -94,7 +95,7 @@ public class PerfilNormativo_Teste
         await Assert.That(Ficticio.CondutoresCarregados("3F").Valor).IsEqualTo(3);
         await Assert.That(Ficticio.SecaoMinimaMm2("Forca").Valor).IsEqualTo(2.5m);
         await Assert.That(Ficticio.FatorDeTemperatura("B1", "PVC", 40m).Valor).IsEqualTo(0.8m);
-        await Assert.That(Ficticio.FatorDeAgrupamento(2).Valor).IsEqualTo(0.8m);
+        await Assert.That(Ficticio.FatorDeAgrupamento("B1", 2).Valor).IsEqualTo(0.8m);
         await Assert.That(Ficticio.QuedaDeTensaoMaximaPct("circuito_terminal").Valor).IsEqualTo(5m);
         await Assert.That(Ficticio.ResistividadeOhmMm2PorM("Cobre").Valor).IsEqualTo(0.02m);
         await Assert.That(Ficticio.CorrentesNominaisDeIdrA().Valor).IsEquivalentTo([25m, 40m, 63m]);
@@ -107,8 +108,8 @@ public class PerfilNormativo_Teste
     {
         var vocabulario = PerfilNormativo.NBR5410_2004.Vocabulario;
 
-        // D (enterrado) fica de fora até a Tabela 40 do solo; alumínio, até ter resistividade no perfil.
-        await Assert.That(vocabulario.MetodosDeInstalacao).IsEquivalentTo(["A1", "A2", "B1", "B2", "C"], CollectionOrdering.Matching);
+        // Alumínio fica de fora até ter resistividade no perfil.
+        await Assert.That(vocabulario.MetodosDeInstalacao).IsEquivalentTo(["A1", "A2", "B1", "B2", "C", "D", "E", "F", "G"], CollectionOrdering.Matching);
         await Assert.That(vocabulario.Isolacoes).IsEquivalentTo(["PVC", "EPR ou XLPE"], CollectionOrdering.Matching);
         await Assert.That(vocabulario.Materiais).IsEquivalentTo(["Cobre"], CollectionOrdering.Matching);
         await Assert.That(vocabulario.Locais).IsEquivalentTo(
@@ -137,6 +138,103 @@ public class PerfilNormativo_Teste
             await Assert.That(oficial.FatorDeTemperatura(metodo, isolacao, 30m).Disponivel).IsTrue().Because($"{metodo}, {isolacao}");
         foreach (var material in oficial.Vocabulario.Materiais)
             await Assert.That(oficial.ResistividadeOhmMm2PorM(material).Disponivel).IsTrue().Because(material);
+    }
+
+    [Test]
+    [Property("Fonte", "NBR 5410:2004, Tabelas 38 e 39")]
+    public async Task Metodos_E_F_e_G_pelas_tabelas_38_e_39_com_a_coluna_na_referencia()
+    {
+        var oficial = PerfilNormativo.NBR5410_2004;
+
+        await Assert.That(oficial.CapacidadeDeConducaoA("E", "PVC", "Cobre", 2, 2.5m).Valor).IsEqualTo(30m);
+        await Assert.That(oficial.CapacidadeDeConducaoA("E", "PVC", "Cobre", 3, 1.5m).Valor).IsEqualTo(18.5m);
+        await Assert.That(oficial.CapacidadeDeConducaoA("F", "PVC", "Cobre", 2, 1000m).Valor).IsEqualTo(1346m);
+        await Assert.That(oficial.CapacidadeDeConducaoA("F", "EPR ou XLPE", "Alumínio", 3, 1000m).Valor).IsEqualTo(1226m);
+        await Assert.That(oficial.CapacidadeDeConducaoA("G", "EPR ou XLPE", "Cobre", 3, 25m).Valor).IsEqualTo(161m);
+        var errata = oficial.CapacidadeDeConducaoA("G", "PVC", "Alumínio", 3, 630m);
+        await Assert.That(errata.Valor).IsEqualTo(730m);
+        await Assert.That(errata.Referencia).Contains("630 mm² como impresso");
+        await Assert.That(oficial.CapacidadeDeConducaoA("F", "PVC", "Cobre", 3, 25m).Referencia).StartsWith("NBR 5410:2004, Tabela 38, coluna (5)");
+        await Assert.That(oficial.CapacidadeDeConducaoA("G", "EPR ou XLPE", "Cobre", 3, 25m).Referencia).StartsWith("NBR 5410:2004, Tabela 39, coluna (8)");
+        // A ref das Tabelas 36 e 37 não muda: as memórias já gravadas continuam com o mesmo hash.
+        await Assert.That(oficial.CapacidadeDeConducaoA("B1", "PVC", "Cobre", 2, 2.5m).Referencia)
+            .IsEqualTo("NBR 5410:2004, Tabelas 36 e 37 (A1 a D; transcrita do texto oficial por coordenadas, validada contra IEC 60364-5-52)");
+        await Assert.That(oficial.CapacidadeDeConducaoA("G", "PVC", "Cobre", 2, 2.5m).Ausencia).IsEqualTo("sem linha para método G, PVC, Cobre, 2 condutores carregados");
+    }
+
+    [Test]
+    [Property("Fonte", "NBR 5410:2004, Tabelas 40 e 44 e item 6.2.5.1.2")]
+    public async Task Linha_enterrada_tem_o_fator_do_solo_e_o_agrupamento_da_tabela_44()
+    {
+        var oficial = PerfilNormativo.NBR5410_2004;
+
+        await Assert.That(oficial.Enterrado("D")).IsTrue();
+        await Assert.That(oficial.Enterrado("B1")).IsFalse();
+        await Assert.That(oficial.FatorDeTemperatura("D", "PVC", 25m).Valor).IsEqualTo(0.95m);
+        await Assert.That(oficial.FatorDeTemperatura("D", "EPR ou XLPE", 80m).Valor).IsEqualTo(0.38m);
+        await Assert.That(oficial.FatorDeTemperatura("D", "PVC", 20m).Referencia).IsEqualTo("NBR 5410:2004, Tabela 40 (solo; 20 °C = 1,0 é a referência)");
+        await Assert.That(oficial.FatorDeTemperatura("E", "PVC", 40m).Valor).IsEqualTo(0.87m);
+        await Assert.That(oficial.FatorDeTemperatura("B1", "PVC", 40m).Referencia).IsEqualTo("NBR 5410:2004, Tabela 40 (ar; 30 C = 1,0 e a referencia)");
+        await Assert.That(string.Join("|", Enumerable.Range(1, 6).Select(circuitos => oficial.FatorDeAgrupamento("D", circuitos).Valor.ToString(CultureInfo.InvariantCulture))))
+            .IsEqualTo("1.0|0.75|0.65|0.6|0.55|0.5");
+        await Assert.That(oficial.FatorDeAgrupamento("D", 7).Ausencia).IsEqualTo("sem fator para 7 circuitos em linha enterrada (método D; a tabela vai até 6 circuitos)");
+        await Assert.That(oficial.FatorDeAgrupamento("D", 0).Ausencia).IsEqualTo("número de circuitos inválido (0)");
+        await Assert.That(oficial.FaixaDeAgrupamento("D", 3)).IsEqualTo((3, (int?)3));
+        await Assert.That(oficial.FaixaDeAgrupamento("D", 7)).IsNull();
+        // Fora do solo, a Tabela 42 (feixe) continua valendo, também para E, F e G (6.2.5.5.4).
+        await Assert.That(oficial.FatorDeAgrupamento("E", 7).Valor).IsEqualTo(0.54m);
+    }
+
+    [Test]
+    [Property("Fonte", "NBR 5410:2004, item 6.2.5.1.2")]
+    public async Task So_os_metodos_em_eletroduto_levam_eletroduto()
+    {
+        var oficial = PerfilNormativo.NBR5410_2004;
+
+        await Assert.That(string.Join("|", oficial.Vocabulario.MetodosDeInstalacao.Where(oficial.ComEletroduto))).IsEqualTo("A1|A2|B1|B2|D");
+        // Perfil sem a tabela (opcional): todo método leva eletroduto, como antes.
+        await Assert.That(Ficticio.ComEletroduto("C")).IsTrue();
+        await Assert.That(Ficticio.Enterrado("D")).IsFalse();
+    }
+
+    [Test]
+    public async Task Tabelas_opcionais_seguem_a_regra_das_demais()
+    {
+        const string Ancora = "\"protecao_diferencial_por_local\": {";
+        string Com(string tabela) => PerfilFicticio.Json.Replace(Ancora, tabela + ", " + Ancora);
+
+        var pendente = PerfilNormativo.Carregar(Com("\"metodos_com_eletroduto\": { \"ref\": \"TODO_NORMA\", \"valores\": [] }"));
+        var enterrado = PerfilNormativo.Carregar(Com(
+            "\"fator_de_agrupamento_enterrado\": { \"ref\": \"FICTÍCIO: enterrado\", \"metodos\": [\"B1\"], \"valores\": { \"1\": 1, \"2\": 0.6 } }"));
+
+        await Assert.That(pendente.ComEletroduto("C")).IsTrue();
+        await Assert.That(enterrado.FatorDeAgrupamento("B1", 2).Valor).IsEqualTo(0.6m);
+        await Assert.That(enterrado.FatorDeAgrupamento("B1", 3).Disponivel).IsFalse();
+        await Assert.That(() => PerfilNormativo.Carregar(Com("\"fator_de_agrupamento_enterrado\": { \"ref\": \"FICTÍCIO: enterrado\", \"valores\": { \"1\": 1 } }")))
+            .Throws<PerfilNormativoInvalidoException>().WithMessageContaining("fator_de_agrupamento_enterrado: lista de métodos vazia");
+        await Assert.That(() => PerfilNormativo.Carregar(Com("\"metodos_com_eletroduto\": { \"ref\": \"TODO_NORMA\", \"valores\": [\"B1\"] }")))
+            .Throws<PerfilNormativoInvalidoException>().WithMessageContaining("metodos_com_eletroduto: tem valores mas a ref é TODO_NORMA");
+    }
+
+    [Test]
+    [Arguments("\"ref\": \"\", ")]
+    [Arguments("\"ref\": \"TODO_NORMA\", ")]
+    public async Task Ref_da_linha_vazia_ou_pendente_e_rejeitada(string referencia)
+    {
+        var json = PerfilFicticio.Json.Replace("\"condutores_carregados\": 2,", "\"condutores_carregados\": 2, " + referencia);
+
+        await Assert.That(() => PerfilNormativo.Carregar(json)).Throws<PerfilNormativoInvalidoException>()
+            .WithMessageContaining("capacidade_de_conducao_a (B1, PVC, Cobre, 2): ref da linha vazia ou TODO_NORMA");
+    }
+
+    [Test]
+    public async Task Ref_da_linha_ficticia_em_perfil_real_e_rejeitada()
+    {
+        var json = PerfilFicticio.Json.Replace("\"ficticio\": true", "\"ficticio\": false").Replace("FICTICIO-TESTE", "REAL")
+            .Replace("FICTÍCIO", "Fonte").Replace("\"condutores_carregados\": 2,", "\"condutores_carregados\": 2, \"ref\": \"FICTÍCIO: coluna\",");
+
+        await Assert.That(() => PerfilNormativo.Carregar(json)).Throws<PerfilNormativoInvalidoException>()
+            .WithMessageContaining("perfil real com referência fictícia em capacidade_de_conducao_a (B1, PVC, Cobre, 2)");
     }
 
     [Test]

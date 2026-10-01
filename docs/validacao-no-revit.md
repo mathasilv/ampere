@@ -40,6 +40,10 @@ Use um projeto de teste com arquitetura vinculada ou com ambientes (Rooms/Spaces
      cálculo deve ir até o eletroduto: seção, disjuntor, IDR, queda, `AMP_EletrodutoTipo` (ex.: DN 20) e a ocupação
      aparecem nos parâmetros do circuito. Sem condutor escolhido, o cálculo para no diâmetro do condutor.
    - Com isolação EPR e o Superastic (PVC), o cálculo deve parar dizendo que a isolação não confere.
+   - Ponha um circuito no método D (enterrado) com a "Temperatura do solo" vazia: ele deve ficar com o problema "linha
+     enterrada sem temperatura do solo". Com 20 °C no campo, a memória deve citar a Tabela 40 (solo) e a Tabela 44.
+   - Num circuito no método E (ao ar livre), o cálculo deve terminar no IDR, sem eletroduto (`AMP_EletrodutoTipo`
+     vazio), e a memória deve citar a coluna da Tabela 38.
    - Em `Documentos\Ampere\{projeto}\Circuitos` devem aparecer as memórias (JSON, MD e PDF), `circuitos.csv` e
      `materiais.csv`. Abra os CSV no Excel e confira os acentos.
 6. **Decisões do projetista.** Num circuito, preencha `AMP_SecaoMinimaProjetistaMm2` = 6 e

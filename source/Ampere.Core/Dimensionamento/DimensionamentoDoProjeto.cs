@@ -88,7 +88,7 @@ public static class DimensionamentoDoProjeto
     /// </summary>
     public static ResultadoDoCircuito Calcular(DadosDoCircuito dados, CondicoesDoProjeto condicoes, PerfilNormativo perfil, CatalogosDeProduto catalogos)
     {
-        var montada = EntradaDoCircuito.Montar(dados, condicoes);
+        var montada = EntradaDoCircuito.Montar(dados, condicoes, perfil);
         var potencia = dados.Pontos.Count > 0 && dados.Pontos.All(ponto => ponto.PotenciaVA is not null)
             ? dados.Pontos.Sum(ponto => ponto.PotenciaVA!.Value)
             : (decimal?)null;

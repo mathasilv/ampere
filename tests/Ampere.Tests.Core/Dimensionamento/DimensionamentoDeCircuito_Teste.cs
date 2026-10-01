@@ -487,15 +487,53 @@ public class DimensionamentoDeCircuito_Teste
     }
 
     [Test]
-    [Property("Fonte", "TODO_NORMA")]
-    public async Task Metodo_enterrado_para_no_fator_de_temperatura_enquanto_a_tabela_do_solo_falta()
+    [Property("Fonte", "NBR 5410:2004, Tabelas 36, 40 (solo) e 44")]
+    public async Task Metodo_enterrado_usa_o_fator_do_solo_e_o_agrupamento_da_tabela_44()
     {
         var resultado = DimensionamentoDeCircuito.Dimensionar(
-            Entrada(locais: ["Demais locais internos"]) with { MetodoDeInstalacao = "D" }, PerfilNormativo.NBR5410_2004, CatalogosFicticiosCarregados);
+            Entrada(temperaturaC: 25m, circuitosAgrupados: 2, locais: ["Demais locais internos"]) with { MetodoDeInstalacao = "D" },
+            PerfilNormativo.NBR5410_2004, CatalogosFicticiosCarregados);
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
+        await Assert.That(resultado.FCT).IsEqualTo(0.95m);
+        await Assert.That(resultado.FCA).IsEqualTo(0.75m);
+        var fct = PassoDe(resultado, "Fator de correção de temperatura");
+        await Assert.That(fct.Expressao).IsEqualTo("FCT = tabela (PVC; 25 °C no solo)");
+        await Assert.That(fct.Referencia).IsEqualTo("NBR 5410:2004, Tabela 40 (solo; 20 °C = 1,0 é a referência)");
+        var fca = PassoDe(resultado, "Fator de correção de agrupamento");
+        await Assert.That(fca.Expressao).IsEqualTo("FCA = tabela (2 circuitos)");
+        await Assert.That(fca.Referencia).StartsWith("NBR 5410:2004, Tabela 44, distância nula entre cabos");
+        // D é em eletroduto enterrado (6.2.5.1.2): o eletroduto é dimensionado.
+        await Assert.That(resultado.Eletroduto).IsNotNull();
+    }
+
+    [Test]
+    public async Task Metodo_enterrado_acima_de_6_circuitos_para_sem_fator()
+    {
+        var resultado = DimensionamentoDeCircuito.Dimensionar(
+            Entrada(temperaturaC: 20m, circuitosAgrupados: 7, locais: ["Demais locais internos"]) with { MetodoDeInstalacao = "D" },
+            PerfilNormativo.NBR5410_2004, CatalogosFicticiosCarregados);
 
         await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
-        await Assert.That(resultado.FCT).IsNull();
-        await Assert.That(resultado.Problemas).IsEquivalentTo(["sem fatores de temperatura para o método D (PVC) no perfil"]);
+        await Assert.That(resultado.Problemas).IsEquivalentTo(["sem fator para 7 circuitos em linha enterrada (método D; a tabela vai até 6 circuitos)"]);
+    }
+
+    [Test]
+    [Property("Fonte", "NBR 5410:2004, Tabela 38 e item 6.2.5.1.2")]
+    public async Task Metodo_ao_ar_livre_nao_tem_eletroduto_e_cita_a_coluna_da_tabela_38()
+    {
+        // Sem tipo de condutor: em eletroduto pararia no diâmetro; ao ar livre (E), o cálculo termina no IDR.
+        var resultado = DimensionamentoDeCircuito.Dimensionar(
+            Entrada(locais: ["Demais locais internos"]) with { MetodoDeInstalacao = "E", TipoDeCondutor = null }, PerfilNormativo.NBR5410_2004,
+            CatalogosFicticiosCarregados);
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
+        await Assert.That(resultado.SecaoMm2).IsEqualTo(2.5m);
+        await Assert.That(resultado.CapacidadeDeConducaoA).IsEqualTo(30m);
+        await Assert.That(resultado.Eletroduto).IsNull();
+        await Assert.That(resultado.Memoria!.Passos.Any(passo => passo.Descricao.Contains("letroduto", StringComparison.Ordinal))).IsFalse();
+        await Assert.That(PassoDe(resultado, "Capacidade de condução da seção adotada").Referencia)
+            .IsEqualTo("NBR 5410:2004, Tabela 38, coluna (2): método E, cabo multipolar, dois condutores carregados");
     }
 
     [Test]

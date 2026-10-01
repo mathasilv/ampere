@@ -365,7 +365,7 @@ public static class DimensionamentoDeAlimentadores
         var (comprimento, origemDoComprimento) = EntradaDoCircuito.Comprimento(dados.ComprimentoM, dados.ComprimentoNoRevit, problemas);
         var metodo = EntradaDoCircuito.Preencher(dados.MetodoDeInstalacao, condicoes.MetodoDeInstalacaoPadrao, "AMP_MetodoInstalacao", problemas);
         var isolacao = EntradaDoCircuito.Preencher(dados.Isolacao, condicoes.IsolacaoPadrao, "AMP_MaterialIsolacao", problemas);
-        var decisoes = EntradaDoCircuito.Decisoes(dados.Decisoes ?? new DecisoesDoProjetista(), condicoes, problemas);
+        var decisoes = EntradaDoCircuito.Decisoes(dados.Decisoes ?? new DecisoesDoProjetista(), condicoes, metodo is not null && perfil.Enterrado(metodo), problemas);
 
         var dadoDoTotal = perfil.QuedaDeTensaoMaximaPct(origem);
         if (!dadoDoTotal.Disponivel) problemas.Add($"limite de queda total ({origem}): {dadoDoTotal.Ausencia}");

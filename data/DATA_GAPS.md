@@ -33,9 +33,11 @@ dotnet test tests/Ampere.Tests.Core --list-tests --treenode-filter "/*/*/*/*[Fon
 | `correntes_nominais_disjuntor_a` | Correntes nominais de disjuntores | Valores preferenciais da norma de disjuntores / fabricante |
 | `condutores_carregados` | ✅ PREENCHIDA (Tabelas 36-41 + 6.2.6.2, sem harmônicas o neutro não conta) | Regra da 5410 para neutro carregado |
 | `secao_minima_mm2` | ✅ PREENCHIDA (item 6.2.6.1.1 e Tabela 47) | |
-| `capacidade_de_conducao_a` | ✅ PREENCHIDA (Tabelas 36 e 37, A1-D, validada contra IEC) | Especificação cita tabelas 36/37 |
-| `fator_de_temperatura` | ✅ PREENCHIDA (Tabela 40, ar; solo pendente) | Especificação cita a Tabela 40; o motor não interpola |
+| `capacidade_de_conducao_a` | ✅ PREENCHIDA (Tabelas 36 e 37, A1-D, validada contra IEC; **01/10/2026:** Tabelas 38 e 39, E-F-G, com a coluna citada na `ref` de cada linha) | Especificação cita tabelas 36/37. E/F/G: E = colunas (2)/(3); F = (4) com dois condutores e (5), trifólio, com três (a menor das colunas de F; justapostos no plano, coluna (6), dariam mais); G = (8), espaçados na vertical (a menor; horizontal, coluna (7), daria mais). Conferidas contra as fichas Prysmian (Superastic/Sintenax). **Errata impressa:** na Tabela 38, alumínio 630 mm², as colunas (6) a (8) repetem os valores de 500 mm² (640/775/730); o perfil guarda o impresso (menor que o real, a favor da segurança) e a ref da linha G avisa. A ref da tabela (A1-D) não mudou: as memórias já gravadas mantêm o hash |
+| `fator_de_temperatura` | ✅ PREENCHIDA (Tabela 40, ar — A1 a C e E, F, G; **01/10/2026:** solo, para D, com `ref` própria: 20 °C = 1,0) | Especificação cita a Tabela 40; o motor não interpola. Não aplicada: a Tabela 41 (solo com resistividade térmica diferente de 2,5 K·m/W) — as capacidades do método D valem para 2,5 K·m/W e 0,7 m de profundidade (6.2.5.1.2, nota 4) |
 | `fator_de_agrupamento` | ✅ PREENCHIDA (Tabela 42 linha 1). **Corrigida em 01/10/2026:** as chaves eram 12/16/19/20 ("limite superior"), e a busca exata parava em 9–11, 13–15 e 17–18 circuitos e dava 0,50 para 12 e 0,45 para 16 — acima dos 0,45 e 0,41 das faixas da norma (contra a segurança). Agora a chave é o início da faixa (9, 12, 16, 20) e vale a maior faixa ≤ n; os valores são os mesmos. Em qualquer leitura das faixas, o fator novo nunca é maior que o anterior | ✅ Conferido em 01/10/2026 no texto oficial (NBR anexada pelo usuário): faixas 9 a 11, 12 a 15, 16 a 19 e ≥ 20 (0,50, 0,45, 0,41 e 0,38) |
+| `fator_de_agrupamento_enterrado` | ✅ PREENCHIDA (01/10/2026, Tabela 44, distância nula; métodos D) | **Critério do Ampere (a favor da segurança):** a coluna de distância nula da Tabela 44 (cabos diretamente enterrados) também para eletrodutos enterrados — os fatores da Tabela 45 e das distâncias maiores são todos maiores ou iguais. Chave = número exato de circuitos; de 7 em diante a tabela não tem valor e o cálculo para. 1 circuito = sem agrupamento (fator 1) |
+| `metodos_com_eletroduto` | ✅ PREENCHIDA (01/10/2026, item 6.2.5.1.2): A1, A2, B1, B2 e D | C, E, F e G são cabos sobre parede ou ao ar livre: o motor não dimensiona eletroduto (a memória termina no IDR). Antes, o eletroduto saía para todo método, inclusive o C |
 | `queda_de_tensao_maxima_pct` | ✅ PREENCHIDA (6.2.7.1/6.2.7.2): circuito_terminal 4, ponto_de_entrega 5, transformador próprio 7, transformador da distribuidora 7 (alínea b, 01/10/2026), gerador 7 | ✅ Conferido em 01/10/2026 no texto oficial: 4% é o máximo dos circuitos terminais (6.2.7.2) e 5%/7% o total da instalação (6.2.7.1) — a especificação estava invertida. Não aplicado (a favor da segurança): a nota 3, que permite +0,005%/m nas linhas principais acima de 100 m (até +0,5%) nas alíneas a, b e d |
 | `resistividade_ohm_mm2_por_m` | Resistividade do condutor na temperatura de serviço | Para a queda de tensão |
 | `ocupacao_maxima_eletroduto_pct` | ✅ PREENCHIDA (6.2.11.1.6-a) | A especificação diz "40% ≥ 2 condutores; 31%/53% nos casos da norma". **Conferir a que número de condutores cada taxa se aplica** |
@@ -194,9 +196,12 @@ Comportamento do modelo a validar pelo projetista:
 
 Pendente:
 
-- **Método D (enterrado) bloqueado**: as linhas da Tabela 40 do perfil são do ar e declaram `"metodos": [A1…C]`; para D
-  o motor para no fator de temperatura até a Tabela 40-solo (e as Tabelas 44/45 de agrupamento enterrado) serem
-  transcritas. D também sai da lista do diálogo.
+- ✅ **Método D (enterrado) liberado em 01/10/2026**: Tabela 40 do solo e Tabela 44. A temperatura da linha enterrada é a
+  do solo: a "Temperatura do solo" das condições do projeto (campo opcional do diálogo, guardado no JSON das condições
+  sem mudar a versão) ou o AMP_TemperaturaAmbienteC do circuito; sem nenhuma das duas, o circuito enterrado fica com
+  problema de dados (a temperatura do ar nunca vale como a do solo).
+- Agrupamento em mais de uma camada (Tabela 43) e as linhas 2 a 5 da Tabela 42 (camada única) não são aplicados: o
+  perfil usa a linha 1 (feixe), a de menores fatores, para todos os métodos não enterrados — também E, F e G (6.2.5.5.4).
 - **Alumínio fora do diálogo**: o perfil só tem resistividade do cobre, e a seção mínima (Tabela 47) está com os valores
   do cobre (a ref já cita 16 mm² para alumínio). Para liberar: resistividade do alumínio com fonte e seção mínima por
   material no perfil.

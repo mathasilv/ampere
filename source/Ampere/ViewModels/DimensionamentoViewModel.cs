@@ -13,6 +13,7 @@ namespace Ampere.ViewModels;
 public sealed class DimensionamentoViewModel : ObservableObject
 {
     private string _temperaturaC = string.Empty;
+    private string _temperaturaDoSoloC = string.Empty;
     private string _circuitosAgrupados = string.Empty;
     private string _material;
     private string _metodoPadrao = string.Empty;
@@ -43,6 +44,7 @@ public sealed class DimensionamentoViewModel : ObservableObject
         if (anteriores is null) return;
         // Na cultura atual, a mesma que NumeroDigitado usa para ler o campo de volta.
         _temperaturaC = anteriores.TemperaturaAmbienteC.ToString(CultureInfo.CurrentCulture);
+        _temperaturaDoSoloC = anteriores.TemperaturaDoSoloC?.ToString(CultureInfo.CurrentCulture) ?? string.Empty;
         _circuitosAgrupados = anteriores.CircuitosAgrupados.ToString(CultureInfo.CurrentCulture);
         _material = anteriores.Material;
         _metodoPadrao = anteriores.MetodoDeInstalacaoPadrao ?? string.Empty;
@@ -55,7 +57,7 @@ public sealed class DimensionamentoViewModel : ObservableObject
 
     public string Dica { get; } =
         $"Padrões em branco: cada circuito usa os seus AMP_MetodoInstalacao, AMP_MaterialIsolacao e AMP_TipoCondutor. Comprimento: AMP_ComprimentoRotaM ou, vazio, o do circuito no Revit. "
-        + "Temperatura e agrupamento: os do circuito (AMP_TemperaturaAmbienteC, AMP_CircuitosAgrupados) prevalecem; decisões do projetista (seção mínima, disjuntor, IDR) também ficam no circuito — 0 = sem decisão. "
+        + "Temperatura e agrupamento: os do circuito (AMP_TemperaturaAmbienteC, AMP_CircuitosAgrupados) prevalecem — na linha enterrada (D), AMP_TemperaturaAmbienteC é a do solo; decisões do projetista (seção mínima, disjuntor, IDR) também ficam no circuito — 0 = sem decisão. "
         + $"Decimais com '{CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator}'.";
 
     public string AvisoDeCatalogo { get; }
@@ -74,6 +76,12 @@ public sealed class DimensionamentoViewModel : ObservableObject
     {
         get => _temperaturaC;
         set => SetProperty(ref _temperaturaC, value);
+    }
+
+    public string TemperaturaDoSoloC
+    {
+        get => _temperaturaDoSoloC;
+        set => SetProperty(ref _temperaturaDoSoloC, value);
     }
 
     public string CircuitosAgrupados
@@ -125,7 +133,7 @@ public sealed class DimensionamentoViewModel : ObservableObject
     public bool Confirmar()
     {
         var entrada = EntradaDeCondicoes.Interpretar(
-            TemperaturaC, CircuitosAgrupados, Material, MetodoPadrao, IsolacaoPadrao, TipoDeCondutorPadrao, TipoDeEletroduto, CultureInfo.CurrentCulture);
+            TemperaturaC, TemperaturaDoSoloC, CircuitosAgrupados, Material, MetodoPadrao, IsolacaoPadrao, TipoDeCondutorPadrao, TipoDeEletroduto, CultureInfo.CurrentCulture);
         Condicoes = entrada.Condicoes;
         Problemas = string.Join(Environment.NewLine, entrada.Problemas);
         return Condicoes is not null;

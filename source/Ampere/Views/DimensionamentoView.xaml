@@ -25,18 +25,23 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <TextBlock Grid.Row="0" Text="Temperatura ambiente (°C)" VerticalAlignment="Center" />
             <TextBox Grid.Row="0" Grid.Column="1" Margin="0,4" Text="{Binding TemperaturaC, UpdateSourceTrigger=PropertyChanged}"
                      ToolTip="Temperatura do ar em torno dos condutores (fator de correção de temperatura, Tabela 40)" />
 
-            <TextBlock Grid.Row="1" Text="Circuitos agrupados" VerticalAlignment="Center" />
-            <TextBox Grid.Row="1" Grid.Column="1" Margin="0,4" Text="{Binding CircuitosAgrupados, UpdateSourceTrigger=PropertyChanged}"
-                     ToolTip="Circuitos no mesmo feixe ou eletroduto, incluindo o próprio (fator de agrupamento, Tabela 42); 1 = sozinho" />
+            <TextBlock Grid.Row="1" Text="Temperatura do solo (°C)" VerticalAlignment="Center" />
+            <TextBox Grid.Row="1" Grid.Column="1" Margin="0,4" Text="{Binding TemperaturaDoSoloC, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Só para linhas enterradas (método D): temperatura do solo, Tabela 40 (referência 20 °C). Vazio = cada circuito enterrado informa a sua em AMP_TemperaturaAmbienteC" />
 
-            <TextBlock Grid.Row="2" Text="Material do condutor" VerticalAlignment="Center" />
-            <ComboBox Grid.Row="2" Grid.Column="1" Margin="0,4" ItemsSource="{Binding Materiais}" SelectedItem="{Binding Material}" />
+            <TextBlock Grid.Row="2" Text="Circuitos agrupados" VerticalAlignment="Center" />
+            <TextBox Grid.Row="2" Grid.Column="1" Margin="0,4" Text="{Binding CircuitosAgrupados, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Circuitos no mesmo feixe ou eletroduto, incluindo o próprio (fator de agrupamento, Tabela 42; enterrados, Tabela 44); 1 = sozinho" />
+
+            <TextBlock Grid.Row="3" Text="Material do condutor" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="3" Grid.Column="1" Margin="0,4" ItemsSource="{Binding Materiais}" SelectedItem="{Binding Material}" />
         </Grid>
 
         <TextBlock Text="Padrões para circuitos sem o parâmetro" FontWeight="SemiBold" Margin="0,12,0,4" />
