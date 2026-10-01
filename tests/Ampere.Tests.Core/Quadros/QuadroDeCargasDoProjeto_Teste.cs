@@ -172,7 +172,8 @@ public class QuadroDeCargasDoProjeto_Teste
         await Assert.That(Math.Round(resultado.CorrenteDeDemandaA!.Value, 6)).IsEqualTo(Math.Round(resultado.DemandaVA!.Value / (1.7320508075688772935274463415m * 220m), 6));
         var passo = resultado.Memoria!.Passos[^1];
         await Assert.That(passo.Expressao).IsEqualTo("I = D_total / (√3 × V)");
-        await Assert.That(passo.Observacao).IsEqualTo("alimentação 3F+N 220 V: sistema de distribuição '220/127 Y' do quadro");
+        await Assert.That(passo.Observacao).IsEqualTo(
+            "alimentação 3F+N 220 V: sistema de distribuição '220/127 Y' do quadro; corrente média, com as cargas supostas equilibradas entre as fases");
     }
 
     [Test]
@@ -198,12 +199,43 @@ public class QuadroDeCargasDoProjeto_Teste
     public async Task Alimentacao_sem_calculo_de_corrente_diz_o_esquema()
     {
         var quadro = new QuadroLido(10, "QD1", [new CircuitoLido(101, "IL-01", "Iluminação", 600m, "F+N", 120m)],
-            new AlimentacaoDoQuadro("2F+N", 240m, "sistema de distribuição '120/240 monofásico' do quadro"));
+            new AlimentacaoDoQuadro("2F+N", 240m, "sistema de distribuição '120/240 monofásico' do quadro", ["A", "B"], 120m));
 
         var resultado = QuadroDeCargasDoProjeto.Executar(new DocumentoDeQuadrosFalso([quadro]), Ficticio)[0].Quadro;
 
         await Assert.That(resultado.CorrenteDeDemandaA).IsNull();
         await Assert.That(string.Join("\n", resultado.Problemas)).Contains("esquema desconhecido '2F+N'");
+        await Assert.That(string.Join("\n", resultado.Problemas)).DoesNotContain("incompatível");
+    }
+
+    [Test]
+    [Arguments(120, "F+N", 120, true)]
+    [Arguments(127, "F+N", 127, true)]
+    [Arguments(220, "F+N", 220, true)]
+    [Arguments(127, "F+N", 220, false)]
+    [Arguments(127, "2F", 220, true)]
+    [Arguments(127, "2F+N", 220, true)]
+    public async Task Bifasico_confere_o_F_mais_N_pela_tensao_fase_terra_do_Revit(decimal faseTerra, string fases, decimal tensaoDoCircuito, bool compativel)
+    {
+        // 2F+N do Revit pode ser 120/240 (monofásico de 3 fios) ou 220/127 e 380/220 (duas fases de um Y): vale a fase-terra informada.
+        var linha = faseTerra == 120m ? 240m : faseTerra == 127m ? 220m : 380m;
+        var quadro = new QuadroLido(10, "QD1", [new CircuitoLido(101, "TUE-01", "TUE", 1000m, fases, tensaoDoCircuito == 220m && fases != "F+N" ? linha : tensaoDoCircuito)],
+            new AlimentacaoDoQuadro("2F+N", linha, "teste", ["A", "B"], faseTerra));
+
+        var problemas = QuadroDeCargasDoProjeto.Executar(new DocumentoDeQuadrosFalso([quadro]), Ficticio)[0].Quadro.Problemas;
+
+        await Assert.That(problemas.Any(problema => problema.Contains("incompatível com a alimentação do quadro"))).IsEqualTo(!compativel);
+    }
+
+    [Test]
+    public async Task Bifasico_sem_tensao_fase_terra_nao_confere_o_F_mais_N_e_diz_isso()
+    {
+        var quadro = new QuadroLido(10, "QD1", [new CircuitoLido(101, "IL-01", "Iluminação", 600m, "F+N", 127m)], new AlimentacaoDoQuadro("2F+N", 220m, "teste"));
+
+        var problemas = string.Join("\n", QuadroDeCargasDoProjeto.Executar(new DocumentoDeQuadrosFalso([quadro]), Ficticio)[0].Quadro.Problemas);
+
+        await Assert.That(problemas).Contains("não informa a tensão fase-neutro: tensão dos circuitos F+N não conferida (IL-01)");
+        await Assert.That(problemas).DoesNotContain("incompatível");
     }
 
     [Test]

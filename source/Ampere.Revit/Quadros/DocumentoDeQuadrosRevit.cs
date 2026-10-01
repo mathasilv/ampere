@@ -188,8 +188,8 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
             .ToArray();
     }
 
-    // Fases do circuito pelo rótulo que o Revit dá a ele no quadro (ex.: "A", "A,B"), conferido com o número de polos:
-    // rótulo que não bate com os polos fica sem fase (o Core lista o circuito como não identificado), nunca adivinhado.
+    // Fases do circuito pelo rótulo que o Revit dá a ele no quadro (ex.: "A", "A,B" ou "AB"), conferido com o número de
+    // polos: rótulo que não bate fica sem fase (o Core lista o circuito como não identificado), nunca adivinhado.
     private static IReadOnlyList<string>? FasesNoQuadro(ElectricalSystem sistema, string[] rotulos)
     {
         string? rotulo;
@@ -205,17 +205,19 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
         }
 
         if (string.IsNullOrWhiteSpace(rotulo) || rotulos.Length < 3) return null;
-        var fases = rotulos.Where(fase => rotulo.Contains(fase, StringComparison.Ordinal)).ToList();
-        return fases.Count == polos ? fases : null;
+        var fases = RotuloDeFases.Ler(rotulo, rotulos);
+        return fases?.Count == polos ? fases : null;
     }
 
     // Sistema de distribuição atribuído ao quadro: fases, fios e tensões. Tensão pelo parâmetro do VoltageType, em unidades
     // internas convertidas (como as demais leituras do adapter). Sem sistema, o Core usa o esquema comum dos circuitos.
+    // Transformador: os circuitos saem do secundário. 3 fases e 4 fios (Y, ou delta com neutro): 3F+N; a tensão
+    // fase-neutro é a fase-terra do Revit (no delta com neutro, a das duas fases do meio do enrolamento — a "perna alta"
+    // não é tratada à parte). Monofásico de 3 fios: 2F+N, também com a fase-terra do Revit.
     private AlimentacaoDoQuadro? Alimentacao(FamilyInstance painel, string[] rotulos)
     {
-        if (painel.get_Parameter(BuiltInParameter.RBS_FAMILY_CONTENT_DISTRIBUTION_SYSTEM)?.AsElementId() is not { } id
-            || documento.GetElement(id) is not DistributionSysType sistema)
-            return null;
+        var sistema = Sistema(painel, BuiltInParameter.RBS_FAMILY_CONTENT_SECONDARY_DISTRIBSYS) ?? Sistema(painel, BuiltInParameter.RBS_FAMILY_CONTENT_DISTRIBUTION_SYSTEM);
+        if (sistema is null) return null;
 
         var linha = Volts(sistema.VoltageLineToLine);
         var terra = Volts(sistema.VoltageLineToGround);
@@ -229,8 +231,12 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
 
         var quantas = esquema.StartsWith("3F", StringComparison.Ordinal) ? 3 : esquema.StartsWith("2F", StringComparison.Ordinal) ? 2 : 1;
         IReadOnlyList<string>? fases = rotulos.Length >= quantas ? rotulos.Take(quantas).ToList() : null;
-        return new AlimentacaoDoQuadro(esquema, tensao.Value, $"sistema de distribuição '{sistema.Name}' do quadro", fases);
+        var faseNeutro = esquema.EndsWith("+N", StringComparison.Ordinal) && esquema != "F+N" ? terra : null;
+        return new AlimentacaoDoQuadro(esquema, tensao.Value, $"sistema de distribuição '{sistema.Name}' do quadro", fases, faseNeutro);
     }
+
+    private DistributionSysType? Sistema(FamilyInstance painel, BuiltInParameter parametro) =>
+        painel.get_Parameter(parametro)?.AsElementId() is { } id && documento.GetElement(id) is DistributionSysType sistema ? sistema : null;
 
     private static decimal? Volts(VoltageType? tensao) =>
         tensao?.get_Parameter(BuiltInParameter.RBS_VOLTAGETYPE_VOLTAGE_PARAM) is { HasValue: true } parametro

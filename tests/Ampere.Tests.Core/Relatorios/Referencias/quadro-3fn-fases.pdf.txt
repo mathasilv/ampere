@@ -2,7 +2,7 @@
 56,7 [Titulo 56,7] Memória de cálculo — quadro QD-04
 80,2 [Rotulo 56,7] Perfil normativo: [Texto 150,4] FICTICIO-TESTE
 91,2 [Rotulo 56,7] Identificador (AMP_MemoriaCalculoId):
-102,3 [Codigo 56,7] sha256:f0c87202863f69de8be5232f590b78b33c8fd66ef4060c493f1ccee9a3ae4c05
+102,3 [Codigo 56,7] sha256:ddaad9f6a0e939dfb828fa7da7451125aacda41fd7d7525d22d97ea2f4ca2c32
 112,8 [Rotulo 56,7] Esquema do documento: [Texto 191,8] 1
 123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo completo (5 passos)
 134,9 [Rotulo 56,7] Atenção: [Texto 107,2] perfil fictício, só para testes
@@ -15,9 +15,9 @@
 239,1 [Rotulo 68,7] TUE-01 (TUE): [Texto 146] instalada 2000 VA · fd 1 · demanda 2000 VA
 250,2 [Rotulo 68,7] Total do quadro: [Texto 160,7] instalada 4000 VA · demanda 3300 VA · corrente 8,6603 A
 269,2 [TituloDoPasso 56,7] Cargas por fase
-283,5 [Rotulo 68,7] Fase A: [Texto 111,2] instalada 1600 VA · demanda 1480 VA · corrente 11,652 A
-294,5 [Rotulo 68,7] Fase B: [Texto 111,1] instalada 1400 VA · demanda 1320 VA · corrente 10,3923 A
-305,6 [Rotulo 68,7] Fase C: [Texto 110,8] instalada 1000 VA · demanda 500 VA · corrente 3,9365 A
+283,5 [Rotulo 68,7] Fase A: [Texto 111,2] instalada 1600 VA · demanda 1480 VA · corrente 12,8704 A
+294,5 [Rotulo 68,7] Fase B: [Texto 111,1] instalada 1400 VA · demanda 1320 VA · corrente 11,6106 A
+305,6 [Rotulo 68,7] Fase C: [Texto 110,8] instalada 1000 VA · demanda 500 VA · corrente 3,937 A
 316,6 [Rotulo 68,7] Desequilíbrio: [Texto 146,5] 66,2162% = (maior − menor) / maior, pela demanda; fase mais carregada: A.
 327,7 [Texto 68,7] Indicador para distribuir os circuitos: a NBR 5410 não fixa limite
 338,8 [Secao 56,7] Passos
@@ -46,5 +46,6 @@
 651,8 [Rotulo 68,7] Expressão: [Codigo 132,7] I = D_total / (√3 × V)
 662,9 [Rotulo 68,7] Valores: [Texto 115,8] D_total = 3300 VA; V = 220 V
 673,9 [Rotulo 68,7] Resultado: [Texto 129,2] 8,6603 A
-685 [Rotulo 68,7] Observação: [Texto 138,3] alimentação 3F+N 220 V: sistema de distribuição '220/127 Y' do quadro
+685 [Rotulo 68,7] Observação: [Texto 138,3] alimentação 3F+N 220 V: sistema de distribuição '220/127 Y' do quadro; corrente
+696,1 [Texto 68,7] média, com as cargas supostas equilibradas entre as fases
 776 [Rodape 192,4] Memória de cálculo — quadro QD-04 · página 1 de 1

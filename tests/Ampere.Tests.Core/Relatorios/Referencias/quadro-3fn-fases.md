@@ -1,7 +1,7 @@
 # Memória de cálculo — quadro QD-04
 
 - **Perfil normativo:** FICTICIO-TESTE
-- **Identificador (AMP_MemoriaCalculoId):** `sha256:f0c87202863f69de8be5232f590b78b33c8fd66ef4060c493f1ccee9a3ae4c05`
+- **Identificador (AMP_MemoriaCalculoId):** `sha256:ddaad9f6a0e939dfb828fa7da7451125aacda41fd7d7525d22d97ea2f4ca2c32`
 - **Esquema do documento:** 1
 - **Situação:** cálculo completo (5 passos)
 - **Atenção:** perfil fictício, só para testes
@@ -18,9 +18,9 @@
 
 ## Cargas por fase
 
-- **Fase A:** instalada 1600 VA · demanda 1480 VA · corrente 11,652 A
-- **Fase B:** instalada 1400 VA · demanda 1320 VA · corrente 10,3923 A
-- **Fase C:** instalada 1000 VA · demanda 500 VA · corrente 3,9365 A
+- **Fase A:** instalada 1600 VA · demanda 1480 VA · corrente 12,8704 A
+- **Fase B:** instalada 1400 VA · demanda 1320 VA · corrente 11,6106 A
+- **Fase C:** instalada 1000 VA · demanda 500 VA · corrente 3,937 A
 - **Desequilíbrio:** 66,2162% = (maior − menor) / maior, pela demanda; fase mais carregada: A. Indicador para distribuir os circuitos: a NBR 5410 não fixa limite
 
 ## Passos
@@ -59,4 +59,4 @@
 - **Expressão:** `I = D_total / (√3 × V)`
 - **Valores:** D_total = 3300 VA; V = 220 V
 - **Resultado:** 8,6603 A
-- **Observação:** alimentação 3F+N 220 V: sistema de distribuição '220/127 Y' do quadro
+- **Observação:** alimentação 3F+N 220 V: sistema de distribuição '220/127 Y' do quadro; corrente média, com as cargas supostas equilibradas entre as fases

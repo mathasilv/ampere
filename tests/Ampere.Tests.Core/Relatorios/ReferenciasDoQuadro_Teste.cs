@@ -47,12 +47,13 @@ public class ReferenciasDoQuadro_Teste
             await File.WriteAllBytesAsync(Path.Combine(pasta, $"{cenario}.pdf"), RelatorioDeMemoria.PdfDoQuadro(quadro, fases));
     }
 
-    // IL-01 na fase A, IL-02 na B, TUG-01 na C e o chuveiro (2F) em A e B.
+    // IL-01 na fase A, IL-02 na B, TUG-01 na C (F+N 127 V) e o chuveiro (2F 220 V) em A e B.
     private static BalancoDasFases Fases(ResultadoDoQuadroDeCargas quadro)
     {
-        string[][] fases = [["A"], ["B"], ["C"], ["A", "B"]];
+        (string[] Fases, string Configuracao, decimal Tensao)[] circuitos = [(["A"], "F+N", 127m), (["B"], "F+N", 127m), (["C"], "F+N", 127m), (["A", "B"], "2F", 220m)];
         return CargasPorFase.Calcular(["A", "B", "C"], CargasPorFase.FaseNeutro(quadro.Esquema, quadro.TensaoV),
-            quadro.Linhas.Select((linha, indice) => new CircuitoNasFases(linha.Numero, linha.PotenciaInstaladaVA, linha.DemandaVA, fases[indice])).ToList())!;
+            quadro.Linhas.Select((linha, indice) => new CircuitoNasFases(indice, linha.Numero, linha.PotenciaInstaladaVA, linha.DemandaVA,
+                circuitos[indice].Fases, circuitos[indice].Configuracao, circuitos[indice].Tensao)).ToList())!;
     }
 
     private static ResultadoDoQuadroDeCargas Montar(string cenario) => cenario switch
@@ -61,7 +62,8 @@ public class ReferenciasDoQuadro_Teste
         "quadro-fator-informado" => QuadroDeCargas.Montar("QD-02", "F+N", 127m, Circuitos, Ficticio,
             new Dictionary<TipoDeCarga, decimal> { [TipoDeCarga.Iluminacao] = 1m }),
         "quadro-2fn-sem-corrente" => QuadroDeCargas.Montar("QD-03", "2F+N", 220m, Circuitos, Ficticio),
-        "quadro-3fn-fases" => QuadroDeCargas.Montar("QD-04", "3F+N", 220m, Circuitos, Ficticio, null, "sistema de distribuição '220/127 Y' do quadro"),
+        "quadro-3fn-fases" => QuadroDeCargas.Montar("QD-04", "3F+N", 220m, Circuitos, Ficticio, null,
+            "sistema de distribuição '220/127 Y' do quadro; corrente média, com as cargas supostas equilibradas entre as fases"),
         _ => throw new ArgumentOutOfRangeException(nameof(cenario), cenario, "cenário sem definição")
     };
 
