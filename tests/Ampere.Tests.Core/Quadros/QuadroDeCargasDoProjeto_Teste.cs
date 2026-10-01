@@ -225,6 +225,20 @@ public class QuadroDeCargasDoProjeto_Teste
         await Assert.That(fases.DesequilibrioPct).IsEqualTo(52m);
     }
 
+    [Test]
+    public async Task Fatores_da_montagem_ficam_no_quadro_e_refazem_a_mesma_memoria()
+    {
+        var fatores = new Dictionary<TipoDeCarga, decimal> { [TipoDeCarga.Iluminacao] = 1m };
+        var documento = new DocumentoDeQuadrosFalso([Qd1]);
+
+        var montados = QuadroDeCargasDoProjeto.Executar(documento, Ficticio, fatores);
+        QuadroDeCargasDoProjeto.Gravar(montados, documento, fatores);
+        var refeito = QuadroDeCargasDoProjeto.Montar(Qd1, Ficticio, documento.LerFatoresDoQuadro(Qd1.Id));
+
+        await Assert.That(documento.LerFatoresDoQuadro(Qd1.Id)).IsSameReferenceAs(fatores);
+        await Assert.That(refeito.Quadro.Memoria!.Hash()).IsEqualTo(documento.LerMemoriaDoQuadro(Qd1.Id));
+    }
+
     private sealed class DocumentoDeQuadrosFalso(IReadOnlyList<QuadroLido> quadros) : IDocumentoDeQuadros
     {
         public List<string> Chamadas { get; } = [];
@@ -249,14 +263,21 @@ public class QuadroDeCargasDoProjeto_Teste
 
         public HashSet<long> QuadrosSomenteLeitura { get; } = [];
 
-        public bool GravarMemoriaDoQuadro(long quadroId, string? hashDaMemoria)
+        public Dictionary<long, IReadOnlyDictionary<TipoDeCarga, decimal>?> Fatores { get; } = [];
+
+        public bool GravarMemoriaDoQuadro(long quadroId, string? hashDaMemoria, IReadOnlyDictionary<TipoDeCarga, decimal>? fatoresInformados)
         {
             Chamadas.Add($"memoria:{quadroId}");
             if (QuadrosSomenteLeitura.Contains(quadroId)) return false;
 
             Memorias[quadroId] = hashDaMemoria;
+            Fatores[quadroId] = fatoresInformados;
             return true;
         }
+
+        public string? LerMemoriaDoQuadro(long quadroId) => Memorias.GetValueOrDefault(quadroId);
+
+        public IReadOnlyDictionary<TipoDeCarga, decimal>? LerFatoresDoQuadro(long quadroId) => Fatores.GetValueOrDefault(quadroId);
 
         public List<CircuitoLido> SemQuadro { get; } = [];
 

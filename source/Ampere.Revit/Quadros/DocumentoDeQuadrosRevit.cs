@@ -1,5 +1,7 @@
+using Ampere.Core.Cargas;
 using Ampere.Core.Parametros;
 using Ampere.Core.Quadros;
+using Ampere.Revit.Armazenamento;
 using Autodesk.Revit.DB.Electrical;
 
 namespace Ampere.Revit.Quadros;
@@ -31,18 +33,30 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
         }
     }
 
-    public bool GravarMemoriaDoQuadro(long quadroId, string? hashDaMemoria)
+    private static readonly EsquemaJson FatoresDoQuadro = new(new Guid(FatoresEmJson.GuidDoEsquema), "AmpereFatoresDoQuadro", "FatoresJson",
+        "Ampere: fatores de demanda informados na montagem do quadro de cargas (JSON versionado).");
+
+    public bool GravarMemoriaDoQuadro(long quadroId, string? hashDaMemoria, IReadOnlyDictionary<TipoDeCarga, decimal>? fatoresInformados)
     {
-        var painel = documento.GetElement(new ElementId(quadroId)) as FamilyInstance
-                     ?? throw new InvalidOperationException($"O quadro {quadroId} não existe no documento.");
+        var painel = Painel(quadroId);
         // Quadro em grupo de modelo (ou vínculo): o parâmetro não é editável fora do grupo — só é problema se o valor
-        // gravado não é o que deveria estar.
+        // gravado não é o que deveria estar. Os fatores vão junto com o hash, ou nenhum dos dois.
         if (ParametrosAmpere.Ler(painel, ParametrosAmpere.MemoriaCalculoId) is { IsReadOnly: true } somenteLeitura)
             return string.Equals(somenteLeitura.AsString() ?? string.Empty, hashDaMemoria ?? string.Empty, StringComparison.Ordinal);
 
         ParametrosAmpere.GravarTextoOuApagar(painel, ParametrosAmpere.MemoriaCalculoId, hashDaMemoria);
+        FatoresDoQuadro.GravarEm(painel, FatoresEmJson.Escrever(fatoresInformados));
         return true;
     }
+
+    public string? LerMemoriaDoQuadro(long quadroId) =>
+        ParametrosAmpere.LerTexto(Painel(quadroId), ParametrosAmpere.MemoriaCalculoId) is { Length: > 0 } hash ? hash : null;
+
+    public IReadOnlyDictionary<TipoDeCarga, decimal>? LerFatoresDoQuadro(long quadroId) => FatoresEmJson.Ler(FatoresDoQuadro.LerDo(Painel(quadroId)));
+
+    private FamilyInstance Painel(long quadroId) =>
+        documento.GetElement(new ElementId(quadroId)) as FamilyInstance
+        ?? throw new InvalidOperationException($"O quadro {quadroId} não existe no documento.");
 
     public IReadOnlyList<string> ApagarMemoriaDosOutrosQuadros(IReadOnlyCollection<long> montados)
     {

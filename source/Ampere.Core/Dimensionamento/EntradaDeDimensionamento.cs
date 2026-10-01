@@ -27,6 +27,9 @@ namespace Ampere.Core.Dimensionamento;
 /// <param name="Justificativa">Justificativa das decisões do projetista, registrada na memória.</param>
 /// <param name="OrigemDaTemperatura">De onde veio a temperatura quando não é a do projeto, registrado na memória.</param>
 /// <param name="OrigemDoAgrupamento">De onde veio o número de circuitos agrupados quando não é o do projeto.</param>
+/// <param name="OrigemDaPotencia">De onde veio a potência quando não é a soma dos pontos (ex.: demanda do quadro), registrado na memória.</param>
+/// <param name="LimiteDeQueda">Limite de queda calculado fora da tabela do circuito terminal (ex.: o que sobra para o alimentador).</param>
+/// <param name="Alimentador">Circuito que alimenta um quadro: a tabela de IDR por local não se aplica (só a decisão do projetista).</param>
 public sealed record EntradaDeDimensionamento(
     string Circuito,
     TipoDeCarga Tipo,
@@ -48,7 +51,10 @@ public sealed record EntradaDeDimensionamento(
     decimal? DisjuntorDoProjetistaA = null,
     string? Justificativa = null,
     string? OrigemDaTemperatura = null,
-    string? OrigemDoAgrupamento = null)
+    string? OrigemDoAgrupamento = null,
+    string? OrigemDaPotencia = null,
+    LimiteDeQuedaDoCircuito? LimiteDeQueda = null,
+    bool Alimentador = false)
 {
     /// <summary>Problemas que impedem dimensionar; vazio se a entrada estiver válida.</summary>
     public IReadOnlyList<string> Validar()
@@ -68,11 +74,18 @@ public sealed record EntradaDeDimensionamento(
         if (SecaoMinimaDoProjetistaMm2 is <= 0m) problemas.Add("seção mínima do projetista deve ser positiva");
         if (DisjuntorDoProjetistaA is <= 0m) problemas.Add("disjuntor do projetista deve ser positivo");
         if (LocaisDosPontos.Count == 0) problemas.Add("circuito sem pontos (locais dos pontos vazio)");
+        if (LimiteDeQueda is { ValorPct: <= 0m }) problemas.Add("limite de queda de tensão deve ser positivo");
         if (IdrDoProjetista is { Exigir: true, SensibilidadeMa: not > 0 }) problemas.Add("IDR exigido pelo projetista sem sensibilidade positiva");
         if (IdrDoProjetista is { Exigir: false, SensibilidadeMa: not null }) problemas.Add("IDR dispensado pelo projetista não leva sensibilidade");
         return problemas;
     }
 }
+
+/// <summary>Limite de queda calculado fora da tabela do circuito terminal, com a conta para a memória.</summary>
+/// <param name="ValorPct">ΔV% máximo do circuito.</param>
+/// <param name="Referencia">Referência da tabela de queda do perfil de onde vêm os limites.</param>
+/// <param name="Expressao">A conta (ex.: "ΔV%máx = ΔV%total − ΔV%terminal").</param>
+public sealed record LimiteDeQuedaDoCircuito(decimal ValorPct, string Referencia, string Expressao, IReadOnlyList<ValorDoPasso> Valores, string? Observacao);
 
 /// <summary>
 ///     Decisão do projetista sobre o IDR de um circuito. Prevalece sobre a tabela de proteção diferencial por local; a

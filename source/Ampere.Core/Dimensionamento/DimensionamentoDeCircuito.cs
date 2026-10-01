@@ -103,8 +103,7 @@ public static class DimensionamentoDeCircuito
             var disjuntores = Exigir(perfil.CorrentesNominaisDeDisjuntorA(), "Correntes nominais de disjuntor", "In ∈ correntes nominais", "A");
             var resistividade = Consultar(perfil.ResistividadeOhmMm2PorM(entrada.Material), "Resistividade do condutor",
                 $"ρ = tabela ({entrada.Material})", [], "Ω·mm²/m");
-            var limite = Consultar(perfil.QuedaDeTensaoMaximaPct("circuito_terminal"), "Limite de queda de tensão",
-                "ΔV%máx = tabela (circuito terminal)", [], "%");
+            var limite = LimiteDeQueda();
 
             var fator = entrada.Fases is "3F" or "3F+N" ? Raiz3 : 2m;
             var elevacoes = new List<string>();
@@ -171,18 +170,32 @@ public static class DimensionamentoDeCircuito
                     $"configuração {entrada.Fases}: a divisão das cargas entre as fases não é modelada no MVP; use F+N ou 2F")
             };
 
-            Passo(referencia, "Corrente de projeto", expressao, valores, ib, "A");
+            Passo(referencia, "Corrente de projeto", expressao, valores, ib, "A",
+                entrada.OrigemDaPotencia is { Length: > 0 } origem ? $"S: {origem}" : null);
             _correnteDeProjeto = ib;
             return ib;
+        }
+
+        private decimal LimiteDeQueda()
+        {
+            if (entrada.LimiteDeQueda is not { } limite)
+                return Consultar(perfil.QuedaDeTensaoMaximaPct("circuito_terminal"), "Limite de queda de tensão", "ΔV%máx = tabela (circuito terminal)", [], "%");
+
+            Passo(limite.Referencia, "Limite de queda de tensão", limite.Expressao, limite.Valores, limite.ValorPct, "%", limite.Observacao);
+            return limite.ValorPct;
         }
 
         private void Idr(decimal disjuntor)
         {
             var tabela = perfil.ProtecaoDiferencialPorLocal();
-            var avaliacao = AvaliarPelaTabela(tabela);
+            var avaliacao = entrada.Alimentador
+                ? new AvaliacaoPelaTabela("alimentador de quadro: a tabela por local vale para os circuitos terminais", [])
+                : AvaliarPelaTabela(tabela);
             var sensibilidade = entrada.IdrDoProjetista is { } decisao
                 ? PelaDecisaoDoProjetista(decisao, tabela.Referencia, avaliacao)
-                : PelaTabela(tabela.Referencia, avaliacao);
+                : entrada.Alimentador
+                    ? SemIdrNoAlimentador(tabela.Referencia)
+                    : PelaTabela(tabela.Referencia, avaliacao);
             if (sensibilidade is null)
             {
                 _idrAvaliado = true;
@@ -237,6 +250,14 @@ public static class DimensionamentoDeCircuito
 
             Passo(referencia, "Sensibilidade do IDR", "IΔn = menor IΔn máx dos locais que exigem IDR", [], sensibilidade, "mA");
             return sensibilidade;
+        }
+
+        // Sem decisão do projetista, o alimentador não leva IDR: a exigência por local é dos circuitos terminais.
+        private decimal? SemIdrNoAlimentador(string referencia)
+        {
+            Passo(referencia, "Exigência de IDR", "n = 0 (alimentador de quadro)", [], 0m, "pontos",
+                "a tabela de IDR por local vale para os circuitos terminais; IDR no alimentador só por decisão do projetista (AMP_IDR_DecisaoProjetista)");
+            return null;
         }
 
         private decimal? PelaDecisaoDoProjetista(DecisaoDeIdr decisao, string referencia, AvaliacaoPelaTabela avaliacao)

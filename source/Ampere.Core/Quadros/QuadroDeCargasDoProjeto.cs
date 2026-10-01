@@ -69,10 +69,17 @@ public interface IDocumentoDeQuadros : IDocumentoTransacional
 
     /// <summary>
     ///     Grava no próprio quadro o hash da memória do quadro de cargas (AMP_MemoriaCalculoId do quadro; o do circuito é
-    ///     da memória do dimensionamento). Nulo apaga o anterior. Devolve <c>false</c>, sem gravar, se o quadro não aceita
-    ///     edição (em grupo ou vínculo) — o resto da montagem segue.
+    ///     da memória do dimensionamento) e os fatores informados na montagem (para refazer o quadro depois). Nulo apaga o
+    ///     anterior. Devolve <c>false</c>, sem gravar, se o quadro não aceita edição (em grupo ou vínculo) — o resto da
+    ///     montagem segue.
     /// </summary>
-    bool GravarMemoriaDoQuadro(long quadroId, string? hashDaMemoria);
+    bool GravarMemoriaDoQuadro(long quadroId, string? hashDaMemoria, IReadOnlyDictionary<TipoDeCarga, decimal>? fatoresInformados);
+
+    /// <summary>Hash da memória do quadro de cargas gravado no quadro (nulo se não há).</summary>
+    string? LerMemoriaDoQuadro(long quadroId);
+
+    /// <summary>Fatores informados na montagem que gravou a memória do quadro (nulo se não há; vazio = só os do perfil).</summary>
+    IReadOnlyDictionary<TipoDeCarga, decimal>? LerFatoresDoQuadro(long quadroId);
 
     /// <summary>
     ///     Apaga o hash da memória de quadro de cargas dos quadros que não estão entre os montados (ficaram sem circuitos).
@@ -106,76 +113,78 @@ public static class QuadroDeCargasDoProjeto
         PerfilNormativo perfil,
         IReadOnlyDictionary<TipoDeCarga, decimal>? fatoresInformados = null)
     {
-        var resultados = new List<ResultadoDoQuadro>();
-        foreach (var quadro in documento.LerQuadrosComCircuitos())
+        return documento.LerQuadrosComCircuitos().Select(quadro => Montar(quadro, perfil, fatoresInformados)).ToList();
+    }
+
+    /// <summary>
+    ///     O quadro de cargas de um quadro lido, sem gravar nada: o mesmo da montagem — é por ele que o alimentador refaz o
+    ///     quadro com os fatores guardados e confere a memória gravada.
+    /// </summary>
+    public static ResultadoDoQuadro Montar(QuadroLido quadro, PerfilNormativo perfil, IReadOnlyDictionary<TipoDeCarga, decimal>? fatoresInformados)
+    {
+        var problemas = new List<string>();
+        var circuitos = new List<CircuitoDoQuadro>();
+        var idsDasLinhas = new List<long>();
+        var foraDoQuadro = new List<CircuitoLido>();
+        foreach (var lido in quadro.Circuitos)
         {
-            var problemas = new List<string>();
-            var circuitos = new List<CircuitoDoQuadro>();
-            var idsDasLinhas = new List<long>();
-            var foraDoQuadro = new List<CircuitoLido>();
-            foreach (var lido in quadro.Circuitos)
+            var numero = string.IsNullOrWhiteSpace(lido.Numero) ? "(sem número)" : lido.Numero.Trim();
+            if (!CodigosDeTipoDeCarga.TryLer(lido.Tipo, out var tipo))
             {
-                var numero = string.IsNullOrWhiteSpace(lido.Numero) ? "(sem número)" : lido.Numero.Trim();
-                if (!CodigosDeTipoDeCarga.TryLer(lido.Tipo, out var tipo))
-                {
-                    problemas.Add($"circuito {numero}: sem AMP_TipoCarga reconhecido (crie os circuitos com o Ampere ou classifique-os)");
-                    foraDoQuadro.Add(lido);
-                    continue;
-                }
-
-                if (lido.PotenciaVA is not { } potencia)
-                {
-                    problemas.Add($"circuito {numero}: sem potência instalada (classifique os pontos com AMP_PotenciaInstaladaVA)");
-                    foraDoQuadro.Add(lido);
-                    continue;
-                }
-
-                circuitos.Add(new CircuitoDoQuadro(numero, null, tipo, potencia));
-                idsDasLinhas.Add(lido.Id);
-            }
-
-            if (quadro.Alimentacao is { } alimentacao)
-            {
-                Compatibilidade(quadro, alimentacao, problemas);
-                var pelaAlimentacao = QuadroDeCargas.Montar(quadro.Nome, alimentacao.Esquema, alimentacao.TensaoV, circuitos, perfil, fatoresInformados, alimentacao.Origem);
-                if (problemas.Count > 0) pelaAlimentacao = pelaAlimentacao with { Problemas = [.. pelaAlimentacao.Problemas, .. problemas] };
-                resultados.Add(new ResultadoDoQuadro(quadro.Id, quadro.Nome, pelaAlimentacao, idsDasLinhas, foraDoQuadro,
-                    Fases(quadro, pelaAlimentacao, idsDasLinhas, alimentacao.Fases)));
+                problemas.Add($"circuito {numero}: sem AMP_TipoCarga reconhecido (crie os circuitos com o Ampere ou classifique-os)");
+                foraDoQuadro.Add(lido);
                 continue;
             }
 
-            // Sem sistema de distribuição no quadro, o par (esquema, tensão) precisa ser único entre os circuitos que o informam.
-            var pares = quadro.Circuitos
-                .Where(lido => lido.Fases is { Length: > 0 } && lido.TensaoV is > 0)
-                .Select(lido => (lido.Fases!.Trim(), lido.TensaoV!.Value))
-                .Distinct()
-                .ToList();
-            string esquema;
-            decimal tensao;
-            switch (pares.Count)
+            if (lido.PotenciaVA is not { } potencia)
             {
-                case 1:
-                    (esquema, tensao) = pares[0];
-                    break;
-                case 0:
-                    esquema = "F+N";
-                    tensao = 0m;
-                    problemas.Add("nenhum circuito com AMP_Fases e AMP_TensaoCircuitoV: corrente do quadro não calculada");
-                    break;
-                default:
-                    esquema = "F+N";
-                    tensao = 0m;
-                    problemas.Add($"circuitos com esquemas/tensões diferentes ({string.Join(", ", pares.Select(par => $"{par.Item1} {NumeroEmTexto.Formatar(par.Item2)} V"))}) e quadro sem sistema de distribuição no Revit: corrente do quadro não calculada (atribua o sistema de distribuição ao quadro)");
-                    break;
+                problemas.Add($"circuito {numero}: sem potência instalada (classifique os pontos com AMP_PotenciaInstaladaVA)");
+                foraDoQuadro.Add(lido);
+                continue;
             }
 
-            // Montar devolve uma linha por circuito, na ordem recebida: é assim que os ids acompanham as linhas.
-            var montado = QuadroDeCargas.Montar(quadro.Nome, esquema, tensao, circuitos, perfil, fatoresInformados);
-            if (problemas.Count > 0) montado = montado with { Problemas = [.. montado.Problemas, .. problemas] };
-            resultados.Add(new ResultadoDoQuadro(quadro.Id, quadro.Nome, montado, idsDasLinhas, foraDoQuadro, Fases(quadro, montado, idsDasLinhas, null)));
+            circuitos.Add(new CircuitoDoQuadro(numero, null, tipo, potencia));
+            idsDasLinhas.Add(lido.Id);
         }
 
-        return resultados;
+        if (quadro.Alimentacao is { } alimentacao)
+        {
+            Compatibilidade(quadro, alimentacao, problemas);
+            var pelaAlimentacao = QuadroDeCargas.Montar(quadro.Nome, alimentacao.Esquema, alimentacao.TensaoV, circuitos, perfil, fatoresInformados, alimentacao.Origem);
+            if (problemas.Count > 0) pelaAlimentacao = pelaAlimentacao with { Problemas = [.. pelaAlimentacao.Problemas, .. problemas] };
+            return new ResultadoDoQuadro(quadro.Id, quadro.Nome, pelaAlimentacao, idsDasLinhas, foraDoQuadro,
+                Fases(quadro, pelaAlimentacao, idsDasLinhas, alimentacao.Fases));
+        }
+
+        // Sem sistema de distribuição no quadro, o par (esquema, tensão) precisa ser único entre os circuitos que o informam.
+        var pares = quadro.Circuitos
+            .Where(lido => lido.Fases is { Length: > 0 } && lido.TensaoV is > 0)
+            .Select(lido => (lido.Fases!.Trim(), lido.TensaoV!.Value))
+            .Distinct()
+            .ToList();
+        string esquema;
+        decimal tensao;
+        switch (pares.Count)
+        {
+            case 1:
+                (esquema, tensao) = pares[0];
+                break;
+            case 0:
+                esquema = "F+N";
+                tensao = 0m;
+                problemas.Add("nenhum circuito com AMP_Fases e AMP_TensaoCircuitoV: corrente do quadro não calculada");
+                break;
+            default:
+                esquema = "F+N";
+                tensao = 0m;
+                problemas.Add($"circuitos com esquemas/tensões diferentes ({string.Join(", ", pares.Select(par => $"{par.Item1} {NumeroEmTexto.Formatar(par.Item2)} V"))}) e quadro sem sistema de distribuição no Revit: corrente do quadro não calculada (atribua o sistema de distribuição ao quadro)");
+                break;
+        }
+
+        // Montar devolve uma linha por circuito, na ordem recebida: é assim que os ids acompanham as linhas.
+        var montado = QuadroDeCargas.Montar(quadro.Nome, esquema, tensao, circuitos, perfil, fatoresInformados);
+        if (problemas.Count > 0) montado = montado with { Problemas = [.. montado.Problemas, .. problemas] };
+        return new ResultadoDoQuadro(quadro.Id, quadro.Nome, montado, idsDasLinhas, foraDoQuadro, Fases(quadro, montado, idsDasLinhas, null));
     }
 
     // Folga de 2% para as tensões nominais arredondadas (380/220 V: 380 / √3 = 219,4 V).
@@ -229,7 +238,9 @@ public static class QuadroDeCargasDoProjeto
     ///     que ficou sem circuitos, perde o hash — mesmo quando nenhum quadro tem circuitos. Quadro em grupo ou vínculo fica
     ///     sem o hash e é informado; qualquer outra recusa do Revit aborta tudo.
     /// </summary>
-    public static GravacaoDosQuadros Gravar(IReadOnlyList<ResultadoDoQuadro> resultados, IDocumentoDeQuadros documento)
+    /// <param name="fatoresInformados">Os fatores usados na montagem: ficam guardados em cada quadro, com o hash da memória.</param>
+    public static GravacaoDosQuadros Gravar(
+        IReadOnlyList<ResultadoDoQuadro> resultados, IDocumentoDeQuadros documento, IReadOnlyDictionary<TipoDeCarga, decimal>? fatoresInformados = null)
     {
         var linhas = resultados
             .SelectMany(resultado => resultado.Quadro.Linhas
@@ -244,7 +255,7 @@ public static class QuadroDeCargasDoProjeto
             if (linhas.Count > 0) documento.GravarLinhas(linhas);
             foreach (var resultado in resultados)
             {
-                if (!documento.GravarMemoriaDoQuadro(resultado.Id, resultado.Quadro.Memoria?.Hash())) semMemoria.Add(resultado.Nome);
+                if (!documento.GravarMemoriaDoQuadro(resultado.Id, resultado.Quadro.Memoria?.Hash(), fatoresInformados)) semMemoria.Add(resultado.Nome);
             }
 
             semMemoria.AddRange(documento.ApagarMemoriaDosOutrosQuadros(resultados.Select(resultado => resultado.Id).ToList()));

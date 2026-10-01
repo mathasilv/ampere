@@ -68,7 +68,7 @@ public class MontarQuadroDeCargasCommand : ExternalCommand
         GravacaoDosQuadros gravacao;
         try
         {
-            gravacao = QuadroDeCargasDoProjeto.Gravar(resultados, porta);
+            gravacao = QuadroDeCargasDoProjeto.Gravar(resultados, porta, fatores);
         }
         catch (Exception excecao) when (excecao is InvalidOperationException or Autodesk.Revit.Exceptions.ApplicationException)
         {
