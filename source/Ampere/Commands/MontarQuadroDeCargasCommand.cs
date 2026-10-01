@@ -38,7 +38,19 @@ public class MontarQuadroDeCargasCommand : ExternalCommand
         var quadros = porta.LerQuadrosComCircuitos();
         if (quadros.Count == 0)
         {
-            Cancelar("Nenhum quadro com circuitos no projeto. Crie os circuitos com o Ampere primeiro.");
+            // Mesmo sem quadros, apaga o que montagens anteriores deixaram (hash em quadro, fator em circuito sem quadro).
+            // Result fica Succeeded: com Cancelled, o Revit desfaria essa limpeza.
+            try
+            {
+                QuadroDeCargasDoProjeto.Gravar([], porta);
+            }
+            catch (Exception excecao) when (excecao is InvalidOperationException or Autodesk.Revit.Exceptions.ApplicationException)
+            {
+                Cancelar($"Nada foi alterado:{Environment.NewLine}{excecao.Message}");
+                return;
+            }
+
+            TaskDialog.Show(TituloDaJanela, "Nenhum quadro com circuitos no projeto. Crie os circuitos com o Ampere primeiro.");
             return;
         }
 

@@ -37,7 +37,7 @@ public class QuadroDeCargasDoProjeto_Teste
         await Assert.That(documento.Chamadas).IsEquivalentTo(
             ["transacao:" + QuadroDeCargasDoProjeto.NomeDaTransacao, "linhas:3", "memoria:10", "memoria:20", "apagar-outros:10,20"], CollectionOrdering.Matching);
         await Assert.That(documento.Linhas).IsEquivalentTo(
-            [new LinhaParaGravar(101, "IL-01", 600m, 0.8m), new LinhaParaGravar(102, "TUG-01", 1000m, 0.5m), new LinhaParaGravar(201, "TUE-01", 2000m, 1m)],
+            [new LinhaParaGravar(101, "IL-01", 600m, 0.8m, "QD1"), new LinhaParaGravar(102, "TUG-01", 1000m, 0.5m, "QD1"), new LinhaParaGravar(201, "TUE-01", 2000m, 1m, "QD2")],
             CollectionOrdering.Matching);
         await Assert.That(documento.Memorias[10]).IsEqualTo(resultados[0].Quadro.Memoria!.Hash());
         await Assert.That(documento.Memorias[20]).IsEqualTo(resultados[1].Quadro.Memoria!.Hash());
@@ -60,14 +60,35 @@ public class QuadroDeCargasDoProjeto_Teste
     }
 
     [Test]
-    public async Task Sem_quadros_nada_e_gravado()
+    public async Task Sem_quadros_ainda_apaga_o_que_montagens_anteriores_deixaram()
     {
         var documento = new DocumentoDeQuadrosFalso([]);
 
         var gravacao = QuadroDeCargasDoProjeto.Gravar(QuadroDeCargasDoProjeto.Executar(documento, Ficticio), documento);
 
         await Assert.That(gravacao.CircuitosAtualizados).IsEqualTo(0);
-        await Assert.That(documento.Chamadas).IsEmpty();
+        await Assert.That(documento.Chamadas).IsEquivalentTo(["transacao:" + QuadroDeCargasDoProjeto.NomeDaTransacao, "apagar-outros:"], CollectionOrdering.Matching);
+    }
+
+    [Test]
+    public async Task Circuito_sem_quadro_perde_fator_e_quadro_da_montagem_anterior()
+    {
+        var documento = new DocumentoDeQuadrosFalso([Qd1]) { SemQuadro = { new CircuitoLido(301, "TUG-07", "TUG", 360m, "F+N", 127m) } };
+
+        var gravacao = QuadroDeCargasDoProjeto.Gravar(QuadroDeCargasDoProjeto.Executar(documento, Ficticio), documento);
+
+        await Assert.That(gravacao.CircuitosAtualizados).IsEqualTo(3);
+        await Assert.That(documento.Linhas[^1]).IsEqualTo(new LinhaParaGravar(301, "TUG-07", 360m, null, null));
+    }
+
+    [Test]
+    public async Task Quadro_sem_circuitos_que_nao_aceita_edicao_e_informado()
+    {
+        var documento = new DocumentoDeQuadrosFalso([Qd1]) { OutrosSomenteLeitura = { "QD-ANTIGO" } };
+
+        var gravacao = QuadroDeCargasDoProjeto.Gravar(QuadroDeCargasDoProjeto.Executar(documento, Ficticio), documento);
+
+        await Assert.That(gravacao.QuadrosSemMemoria).IsEquivalentTo(["QD-ANTIGO"]);
     }
 
     [Test]
@@ -103,7 +124,7 @@ public class QuadroDeCargasDoProjeto_Teste
 
         await Assert.That(gravacao.CircuitosAtualizados).IsEqualTo(3);
         await Assert.That(documento.Linhas).IsEquivalentTo(
-            [new LinhaParaGravar(101, "IL-01", 600m, 0.8m), new LinhaParaGravar(102, "X-01", 100m, null), new LinhaParaGravar(103, "TUG-09", null, null)],
+            [new LinhaParaGravar(101, "IL-01", 600m, 0.8m, "QD1"), new LinhaParaGravar(102, "X-01", 100m, null, "QD1"), new LinhaParaGravar(103, "TUG-09", null, null, "QD1")],
             CollectionOrdering.Matching);
     }
 
@@ -168,8 +189,17 @@ public class QuadroDeCargasDoProjeto_Teste
             return true;
         }
 
-        public void ApagarMemoriaDosOutrosQuadros(IReadOnlyCollection<long> montados) =>
+        public List<CircuitoLido> SemQuadro { get; } = [];
+
+        public List<string> OutrosSomenteLeitura { get; } = [];
+
+        public IReadOnlyList<string> ApagarMemoriaDosOutrosQuadros(IReadOnlyCollection<long> montados)
+        {
             Chamadas.Add($"apagar-outros:{string.Join(",", montados)}");
+            return OutrosSomenteLeitura;
+        }
+
+        public IReadOnlyList<CircuitoLido> LerCircuitosSemQuadro() => SemQuadro;
 
         public string CriarTabelaDoQuadro(string nomeDoQuadro) => $"{nomeDoQuadro} (tabela)";
     }

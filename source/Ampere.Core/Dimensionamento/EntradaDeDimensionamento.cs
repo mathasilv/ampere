@@ -101,8 +101,9 @@ public enum SituacaoDoDimensionamento
 /// <param name="Problemas">Por que o cálculo não foi feito ou parou.</param>
 /// <param name="Avisos">Divergências que não param o cálculo (ex.: decisão do projetista contrária à tabela).</param>
 /// <param name="IdrAvaliado">
-///     A exigência de IDR foi decidida (exigido ou não). Falso quando o cálculo parou antes ou na própria exigência: aí
-///     IDR nulo não quer dizer "sem IDR", e o disjuntor não forma um conjunto de proteção completo.
+///     A proteção diferencial foi decidida por completo: a exigência (exigido ou não) e, se exigido, a corrente nominal do
+///     IDR. Falso quando o cálculo parou antes ou dentro do IDR (inclusive sem corrente nominal de IDR que atenda o
+///     disjuntor): aí IDR nulo não quer dizer "sem IDR", e o disjuntor não forma um conjunto de proteção completo.
 /// </param>
 public sealed record ResultadoDoDimensionamento(
     string Circuito,

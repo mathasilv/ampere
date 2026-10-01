@@ -34,9 +34,10 @@ public sealed record ResultadoDoCircuito(
 
 /// <summary>
 ///     Caso de uso "Dimensionar circuitos": lê os circuitos, dimensiona cada um contra o perfil e grava todos numa única
-///     transação — um único desfazer. Circuito interrompido por falta de dado normativo é gravado até onde chegou, e a
-///     memória mostra onde parou; circuito com dados faltando não tem memória e fica com os resultados apagados — depois
-///     do comando, nenhum circuito mostra resultado de uma rodada anterior.
+///     transação — um único desfazer. Circuito interrompido por falta de dado normativo grava a corrente de projeto, os
+///     fatores e o hash da memória (que mostra onde parou); a proteção (seção, disjuntor, IDR, eletroduto) só se o IDR foi
+///     decidido por completo. Circuito com dados faltando não tem memória e fica com os resultados apagados — depois do
+///     comando, nenhum circuito mostra resultado de uma rodada anterior.
 /// </summary>
 public static class DimensionamentoDoProjeto
 {

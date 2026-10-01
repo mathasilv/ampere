@@ -135,6 +135,7 @@ public class DimensionamentoDeCircuito_Teste
         await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
         await Assert.That(resultado.IdrSensibilidadeMa).IsEqualTo(30m);
         await Assert.That(resultado.IdrNominalA).IsNull();
+        await Assert.That(resultado.IdrAvaliado).IsFalse(); // exigência decidida, mas a proteção não ficou completa
         await Assert.That(string.Join("\n", resultado.Problemas)).Contains("nenhuma corrente nominal de IDR do perfil atende In = 32 A (maior: 25 A)");
     }
 

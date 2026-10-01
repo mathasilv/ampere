@@ -26,10 +26,11 @@ public sealed record ResultadoDoQuadro(
     IReadOnlyList<CircuitoLido> ForaDoQuadro);
 
 /// <summary>
-///     Uma linha a gravar num circuito: potência instalada e fator aplicado. Nulo apaga o valor anterior — circuito fora
-///     do quadro não fica com o fator da montagem passada.
+///     Uma linha a gravar num circuito: potência instalada, fator aplicado e o quadro em que ele está agora (AMP_Quadro, que
+///     filtra a tabela do quadro). Nulo apaga o valor anterior — circuito fora do quadro ou sem quadro não fica com o fator
+///     nem com o quadro da montagem passada.
 /// </summary>
-public sealed record LinhaParaGravar(long CircuitoId, string NumeroDoCircuito, decimal? PotenciaVA, decimal? Fator);
+public sealed record LinhaParaGravar(long CircuitoId, string NumeroDoCircuito, decimal? PotenciaVA, decimal? Fator, string? Quadro);
 
 /// <summary>O que a gravação fez: circuitos atualizados e quadros cujo hash o Revit não deixou gravar (grupo ou vínculo).</summary>
 public sealed record GravacaoDosQuadros(int CircuitosAtualizados, IReadOnlyList<string> QuadrosSemMemoria);
@@ -53,8 +54,14 @@ public interface IDocumentoDeQuadros : IDocumentoTransacional
     /// </summary>
     bool GravarMemoriaDoQuadro(long quadroId, string? hashDaMemoria);
 
-    /// <summary>Apaga o hash da memória de quadro de cargas dos quadros que não estão entre os montados (ficaram sem circuitos).</summary>
-    void ApagarMemoriaDosOutrosQuadros(IReadOnlyCollection<long> montados);
+    /// <summary>
+    ///     Apaga o hash da memória de quadro de cargas dos quadros que não estão entre os montados (ficaram sem circuitos).
+    ///     Devolve os nomes dos que o Revit não deixou editar e continuam com um hash.
+    /// </summary>
+    IReadOnlyList<string> ApagarMemoriaDosOutrosQuadros(IReadOnlyCollection<long> montados);
+
+    /// <summary>Circuitos de força sem quadro (desconectados, ou com o quadro apagado), para apagar o que a montagem gravou neles.</summary>
+    IReadOnlyList<CircuitoLido> LerCircuitosSemQuadro();
 
     /// <summary>Cria (substituindo se já existir) a tabela do quadro de cargas; devolve o nome da view criada.</summary>
     string CriarTabelaDoQuadro(string nomeDoQuadro);
@@ -140,20 +147,21 @@ public static class QuadroDeCargasDoProjeto
     }
 
     /// <summary>
-    ///     Grava os resultados numa única transação — um único desfazer: em cada circuito, a potência instalada e o fator
-    ///     aplicado; em cada quadro, o hash da memória do quadro (é ela que justifica os fatores). Nada da montagem anterior
-    ///     sobrevive com cara de atual: linha sem fator apaga o fator anterior; circuito fora do quadro fica com a potência
-    ///     lida (ou nenhuma) e sem fator; quadro incompleto, ou que ficou sem circuitos, perde o hash. Quadro em grupo ou
-    ///     vínculo fica sem o hash e é informado; qualquer outra recusa do Revit aborta tudo.
+    ///     Grava os resultados numa única transação — um único desfazer: em cada circuito, a potência instalada, o fator
+    ///     aplicado e o quadro atual; em cada quadro, o hash da memória do quadro (é ela que justifica os fatores). Nada da
+    ///     montagem anterior sobrevive com cara de atual: linha sem fator apaga o fator anterior; circuito fora do quadro fica
+    ///     com a potência lida (ou nenhuma) e sem fator; circuito sem quadro perde também o AMP_Quadro; quadro incompleto, ou
+    ///     que ficou sem circuitos, perde o hash — mesmo quando nenhum quadro tem circuitos. Quadro em grupo ou vínculo fica
+    ///     sem o hash e é informado; qualquer outra recusa do Revit aborta tudo.
     /// </summary>
     public static GravacaoDosQuadros Gravar(IReadOnlyList<ResultadoDoQuadro> resultados, IDocumentoDeQuadros documento)
     {
         var linhas = resultados
             .SelectMany(resultado => resultado.Quadro.Linhas
-                .Select((linha, indice) => new LinhaParaGravar(resultado.CircuitosDasLinhas[indice], linha.Numero, linha.PotenciaInstaladaVA, linha.Fator))
-                .Concat(resultado.ForaDoQuadro.Select(lido => new LinhaParaGravar(lido.Id, lido.Numero ?? "(sem número)", lido.PotenciaVA, null))))
+                .Select((linha, indice) => new LinhaParaGravar(resultado.CircuitosDasLinhas[indice], linha.Numero, linha.PotenciaInstaladaVA, linha.Fator, resultado.Nome))
+                .Concat(resultado.ForaDoQuadro.Select(lido => new LinhaParaGravar(lido.Id, lido.Numero ?? "(sem número)", lido.PotenciaVA, null, resultado.Nome))))
+            .Concat(documento.LerCircuitosSemQuadro().Select(lido => new LinhaParaGravar(lido.Id, lido.Numero ?? "(sem número)", lido.PotenciaVA, null, null)))
             .ToList();
-        if (resultados.Count == 0) return new GravacaoDosQuadros(0, []);
 
         var semMemoria = new List<string>();
         documento.EmUmaTransacao(NomeDaTransacao, () =>
@@ -164,7 +172,7 @@ public static class QuadroDeCargasDoProjeto
                 if (!documento.GravarMemoriaDoQuadro(resultado.Id, resultado.Quadro.Memoria?.Hash())) semMemoria.Add(resultado.Nome);
             }
 
-            documento.ApagarMemoriaDosOutrosQuadros(resultados.Select(resultado => resultado.Id).ToList());
+            semMemoria.AddRange(documento.ApagarMemoriaDosOutrosQuadros(resultados.Select(resultado => resultado.Id).ToList()));
         });
         return new GravacaoDosQuadros(linhas.Count, semMemoria);
     }

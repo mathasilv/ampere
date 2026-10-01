@@ -152,6 +152,27 @@ public sealed class QuadroDeCargasNoRevit_Teste : TesteComProjetoEletrico
     }
 
     [Test]
+    public async Task Circuito_desconectado_do_quadro_perde_fator_e_quadro()
+    {
+        MontarQuadroComDoisCircuitos();
+        var porta = new DocumentoDeQuadrosRevit(Cenario.Documento);
+        var fatores = new Dictionary<TipoDeCarga, decimal> { [TipoDeCarga.Iluminacao] = 1m, [TipoDeCarga.TUG] = 0.5m };
+        QuadroDeCargasDoProjeto.Gravar(QuadroDeCargasDoProjeto.Executar(porta, PerfilNormativo.NBR5410_2004, fatores), porta);
+        var tomadas = Cenario.Quadro.MEPModel.GetAssignedElectricalSystems().Single(sistema => Texto(sistema, "AMP_NumeroCircuito") == "TUG-01");
+        using (var transacao = new Transaction(Cenario.Documento, "Preparação do teste"))
+        {
+            transacao.Start();
+            tomadas.DisconnectPanel();
+            transacao.Commit();
+        }
+
+        QuadroDeCargasDoProjeto.Gravar(QuadroDeCargasDoProjeto.Executar(porta, PerfilNormativo.NBR5410_2004, fatores), porta);
+
+        await Assert.That(Parametro(tomadas, "AMP_FatorDemanda").AsDouble()).IsEqualTo(0d);
+        await Assert.That(Texto(tomadas, "AMP_Quadro") ?? string.Empty).IsEqualTo(string.Empty);
+    }
+
+    [Test]
     public async Task Cria_a_tabela_do_quadro_com_campos_filtro_e_ordenacao()
     {
         MontarQuadroComDoisCircuitos();

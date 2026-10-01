@@ -22,7 +22,7 @@ internal static class ResumoDoDimensionamento
         texto.AppendLine($"   Dimensionados: {dimensionados}");
         texto.AppendLine($"   Interrompidos (a memória mostra onde parou): {interrompidos.Count}");
         var semProtecao = interrompidos.Count(resultado => !resultado.Dimensionamento!.IdrAvaliado);
-        if (semProtecao > 0) texto.AppendLine($"      sem seção, disjuntor e IDR gravados (parou antes de decidir o IDR): {semProtecao}");
+        if (semProtecao > 0) texto.AppendLine($"      sem seção, disjuntor e IDR gravados (parou antes de completar o IDR): {semProtecao}");
         texto.AppendLine($"   Não calculados (resultados anteriores apagados): {naoCalculados.Count}");
 
         Agrupar(texto, "Onde o cálculo parou", interrompidos.SelectMany(resultado => resultado.Dimensionamento!.Problemas));

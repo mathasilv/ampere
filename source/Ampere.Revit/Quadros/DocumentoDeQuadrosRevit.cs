@@ -26,6 +26,7 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
             ParametrosAmpere.GravarNumeroOuApagar(sistema, ParametrosAmpere.PotenciaInstaladaVA,
                 linha.PotenciaVA is { } potencia ? UnitUtils.ConvertToInternalUnits((double)potencia, UnitTypeId.VoltAmperes) : null);
             ParametrosAmpere.GravarNumeroOuApagar(sistema, ParametrosAmpere.FatorDemanda, (double?)linha.Fator);
+            ParametrosAmpere.GravarTextoOuApagar(sistema, ParametrosAmpere.Quadro, linha.Quadro);
         }
     }
 
@@ -33,25 +34,42 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
     {
         var painel = documento.GetElement(new ElementId(quadroId)) as FamilyInstance
                      ?? throw new InvalidOperationException($"O quadro {quadroId} não existe no documento.");
-        // Quadro em grupo de modelo (ou vínculo): o parâmetro não é editável fora do grupo.
-        if (ParametrosAmpere.Ler(painel, ParametrosAmpere.MemoriaCalculoId) is { IsReadOnly: true }) return false;
+        // Quadro em grupo de modelo (ou vínculo): o parâmetro não é editável fora do grupo — só é problema se o valor
+        // gravado não é o que deveria estar.
+        if (ParametrosAmpere.Ler(painel, ParametrosAmpere.MemoriaCalculoId) is { IsReadOnly: true } somenteLeitura)
+            return string.Equals(somenteLeitura.AsString() ?? string.Empty, hashDaMemoria ?? string.Empty, StringComparison.Ordinal);
 
         ParametrosAmpere.GravarTextoOuApagar(painel, ParametrosAmpere.MemoriaCalculoId, hashDaMemoria);
         return true;
     }
 
-    public void ApagarMemoriaDosOutrosQuadros(IReadOnlyCollection<long> montados)
+    public IReadOnlyList<string> ApagarMemoriaDosOutrosQuadros(IReadOnlyCollection<long> montados)
     {
         var ignorar = montados.ToHashSet();
+        var semEdicao = new List<string>();
         foreach (var painel in new FilteredElementCollector(documento)
                      .OfCategory(BuiltInCategory.OST_ElectricalEquipment)
                      .OfClass(typeof(FamilyInstance))
+                     .Cast<FamilyInstance>()
                      .Where(painel => !ignorar.Contains(painel.Id.Value)))
         {
-            if (ParametrosAmpere.Ler(painel, ParametrosAmpere.MemoriaCalculoId) is { IsReadOnly: false } parametro && !string.IsNullOrEmpty(parametro.AsString()))
-                ParametrosAmpere.GravarTextoOuApagar(painel, ParametrosAmpere.MemoriaCalculoId, null);
+            if (ParametrosAmpere.Ler(painel, ParametrosAmpere.MemoriaCalculoId) is not { } parametro || string.IsNullOrEmpty(parametro.AsString())) continue;
+
+            if (parametro.IsReadOnly) semEdicao.Add(NomeDoPainel(painel));
+            else ParametrosAmpere.GravarTextoOuApagar(painel, ParametrosAmpere.MemoriaCalculoId, null);
         }
+
+        return semEdicao;
     }
+
+    public IReadOnlyList<CircuitoLido> LerCircuitosSemQuadro() =>
+        new FilteredElementCollector(documento)
+            .OfCategory(BuiltInCategory.OST_ElectricalCircuit)
+            .WhereElementIsNotElementType()
+            .OfType<ElectricalSystem>()
+            .Where(sistema => sistema.SystemType == ElectricalSystemType.PowerCircuit && sistema.BaseEquipment is null)
+            .Select(LerCircuito)
+            .ToList();
 
     public string CriarTabelaDoQuadro(string nomeDoQuadro)
     {

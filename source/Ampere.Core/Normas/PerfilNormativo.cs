@@ -376,7 +376,7 @@ public sealed class PerfilNormativo
         {
             if (metodos is null) return null;
             if (metodos.Count == 0 || metodos.Any(string.IsNullOrWhiteSpace)) problemas.Add($"{nome}: lista de métodos vazia ou com método em branco");
-            return metodos.Select(metodo => metodo.Trim()).ToList();
+            return metodos.Select(metodo => metodo?.Trim() ?? string.Empty).ToList();
         }
 
         public LinhaDeCapacidade Capacidade(string nome, LinhaDeCapacidadeJson linha)

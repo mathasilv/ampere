@@ -112,9 +112,12 @@ public class PerfilNormativo_Teste
     }
 
     [Test]
-    public async Task Lista_de_metodos_vazia_e_rejeitada()
+    [Arguments("[]")]
+    [Arguments("[null]")]
+    [Arguments("[\"B1\", \" \"]")]
+    public async Task Lista_de_metodos_vazia_ou_com_metodo_em_branco_e_rejeitada(string metodos)
     {
-        var json = PerfilFicticio.Json.Replace("{ \"isolacao\": \"PVC\", \"por_temperatura_c\"", "{ \"isolacao\": \"PVC\", \"metodos\": [], \"por_temperatura_c\"");
+        var json = PerfilFicticio.Json.Replace("{ \"isolacao\": \"PVC\", \"por_temperatura_c\"", $"{{ \"isolacao\": \"PVC\", \"metodos\": {metodos}, \"por_temperatura_c\"");
 
         await Assert.That(() => PerfilNormativo.Carregar(json))
             .Throws<PerfilNormativoInvalidoException>()

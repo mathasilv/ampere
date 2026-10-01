@@ -90,15 +90,18 @@ Comportamento do modelo a validar pelo projetista:
 - Resultado que deixou de ser calculado (IDR que deixou de ser exigido, circuito que perdeu um dado, cálculo que parou
   antes) apaga o valor anterior. O Revit não devolve parâmetro compartilhado numérico a "sem valor" (`ClearValue` exige
   HideWhenNoValue, que a injeção não usa): o valor anterior vira **0**; parâmetro que nunca teve valor continua vazio.
-- Seção, I<sub>Z</sub>, disjuntor, queda, IDR e eletroduto só são gravados quando a exigência de IDR foi decidida; se o
-  cálculo parou antes (ex.: ponto sem AMP_Local), ficam vazios/0 e só a corrente de projeto, os fatores e o hash da
+- Seção, I<sub>Z</sub>, disjuntor, queda, IDR e eletroduto só são gravados quando o IDR foi decidido por completo
+  (exigência e, se exigido, a corrente nominal); se o cálculo parou antes ou dentro do IDR (ex.: ponto sem AMP_Local, ou
+  disjuntor acima da maior corrente de IDR do perfil), ficam vazios/0 e só a corrente de projeto, os fatores e o hash da
   memória são gravados. Leitura das tabelas: **IDR vazio ou 0 ao lado de um disjuntor gravado = sem IDR**; sem disjuntor
   gravado, a proteção não foi decidida (ver a memória).
 - AMP_ComprimentoRotaM = 0 conta como vazio (é o único jeito de "esvaziar" o parâmetro): vale o comprimento do Revit.
 - Ponto com AMP_TipoCarga diferente do circuito (reclassificado depois, ou posto no circuito pelo Revit) é problema de
   dados: o tipo decide a seção mínima e o IDR, e o motor não escolhe um deles.
 - Quadro de cargas: circuito que fica fora do quadro (sem tipo ou sem potência) perde o fator da montagem anterior;
-  quadro que ficou sem circuitos perde o hash; quadro em grupo ou vínculo fica sem o hash e o resumo avisa.
+  circuito desconectado do quadro perde também o AMP_Quadro (sai da tabela do quadro); o AMP_Quadro do circuito passa
+  a acompanhar o quadro em que ele está. Quadro que ficou sem circuitos perde o hash (mesmo sem nenhum quadro montado);
+  quadro em grupo ou vínculo fica com o hash que tinha e o resumo avisa quando ele não é o atual.
 
 Pendente:
 

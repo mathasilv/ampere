@@ -62,17 +62,16 @@ internal static class ParametrosAmpere
     /// </summary>
     public static void GravarNumeroOuApagar(Element elemento, DefinicaoDeParametro definicao, double? valorInterno)
     {
-        var parametro = Exigir(elemento, definicao);
-        if (valorInterno is null && !parametro.HasValue) return;
-        if (!parametro.Set(valorInterno ?? 0d)) throw Recusado(elemento, definicao);
+        // Nada a apagar não é escrita: nem exige o parâmetro editável.
+        if (valorInterno is null && Ler(elemento, definicao) is { HasValue: false }) return;
+        if (!Exigir(elemento, definicao).Set(valorInterno ?? 0d)) throw Recusado(elemento, definicao);
     }
 
     /// <summary>Grava o texto ou, se nulo, apaga o anterior (texto vazio).</summary>
     public static void GravarTextoOuApagar(Element elemento, DefinicaoDeParametro definicao, string? valor)
     {
-        var parametro = Exigir(elemento, definicao);
-        if (valor is null && string.IsNullOrEmpty(parametro.AsString())) return;
-        if (!parametro.Set(valor ?? string.Empty)) throw Recusado(elemento, definicao);
+        if (valor is null && Ler(elemento, definicao) is { } atual && string.IsNullOrEmpty(atual.AsString())) return;
+        if (!Exigir(elemento, definicao).Set(valor ?? string.Empty)) throw Recusado(elemento, definicao);
     }
 
     // Somente leitura vira a nossa exceção antes do Set: o Revit lançaria Autodesk.Revit.Exceptions.InvalidOperationException,
