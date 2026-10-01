@@ -85,6 +85,7 @@ public static class DimensionamentoDeCircuito
             var condutores = Consultar(perfil.CondutoresCarregados(entrada.Fases), "Condutores carregados",
                 $"n = condutores carregados ({entrada.Fases})", [], "condutores");
             _condutoresCarregados = condutores;
+            IsolacaoDoCondutor();
             _fct = Consultar(perfil.FatorDeTemperatura(entrada.MetodoDeInstalacao, entrada.Isolacao, entrada.TemperaturaAmbienteC), "Fator de correção de temperatura",
                 $"FCT = tabela ({entrada.Isolacao}; {Numero(entrada.TemperaturaAmbienteC)} °C)", [new ValorDoPasso("θ", entrada.TemperaturaAmbienteC, "°C")], string.Empty,
                 entrada.OrigemDaTemperatura is { Length: > 0 } origemDaTemperatura ? $"θ: {origemDaTemperatura}" : null);
@@ -183,6 +184,18 @@ public static class DimensionamentoDeCircuito
                 entrada.OrigemDaPotencia is { Length: > 0 } origem ? $"S: {origem}" : null);
             _correnteDeProjeto = ib;
             return ib;
+        }
+
+        // A capacidade sai da isolação do circuito: o condutor escolhido no catálogo precisa ter essa isolação (ex.: cabo de
+        // PVC com o circuito em EPR daria IZ acima da real).
+        private void IsolacaoDoCondutor()
+        {
+            if (catalogos.Condutores.Isolacao(entrada.TipoDeCondutor) is not { } doCatalogo
+                || string.Equals(doCatalogo.Isolacao, entrada.Isolacao.Trim(), StringComparison.OrdinalIgnoreCase)) return;
+
+            Parar(doCatalogo.Referencia, "Isolação do condutor", $"isolação do circuito = a de '{entrada.TipoDeCondutor}'", string.Empty,
+                $"o condutor '{entrada.TipoDeCondutor}' é de isolação {doCatalogo.Isolacao}, e o circuito está com {entrada.Isolacao}: " +
+                "corrija AMP_MaterialIsolacao (ou a isolação padrão) ou o tipo de condutor");
         }
 
         // k e corrente da queda: os da entrada (com a conta na memória) ou, sem eles, k pela configuração e IB.

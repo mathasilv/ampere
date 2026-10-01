@@ -21,6 +21,36 @@ public class DimensionamentoDeCircuito_Teste
         CatalogoDeEletrodutos.Carregar(CatalogosFicticios.Eletrodutos));
 
     [Test]
+    public async Task Condutor_do_catalogo_com_outra_isolacao_para_antes_da_capacidade()
+    {
+        var comIsolacao = CatalogosFicticiosCarregados with
+        {
+            Condutores = CatalogoDeCondutores.Carregar(CatalogosFicticios.Condutores.Replace("{ \"tipo\": \"FIO-TESTE\",", "{ \"tipo\": \"FIO-TESTE\", \"isolacao\": \"EPR ou XLPE\","))
+        };
+
+        var resultado = DimensionamentoDeCircuito.Dimensionar(Entrada(), Ficticio, comIsolacao);
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
+        await Assert.That(resultado.Problemas.Single()).StartsWith("o condutor 'FIO-TESTE' é de isolação EPR ou XLPE, e o circuito está com PVC");
+        await Assert.That(resultado.SecaoMm2).IsNull();
+    }
+
+    [Test]
+    public async Task Condutor_do_catalogo_com_a_mesma_isolacao_segue_sem_passo_a_mais()
+    {
+        var comIsolacao = CatalogosFicticiosCarregados with
+        {
+            Condutores = CatalogoDeCondutores.Carregar(CatalogosFicticios.Condutores.Replace("{ \"tipo\": \"FIO-TESTE\",", "{ \"tipo\": \"FIO-TESTE\", \"isolacao\": \"pvc\","))
+        };
+
+        var com = DimensionamentoDeCircuito.Dimensionar(Entrada(), Ficticio, comIsolacao);
+        var sem = DimensionamentoDeCircuito.Dimensionar(Entrada(), Ficticio, CatalogosFicticiosCarregados);
+
+        await Assert.That(com.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
+        await Assert.That(com.Memoria!.Hash()).IsEqualTo(sem.Memoria!.Hash());
+    }
+
+    [Test]
     public async Task Local_que_nao_exige_deixa_o_circuito_sem_IDR()
     {
         var resultado = Dimensionar(Entrada());

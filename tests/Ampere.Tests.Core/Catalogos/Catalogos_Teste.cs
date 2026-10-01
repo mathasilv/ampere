@@ -36,6 +36,28 @@ public class CatalogoDeCondutores_Teste
     }
 
     [Test]
+    public async Task Tipo_com_ref_propria_cita_a_ficha_dele()
+    {
+        var json = CatalogosFicticios.Condutores.Replace("{ \"tipo\": \"FIO-TESTE\",", "{ \"tipo\": \"FIO-TESTE\", \"ref\": \"FICTÍCIO: ficha do FIO-TESTE\",");
+
+        var catalogo = CatalogoDeCondutores.Carregar(json);
+
+        await Assert.That(catalogo.DiametroExternoMm(CatalogosFicticios.TipoDeCondutor, 2.5m).Referencia).IsEqualTo("FICTÍCIO: ficha do FIO-TESTE");
+        await Assert.That(catalogo.DiametroExternoMm(CatalogosFicticios.TipoDeCondutor, 35m).Referencia).IsEqualTo("FICTÍCIO: ficha do FIO-TESTE");
+    }
+
+    [Test]
+    [Arguments("")]
+    [Arguments("TODO_CATALOGO")]
+    [Arguments("Prysmian, ficha real")]
+    public async Task Ref_do_tipo_vazia_pendente_ou_real_em_catalogo_ficticio_e_rejeitada(string referencia)
+    {
+        var json = CatalogosFicticios.Condutores.Replace("{ \"tipo\": \"FIO-TESTE\",", $"{{ \"tipo\": \"FIO-TESTE\", \"ref\": \"{referencia}\",");
+
+        await Assert.That(() => CatalogoDeCondutores.Carregar(json)).Throws<CatalogoDeProdutoInvalidoException>().WithMessageContaining("FIO-TESTE: ref do tipo");
+    }
+
+    [Test]
     public async Task Tipo_ou_secao_fora_do_catalogo_e_ausencia_explicada()
     {
         await Assert.That(Ficticio.DiametroExternoMm("Cabo 1kV EPR", 2.5m).Ausencia).Contains("tipo de condutor 'Cabo 1kV EPR' fora do catálogo");
@@ -100,6 +122,14 @@ public class CatalogoDeEletrodutos_Teste
     public async Task Tipo_fora_do_catalogo_e_ausencia_explicada()
     {
         await Assert.That(Ficticio.Tamanhos("Aço galvanizado").Ausencia).Contains("tipo de eletroduto 'Aço galvanizado' fora do catálogo");
+    }
+
+    [Test]
+    public async Task Tipo_com_ref_propria_cita_a_ficha_dele()
+    {
+        var json = CatalogosFicticios.Eletrodutos.Replace("{ \"tipo\": \"ELETRODUTO-TESTE\",", "{ \"tipo\": \"ELETRODUTO-TESTE\", \"ref\": \"FICTÍCIO: ficha do eletroduto\",");
+
+        await Assert.That(CatalogoDeEletrodutos.Carregar(json).Tamanhos(CatalogosFicticios.TipoDeEletroduto).Referencia).IsEqualTo("FICTÍCIO: ficha do eletroduto");
     }
 
     [Test]

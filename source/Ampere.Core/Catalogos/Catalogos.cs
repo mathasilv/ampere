@@ -11,7 +11,8 @@ namespace Ampere.Core.Catalogos;
 /// </summary>
 /// <remarks>
 ///     Dado de fabricante, com a mesma disciplina do perfil normativo: catálogo com ref TODO_CATALOGO não pode ter
-///     valores, e valores exigem a ref (fabricante e edição). O oficial está vazio até a escolha do fabricante.
+///     valores, e valores exigem a ref (fabricante e edição). Cada tipo pode ter a sua ref (a ficha técnica de onde vêm os
+///     valores dele), que vai para a memória no lugar da do arquivo.
 /// </remarks>
 public sealed class CatalogoDeCondutores
 {
@@ -21,15 +22,20 @@ public sealed class CatalogoDeCondutores
     private readonly string _referencia;
     private readonly bool _pendente;
     private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<decimal, decimal>> _diametros;
+    private readonly IReadOnlyDictionary<string, string> _referencias;
+    private readonly IReadOnlyDictionary<string, string> _isolacoes;
 
     private CatalogoDeCondutores(
-        bool ficticio, string referencia, bool pendente, IReadOnlyList<string> tipos, IReadOnlyDictionary<string, IReadOnlyDictionary<decimal, decimal>> diametros)
+        bool ficticio, string referencia, bool pendente, IReadOnlyList<string> tipos, IReadOnlyDictionary<string, IReadOnlyDictionary<decimal, decimal>> diametros,
+        IReadOnlyDictionary<string, string> referencias, IReadOnlyDictionary<string, string> isolacoes)
     {
         Ficticio = ficticio;
         _referencia = referencia;
         _pendente = pendente;
         Tipos = tipos;
         _diametros = diametros;
+        _referencias = referencias;
+        _isolacoes = isolacoes;
     }
 
     /// <summary>Catálogo só para testes.</summary>
@@ -49,6 +55,8 @@ public sealed class CatalogoDeCondutores
         var (ficticio, referencia, pendente) = RegrasDeCatalogo.Validar(arquivo.Meta, arquivo.Catalogo, "condutores", arquivo.Ref, arquivo.Tipos?.Count ?? 0, problemas);
 
         var diametros = new Dictionary<string, IReadOnlyDictionary<decimal, decimal>>(StringComparer.Ordinal);
+        var referencias = new Dictionary<string, string>(StringComparer.Ordinal);
+        var isolacoes = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var tipo in arquivo.Tipos ?? [])
         {
             if (string.IsNullOrWhiteSpace(tipo.Tipo))
@@ -59,11 +67,24 @@ public sealed class CatalogoDeCondutores
 
             if (diametros.ContainsKey(tipo.Tipo)) problemas.Add($"tipo de condutor '{tipo.Tipo}' repetido");
             diametros[tipo.Tipo] = RegrasDeCatalogo.PorSecao(tipo.Tipo, tipo.DiametroExternoMmPorSecaoMm2, problemas);
+            if (RegrasDeCatalogo.ReferenciaDoTipo(tipo.Tipo, tipo.Ref, ficticio, problemas) is { } propria) referencias[tipo.Tipo] = propria;
+            if (tipo.Isolacao is { } isolacao)
+            {
+                if (string.IsNullOrWhiteSpace(isolacao)) problemas.Add($"{tipo.Tipo}: isolação vazia (omita para não conferir)");
+                else isolacoes[tipo.Tipo] = isolacao.Trim();
+            }
         }
 
         if (problemas.Count > 0) throw new CatalogoDeProdutoInvalidoException(problemas);
-        return new CatalogoDeCondutores(ficticio, referencia, pendente, (arquivo.Tipos ?? []).Select(tipo => tipo.Tipo!).ToList(), diametros);
+        return new CatalogoDeCondutores(ficticio, referencia, pendente, (arquivo.Tipos ?? []).Select(tipo => tipo.Tipo!).ToList(), diametros, referencias, isolacoes);
     }
+
+    /// <summary>
+    ///     Isolação do tipo (no vocabulário do perfil, ex.: PVC), com a referência; nula se o catálogo não a declara ou o
+    ///     tipo não está nele.
+    /// </summary>
+    public (string Isolacao, string Referencia)? Isolacao(string? tipo) =>
+        !_pendente && tipo is not null && _isolacoes.TryGetValue(tipo, out var isolacao) ? (isolacao, _referencias.GetValueOrDefault(tipo, _referencia)) : null;
 
     /// <param name="tipo">Tipo de condutor; vazio = não informado (explicado na ausência).</param>
     public DadoNormativo<decimal> DiametroExternoMm(string? tipo, decimal secaoMm2)
@@ -74,9 +95,10 @@ public sealed class CatalogoDeCondutores
         if (!_diametros.TryGetValue(tipo, out var porSecao))
             return DadoNormativo<decimal>.Ausente(_referencia, $"tipo de condutor '{tipo}' fora do catálogo");
 
+        var referencia = _referencias.GetValueOrDefault(tipo, _referencia);
         return porSecao.TryGetValue(secaoMm2, out var diametro)
-            ? DadoNormativo<decimal>.Com(diametro, _referencia)
-            : DadoNormativo<decimal>.Ausente(_referencia, $"sem diâmetro para {NumeroEmTexto.Formatar(secaoMm2)} mm² em '{tipo}'");
+            ? DadoNormativo<decimal>.Com(diametro, referencia)
+            : DadoNormativo<decimal>.Ausente(referencia, $"sem diâmetro para {NumeroEmTexto.Formatar(secaoMm2)} mm² em '{tipo}'");
     }
 }
 
@@ -92,15 +114,18 @@ public sealed class CatalogoDeEletrodutos
     private readonly string _referencia;
     private readonly bool _pendente;
     private readonly IReadOnlyDictionary<string, IReadOnlyList<TamanhoDeEletroduto>> _tamanhos;
+    private readonly IReadOnlyDictionary<string, string> _referencias;
 
     private CatalogoDeEletrodutos(
-        bool ficticio, string referencia, bool pendente, IReadOnlyList<string> tipos, IReadOnlyDictionary<string, IReadOnlyList<TamanhoDeEletroduto>> tamanhos)
+        bool ficticio, string referencia, bool pendente, IReadOnlyList<string> tipos, IReadOnlyDictionary<string, IReadOnlyList<TamanhoDeEletroduto>> tamanhos,
+        IReadOnlyDictionary<string, string> referencias)
     {
         Ficticio = ficticio;
         _referencia = referencia;
         _pendente = pendente;
         Tipos = tipos;
         _tamanhos = tamanhos;
+        _referencias = referencias;
     }
 
     /// <summary>Catálogo só para testes.</summary>
@@ -120,6 +145,7 @@ public sealed class CatalogoDeEletrodutos
         var (ficticio, referencia, pendente) = RegrasDeCatalogo.Validar(arquivo.Meta, arquivo.Catalogo, "eletrodutos", arquivo.Ref, arquivo.Tipos?.Count ?? 0, problemas);
 
         var tamanhos = new Dictionary<string, IReadOnlyList<TamanhoDeEletroduto>>(StringComparer.Ordinal);
+        var referencias = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var tipo in arquivo.Tipos ?? [])
         {
             if (string.IsNullOrWhiteSpace(tipo.Tipo))
@@ -139,11 +165,12 @@ public sealed class CatalogoDeEletrodutos
             }
 
             if (lidos.Count == 0) problemas.Add($"{tipo.Tipo}: sem tamanhos");
+            if (RegrasDeCatalogo.ReferenciaDoTipo(tipo.Tipo, tipo.Ref, ficticio, problemas) is { } propria) referencias[tipo.Tipo] = propria;
             tamanhos[tipo.Tipo] = lidos.OrderBy(tamanho => tamanho.DiametroInternoMm).ThenBy(tamanho => tamanho.Nominal, StringComparer.Ordinal).ToList();
         }
 
         if (problemas.Count > 0) throw new CatalogoDeProdutoInvalidoException(problemas);
-        return new CatalogoDeEletrodutos(ficticio, referencia, pendente, (arquivo.Tipos ?? []).Select(tipo => tipo.Tipo!).ToList(), tamanhos);
+        return new CatalogoDeEletrodutos(ficticio, referencia, pendente, (arquivo.Tipos ?? []).Select(tipo => tipo.Tipo!).ToList(), tamanhos, referencias);
     }
 
     /// <summary>Tamanhos do tipo, em ordem crescente de diâmetro interno.</summary>
@@ -156,7 +183,7 @@ public sealed class CatalogoDeEletrodutos
             return DadoNormativo<IReadOnlyList<TamanhoDeEletroduto>>.Ausente(_referencia, "tipo de eletroduto não informado (nas condições do projeto)");
 
         return _tamanhos.TryGetValue(tipo, out var tamanhos)
-            ? DadoNormativo<IReadOnlyList<TamanhoDeEletroduto>>.Com(tamanhos, _referencia)
+            ? DadoNormativo<IReadOnlyList<TamanhoDeEletroduto>>.Com(tamanhos, _referencias.GetValueOrDefault(tipo, _referencia))
             : DadoNormativo<IReadOnlyList<TamanhoDeEletroduto>>.Ausente(_referencia, $"tipo de eletroduto '{tipo}' fora do catálogo");
     }
 }
@@ -216,6 +243,22 @@ internal static class RegrasDeCatalogo
         return (ficticio, pendente ? TodoCatalogo : lida, pendente || lida.Length == 0);
     }
 
+    // Ref própria do tipo (opcional): sem texto vazio, e com a mesma regra do fictício que a do arquivo.
+    public static string? ReferenciaDoTipo(string tipo, string? referencia, bool ficticio, List<string> problemas)
+    {
+        if (referencia is null) return null;
+        var lida = referencia.Trim();
+        if (lida.Length == 0 || lida == TodoCatalogo)
+        {
+            problemas.Add($"{tipo}: ref do tipo vazia ou TODO_CATALOGO (omita a ref para usar a do catálogo)");
+            return null;
+        }
+
+        var citaFicticio = Normalizar(lida).Contains("FICTICIO");
+        if (ficticio != citaFicticio) problemas.Add($"{tipo}: ref do tipo {(ficticio ? "precisa dizer 'FICTÍCIO'" : "fictícia num catálogo real")}");
+        return lida;
+    }
+
     public static IReadOnlyDictionary<decimal, decimal> PorSecao(string tipo, Dictionary<string, decimal>? valores, List<string> problemas)
     {
         var resultado = new Dictionary<decimal, decimal>();
@@ -254,7 +297,7 @@ internal sealed record ArquivoDeCatalogoDeCondutores(
     string? Ref,
     List<TipoDeCondutorJson>? Tipos);
 
-internal sealed record TipoDeCondutorJson(string? Tipo, Dictionary<string, decimal>? DiametroExternoMmPorSecaoMm2);
+internal sealed record TipoDeCondutorJson(string? Tipo, string? Ref, string? Isolacao, Dictionary<string, decimal>? DiametroExternoMmPorSecaoMm2);
 
 internal sealed record ArquivoDeCatalogoDeEletrodutos(
     [property: JsonPropertyName("$meta")] MetaDoCatalogo? Meta,
@@ -262,7 +305,7 @@ internal sealed record ArquivoDeCatalogoDeEletrodutos(
     string? Ref,
     List<TipoDeEletrodutoJson>? Tipos);
 
-internal sealed record TipoDeEletrodutoJson(string? Tipo, List<TamanhoJson>? Tamanhos);
+internal sealed record TipoDeEletrodutoJson(string? Tipo, string? Ref, List<TamanhoJson>? Tamanhos);
 
 internal sealed record TamanhoJson(string? Nominal, decimal? DiametroInternoMm);
 
