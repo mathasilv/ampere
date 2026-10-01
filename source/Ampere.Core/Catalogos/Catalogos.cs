@@ -24,11 +24,13 @@ public sealed class CatalogoDeCondutores
     private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<decimal, decimal>> _diametros;
     private readonly IReadOnlyDictionary<string, string> _referencias;
     private readonly IReadOnlyDictionary<string, string> _isolacoes;
+    private readonly IReadOnlyDictionary<string, string> _construcoes;
 
     private CatalogoDeCondutores(
         bool ficticio, string referencia, bool pendente, IReadOnlyList<string> tipos, IReadOnlyDictionary<string, IReadOnlyDictionary<decimal, decimal>> diametros,
-        IReadOnlyDictionary<string, string> referencias, IReadOnlyDictionary<string, string> isolacoes)
+        IReadOnlyDictionary<string, string> referencias, IReadOnlyDictionary<string, string> isolacoes, IReadOnlyDictionary<string, string> construcoes)
     {
+        _construcoes = construcoes;
         Ficticio = ficticio;
         _referencia = referencia;
         _pendente = pendente;
@@ -57,6 +59,7 @@ public sealed class CatalogoDeCondutores
         var diametros = new Dictionary<string, IReadOnlyDictionary<decimal, decimal>>(StringComparer.Ordinal);
         var referencias = new Dictionary<string, string>(StringComparer.Ordinal);
         var isolacoes = new Dictionary<string, string>(StringComparer.Ordinal);
+        var construcoes = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var tipo in arquivo.Tipos ?? [])
         {
             if (string.IsNullOrWhiteSpace(tipo.Tipo))
@@ -73,11 +76,26 @@ public sealed class CatalogoDeCondutores
                 if (string.IsNullOrWhiteSpace(isolacao)) problemas.Add($"{tipo.Tipo}: isolação vazia (omita para não conferir)");
                 else isolacoes[tipo.Tipo] = isolacao.Trim();
             }
+
+            if (tipo.Construcao is { } construcao)
+            {
+                if (!Normas.ConstrucoesDeCondutor.Todas.Contains(construcao.Trim(), StringComparer.Ordinal))
+                    problemas.Add($"{tipo.Tipo}: construção '{construcao}' desconhecida (use {string.Join(", ", Normas.ConstrucoesDeCondutor.Todas)})");
+                else construcoes[tipo.Tipo] = construcao.Trim();
+            }
         }
 
         if (problemas.Count > 0) throw new CatalogoDeProdutoInvalidoException(problemas);
-        return new CatalogoDeCondutores(ficticio, referencia, pendente, (arquivo.Tipos ?? []).Select(tipo => tipo.Tipo!).ToList(), diametros, referencias, isolacoes);
+        return new CatalogoDeCondutores(ficticio, referencia, pendente, (arquivo.Tipos ?? []).Select(tipo => tipo.Tipo!).ToList(), diametros, referencias, isolacoes,
+            construcoes);
     }
+
+    /// <summary>
+    ///     Construção do tipo (condutor isolado, cabo unipolar ou multipolar), com a referência; nula se o catálogo não a
+    ///     declara ou o tipo não está nele.
+    /// </summary>
+    public (string Construcao, string Referencia)? Construcao(string? tipo) =>
+        !_pendente && tipo is not null && _construcoes.TryGetValue(tipo, out var construcao) ? (construcao, _referencias.GetValueOrDefault(tipo, _referencia)) : null;
 
     /// <summary>
     ///     Isolação do tipo (no vocabulário do perfil, ex.: PVC), com a referência; nula se o catálogo não a declara ou o
@@ -297,7 +315,7 @@ internal sealed record ArquivoDeCatalogoDeCondutores(
     string? Ref,
     List<TipoDeCondutorJson>? Tipos);
 
-internal sealed record TipoDeCondutorJson(string? Tipo, string? Ref, string? Isolacao, Dictionary<string, decimal>? DiametroExternoMmPorSecaoMm2);
+internal sealed record TipoDeCondutorJson(string? Tipo, string? Ref, string? Isolacao, Dictionary<string, decimal>? DiametroExternoMmPorSecaoMm2, string? Construcao = null);
 
 internal sealed record ArquivoDeCatalogoDeEletrodutos(
     [property: JsonPropertyName("$meta")] MetaDoCatalogo? Meta,

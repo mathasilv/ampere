@@ -2148,6 +2148,27 @@
       "ref": "NBR 5410:2004, item 6.2.5.1.2 (A1, A2, B1 e B2: em eletroduto; D: em eletroduto enterrado; C, E, F e G: cabos sobre parede ou ao ar livre, sem eletroduto)",
       "valores": ["A1", "A2", "B1", "B2", "D"]
     },
+    "construcoes_por_metodo": {
+      "ref": "NBR 5410:2004, Tabela 33 (tipos de linhas elétricas: construção dos condutores em cada maneira de instalar, com o método de referência; G também pelo item 6.2.5.1.2)",
+      "valores": [
+        { "metodo": "A1", "construcoes": ["condutor isolado", "cabo unipolar", "cabo multipolar"] },
+        { "metodo": "A2", "construcoes": ["cabo multipolar"] },
+        { "metodo": "B1", "construcoes": ["condutor isolado", "cabo unipolar", "cabo multipolar"] },
+        { "metodo": "B2", "construcoes": ["condutor isolado", "cabo unipolar", "cabo multipolar"] },
+        { "metodo": "C", "construcoes": ["cabo unipolar", "cabo multipolar"], "condicionais": { "condutor isolado": "só em perfilado, nas condições da nota de 6.2.11.4.1 (Tabela 33, nota 3)" } },
+        { "metodo": "D", "construcoes": ["cabo unipolar", "cabo multipolar"], "condicionais": { "condutor isolado": "só nas condições da nota de 6.2.11.6.1 (Tabela 33, nota 8)" } },
+        { "metodo": "E", "construcoes": ["cabo multipolar"] },
+        { "metodo": "F", "construcoes": ["cabo unipolar"] },
+        { "metodo": "G", "construcoes": ["condutor isolado", "cabo unipolar"] }
+      ]
+    },
+    "secao_minima_do_pe_fora_do_cabo_mm2": {
+      "ref": "NBR 5410:2004, item 6.4.3.1.4, alínea b (condutor de proteção que não faz parte do mesmo cabo nem está no mesmo conduto fechado das fases, sem proteção contra danos mecânicos); critério do Ampere: a alínea b, porque a proteção mecânica não é conferida",
+      "valores": {
+        "Cobre": 4,
+        "Alumínio": 16
+      }
+    },
     "correntes_nominais_idr_a": {
       "ref": "Correntes nominais de IDR conforme catologos WEG/Schneider (25 a 100 A, DIN); decisao de produto registrada em data/DATA_GAPS.md (GAP-004)",
       "valores": [

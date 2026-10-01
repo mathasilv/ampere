@@ -94,6 +94,7 @@ public static class DimensionamentoDeCircuito
                 $"n = condutores carregados ({entrada.Fases})", [], "condutores");
             _condutoresCarregados = condutores;
             IsolacaoDoCondutor();
+            ConstrucaoDoCondutor();
             var noSolo = perfil.Enterrado(entrada.MetodoDeInstalacao) ? " no solo" : string.Empty;
             _fct = Consultar(perfil.FatorDeTemperatura(entrada.MetodoDeInstalacao, entrada.Isolacao, entrada.TemperaturaAmbienteC), "Fator de correção de temperatura",
                 $"FCT = tabela ({entrada.Isolacao}; {Numero(entrada.TemperaturaAmbienteC)} °C{noSolo})", [new ValorDoPasso("θ", entrada.TemperaturaAmbienteC, "°C")], string.Empty,
@@ -207,6 +208,25 @@ public static class DimensionamentoDeCircuito
             Parar(doCatalogo.Referencia, "Isolação do condutor", $"isolação do circuito = a de '{entrada.TipoDeCondutor}'", string.Empty,
                 $"o condutor '{entrada.TipoDeCondutor}' é de isolação {doCatalogo.Isolacao}, e o circuito está com {entrada.Isolacao}: " +
                 "corrija AMP_MaterialIsolacao (ou a isolação padrão) ou o tipo de condutor");
+        }
+
+        // A construção do tipo de condutor (catálogo) precisa ser uma que o método admite (perfil): a capacidade de condução é
+        // a da coluna do método. Admitida só sob condição que o modelo não mostra: segue, com aviso.
+        private void ConstrucaoDoCondutor()
+        {
+            if (catalogos.Condutores.Construcao(entrada.TipoDeCondutor) is not { } doCatalogo
+                || perfil.Construcao(entrada.MetodoDeInstalacao, doCatalogo.Construcao) is not { } admissao) return;
+
+            if (!admissao.Admitida)
+            {
+                Parar(admissao.Referencia, "Construção do condutor", $"construção de '{entrada.TipoDeCondutor}' admitida no método {entrada.MetodoDeInstalacao}",
+                    string.Empty,
+                    $"o condutor '{entrada.TipoDeCondutor}' é {doCatalogo.Construcao}, e o método {entrada.MetodoDeInstalacao} pede " +
+                    $"{string.Join(" ou ", admissao.Admitidas)}: corrija AMP_MetodoInstalacao (ou o método padrão) ou o tipo de condutor");
+            }
+
+            if (admissao.Condicao is { } condicao)
+                _avisos.Add($"{doCatalogo.Construcao} no método {entrada.MetodoDeInstalacao}: {condicao}");
         }
 
         // k e corrente da queda: os da entrada (com a conta na memória) ou, sem eles, k pela configuração e IB.
@@ -357,6 +377,21 @@ public static class DimensionamentoDeCircuito
 
             _secaoDeProtecao = Consultar(perfil.SecaoDoCondutorDeProtecaoMm2(secao), "Seção do condutor de proteção", "SPE = tabela (S)",
                 [new ValorDoPasso("S", secao, "mm²")], "mm²", "condutor de proteção do mesmo material das fases");
+
+            // Sem eletroduto e fora de cabo multipolar, o PE não está no mesmo cabo nem no mesmo conduto das fases: tem mínimo.
+            if (perfil.ComEletroduto(entrada.MetodoDeInstalacao)) return;
+            var construcao = catalogos.Condutores.Construcao(entrada.TipoDeCondutor)?.Construcao;
+            if (construcao == ConstrucoesDeCondutor.CaboMultipolar || (construcao is null && perfil.SoCaboMultipolar(entrada.MetodoDeInstalacao))) return;
+            if (perfil.SecaoMinimaDoPeForaDoCaboMm2(entrada.Material) is not { } dadoDoMinimo) return;
+
+            var minimo = Consultar(dadoDoMinimo, "Seção mínima do condutor de proteção fora do cabo", $"SPE,mín = tabela ({entrada.Material})", [], "mm²",
+                $"método {entrada.MetodoDeInstalacao}, sem eletroduto, com {construcao ?? "construção do condutor não informada"}: " +
+                "o condutor de proteção não vai no mesmo cabo nem no mesmo conduto das fases");
+            if (minimo <= _secaoDeProtecao) return;
+
+            Passo(dadoDoMinimo.Referencia, "Seção do condutor de proteção adotada", "SPE = máx(SPE(S); SPE,mín)",
+                [new ValorDoPasso("SPE(S)", _secaoDeProtecao!.Value, "mm²"), new ValorDoPasso("SPE,mín", minimo, "mm²")], minimo, "mm²");
+            _secaoDeProtecao = minimo;
         }
 
         private void Eletroduto(decimal secao)

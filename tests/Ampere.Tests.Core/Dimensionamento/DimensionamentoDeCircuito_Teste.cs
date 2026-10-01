@@ -507,6 +507,62 @@ public class DimensionamentoDeCircuito_Teste
         await Assert.That(resultado.Eletroduto).IsNotNull();
     }
 
+    private const string Superastic = "Prysmian Superastic Flex 450/750 V";
+    private const string SintenaxUnipolar = "Prysmian Sintenax Flex 0,6/1 kV unipolar";
+
+    // Iluminação de 500 VA em 127 V: IB 3,94 A, fase de 1,5 mm² (seção mínima), sem IDR.
+    private static ResultadoDoDimensionamento NoPerfilOficial(string metodo, string? tipoDeCondutor) =>
+        DimensionamentoDeCircuito.Dimensionar(
+            Entrada(potenciaVA: 500m, tipo: TipoDeCarga.Iluminacao, locais: ["Demais locais internos"]) with
+            {
+                MetodoDeInstalacao = metodo, TipoDeCondutor = tipoDeCondutor, TipoDeEletroduto = "Tigre Tigreflex amarelo"
+            },
+            PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao);
+
+    [Test]
+    [Property("Fonte", "NBR 5410:2004, Tabela 33")]
+    public async Task Construcao_do_condutor_que_o_metodo_nao_admite_para_o_calculo()
+    {
+        var resultado = NoPerfilOficial("F", Superastic);
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
+        await Assert.That(resultado.Problemas.Single()).IsEqualTo(
+            $"o condutor '{Superastic}' é condutor isolado, e o método F pede cabo unipolar: corrija AMP_MetodoInstalacao (ou o método padrão) ou o tipo de condutor");
+        await Assert.That(resultado.Memoria!.Passos[^1].Referencia).StartsWith("NBR 5410:2004, Tabela 33");
+        await Assert.That(NoPerfilOficial("B1", Superastic).Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
+    }
+
+    [Test]
+    [Property("Fonte", "NBR 5410:2004, Tabela 33")]
+    public async Task Construcao_admitida_so_sob_condicao_segue_com_aviso()
+    {
+        var resultado = NoPerfilOficial("C", Superastic);
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
+        await Assert.That(resultado.Avisos.Single()).IsEqualTo("condutor isolado no método C: só em perfilado, nas condições da nota de 6.2.11.4.1 (Tabela 33, nota 3)");
+    }
+
+    [Test]
+    [Property("Fonte", "NBR 5410:2004, item 6.4.3.1.4")]
+    public async Task Protecao_fora_do_cabo_e_sem_eletroduto_tem_secao_minima()
+    {
+        var unipolar = NoPerfilOficial("F", SintenaxUnipolar);
+        var multipolar = NoPerfilOficial("E", null);
+
+        await Assert.That(unipolar.SecaoMm2).IsEqualTo(1.5m);
+        await Assert.That(unipolar.SecaoDeProtecaoMm2).IsEqualTo(4m);
+        var adotado = PassoDe(unipolar, "Seção do condutor de proteção adotada");
+        await Assert.That(adotado.Expressao).IsEqualTo("SPE = máx(SPE(S); SPE,mín)");
+        await Assert.That(adotado.Referencia).StartsWith("NBR 5410:2004, item 6.4.3.1.4, alínea b");
+        await Assert.That(PassoDe(unipolar, "Seção mínima do condutor de proteção fora do cabo").Observacao)
+            .IsEqualTo("método F, sem eletroduto, com cabo unipolar: o condutor de proteção não vai no mesmo cabo nem no mesmo conduto das fases");
+        // E só admite cabo multipolar: o condutor de proteção é uma veia do cabo, sem mínimo próprio.
+        await Assert.That(multipolar.SecaoDeProtecaoMm2).IsEqualTo(1.5m);
+        await Assert.That(multipolar.Memoria!.Passos.Any(passo => passo.Descricao.StartsWith("Seção mínima do condutor de proteção", StringComparison.Ordinal))).IsFalse();
+        // Em eletroduto, também sem mínimo próprio.
+        await Assert.That(NoPerfilOficial("B1", SintenaxUnipolar).SecaoDeProtecaoMm2).IsEqualTo(1.5m);
+    }
+
     [Test]
     public async Task Neutro_com_a_secao_da_fase_e_protecao_pela_tabela()
     {

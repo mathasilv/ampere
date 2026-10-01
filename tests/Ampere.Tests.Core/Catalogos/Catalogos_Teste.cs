@@ -20,6 +20,8 @@ public class CatalogoDeCondutores_Teste
         await Assert.That(sintenax.Valor).IsEqualTo(5.4m);
         await Assert.That(sintenax.Referencia).StartsWith("Prysmian, ficha técnica Sintenax Flex 0,6/1 kV (rodapé LV_006_01_PT)");
         await Assert.That(CatalogoDeCondutores.Padrao.Isolacao("Prysmian Superastic Flex 450/750 V")!.Value.Isolacao).IsEqualTo("PVC");
+        await Assert.That(CatalogoDeCondutores.Padrao.Construcao("Prysmian Superastic Flex 450/750 V")!.Value.Construcao).IsEqualTo("condutor isolado");
+        await Assert.That(CatalogoDeCondutores.Padrao.Construcao("Prysmian Sintenax Flex 0,6/1 kV unipolar")!.Value.Construcao).IsEqualTo("cabo unipolar");
     }
 
     [Test]
@@ -29,6 +31,16 @@ public class CatalogoDeCondutores_Teste
 
         foreach (var tipo in CatalogoDeCondutores.Padrao.Tipos)
             await Assert.That(doPerfil.Contains(CatalogoDeCondutores.Padrao.Isolacao(tipo)!.Value.Isolacao)).IsTrue();
+    }
+
+    [Test]
+    public async Task Construcao_fora_do_vocabulario_e_recusada()
+    {
+        var json = CatalogosFicticios.Condutores.Replace("{ \"tipo\": \"FIO-TESTE\",", "{ \"tipo\": \"FIO-TESTE\", \"construcao\": \"cordão\",");
+
+        await Assert.That(() => CatalogoDeCondutores.Carregar(json)).Throws<CatalogoDeProdutoInvalidoException>()
+            .WithMessageContaining("FIO-TESTE: construção 'cordão' desconhecida");
+        await Assert.That(Ficticio.Construcao(CatalogosFicticios.TipoDeCondutor)).IsNull();
     }
 
     [Test]

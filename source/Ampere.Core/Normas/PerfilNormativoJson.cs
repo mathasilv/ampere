@@ -31,7 +31,9 @@ internal sealed record TabelasDoPerfil(
     TabelaJson<Dictionary<string, decimal>>? FatorDeDemandaPorTipo,
     TabelaJson<Dictionary<string, decimal>>? SecaoDoCondutorDeProtecaoMm2,
     TabelaJson<List<string>>? MetodosComEletroduto = null,
-    TabelaDeAgrupamentoJson? FatorDeAgrupamentoEnterrado = null);
+    TabelaDeAgrupamentoJson? FatorDeAgrupamentoEnterrado = null,
+    TabelaJson<List<LinhaDeConstrucaoJson>>? ConstrucoesPorMetodo = null,
+    TabelaJson<Dictionary<string, decimal>>? SecaoMinimaDoPeForaDoCaboMm2 = null);
 
 internal sealed record TabelaJson<T>(string? Ref, T? Valores);
 
@@ -50,6 +52,9 @@ internal sealed record LinhaDeCapacidadeJson(
 /// <param name="Metodos">Métodos de instalação a que a linha se aplica (ex.: a Tabela 40 do ar não vale para o D, enterrado); ausente = todos.</param>
 /// <param name="Ref">Referência só desta linha (ex.: a coluna do solo da Tabela 40), no lugar da ref da tabela.</param>
 internal sealed record LinhaDeTemperaturaJson(string? Isolacao, Dictionary<string, decimal>? PorTemperaturaC, List<string>? Metodos = null, string? Ref = null);
+
+/// <param name="Condicionais">Construção admitida só sob uma condição (o texto vai para o aviso).</param>
+internal sealed record LinhaDeConstrucaoJson(string? Metodo, List<string>? Construcoes, Dictionary<string, string>? Condicionais);
 
 internal sealed record LinhaDeProtecaoDiferencialJson(string? Local, List<string>? TiposDeCarga, decimal? SensibilidadeMaximaMa);
 

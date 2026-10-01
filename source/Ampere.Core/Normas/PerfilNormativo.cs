@@ -53,6 +53,8 @@ public sealed class PerfilNormativo
     private readonly Tabela<IReadOnlyList<string>>? _metodosComEletroduto;
     private readonly Tabela<IReadOnlyDictionary<int, decimal>>? _agrupamentoEnterrado;
     private readonly IReadOnlyList<string> _metodosEnterrados = [];
+    private readonly Tabela<IReadOnlyDictionary<string, ConstrucoesDoMetodo>>? _construcoes;
+    private readonly Tabela<IReadOnlyDictionary<string, decimal>>? _peForaDoCabo;
 
     private PerfilNormativo(string nome, bool ficticio, Leitor leitor, TabelasDoPerfil tabelas)
     {
@@ -93,6 +95,14 @@ public sealed class PerfilNormativo
             _metodosComEletroduto = leitor.Ler<List<string>, IReadOnlyList<string>>("metodos_com_eletroduto", comEletroduto, valores => valores.Count == 0,
                 (valores, nome1) => leitor.Metodos(nome1, valores)!);
         }
+
+        if (tabelas.ConstrucoesPorMetodo is { } construcoes)
+        {
+            _construcoes = leitor.Ler<List<LinhaDeConstrucaoJson>, IReadOnlyDictionary<string, ConstrucoesDoMetodo>>(
+                "construcoes_por_metodo", construcoes, valores => valores.Count == 0, leitor.Construcoes);
+        }
+
+        if (tabelas.SecaoMinimaDoPeForaDoCaboMm2 is { } peForaDoCabo) _peForaDoCabo = leitor.PorTexto("secao_minima_do_pe_fora_do_cabo_mm2", peForaDoCabo);
 
         if (tabelas.FatorDeAgrupamentoEnterrado is { } enterrado)
         {
@@ -138,7 +148,12 @@ public sealed class PerfilNormativo
         }
 
         var metodos = capacidade.Select(linha => linha.Metodo).ToHashSet(StringComparer.Ordinal);
-        foreach (var (nome, lista) in new[] { ("metodos_com_eletroduto", _metodosComEletroduto is { Pendente: false } tabela ? tabela.Valores : []), ("fator_de_agrupamento_enterrado", _metodosEnterrados) })
+        foreach (var (nome, lista) in new[]
+                 {
+                     ("metodos_com_eletroduto", _metodosComEletroduto is { Pendente: false } tabela ? tabela.Valores : []),
+                     ("fator_de_agrupamento_enterrado", _metodosEnterrados),
+                     ("construcoes_por_metodo", _construcoes is { Pendente: false } porMetodo ? porMetodo.Valores.Keys.ToList() : [])
+                 })
         foreach (var metodo in lista.Where(metodo => metodos.Count > 0 && !metodos.Contains(metodo)))
             leitor.Problema($"{nome}: método '{metodo}' fora da tabela de capacidade de condução");
     }
@@ -234,6 +249,34 @@ public sealed class PerfilNormativo
     /// </summary>
     public bool ComEletroduto(string metodo) =>
         _metodosComEletroduto is not { Pendente: false } tabela || tabela.Valores.Contains(metodo, StringComparer.Ordinal);
+
+    /// <summary>
+    ///     A construção do condutor (condutor isolado, cabo unipolar ou multipolar) no método; nula sem a tabela no perfil
+    ///     (ou pendente) ou com o método fora dela — aí nada é conferido.
+    /// </summary>
+    public AdmissaoDaConstrucao? Construcao(string metodo, string construcao)
+    {
+        if (_construcoes is not { Pendente: false } tabela || !tabela.Valores.TryGetValue(metodo, out var doMetodo)) return null;
+        if (doMetodo.Admitidas.Contains(construcao, StringComparer.Ordinal)) return new AdmissaoDaConstrucao(true, null, doMetodo.Admitidas, tabela.Referencia);
+        return doMetodo.Condicionais.TryGetValue(construcao, out var condicao)
+            ? new AdmissaoDaConstrucao(true, condicao, doMetodo.Admitidas, tabela.Referencia)
+            : new AdmissaoDaConstrucao(false, null, doMetodo.Admitidas, tabela.Referencia);
+    }
+
+    /// <summary>O método só admite cabo multipolar (o condutor de proteção é uma veia do cabo)? Falso sem a tabela.</summary>
+    public bool SoCaboMultipolar(string metodo) =>
+        _construcoes is { Pendente: false } tabela && tabela.Valores.TryGetValue(metodo, out var doMetodo)
+                                                  && doMetodo.Admitidas.SequenceEqual([ConstrucoesDeCondutor.CaboMultipolar])
+                                                  && doMetodo.Condicionais.Count == 0;
+
+    /// <summary>
+    ///     Seção mínima do condutor de proteção que não faz parte do cabo nem está no mesmo conduto das fases, por material;
+    ///     nula sem a tabela no perfil.
+    /// </summary>
+    public DadoNormativo<decimal>? SecaoMinimaDoPeForaDoCaboMm2(string material) =>
+        _peForaDoCabo is null
+            ? null
+            : PorChave(_peForaDoCabo, "secao_minima_do_pe_fora_do_cabo_mm2", material, $"sem seção mínima do condutor de proteção fora do cabo para {material}");
 
     /// <summary>
     ///     Linha enterrada: o método tem tabela de agrupamento própria (fator_de_agrupamento_enterrado) e a temperatura que
@@ -392,6 +435,10 @@ public sealed class PerfilNormativo
 
     private sealed record Tabela<T>(string Referencia, T Valores, bool Pendente);
 
+    /// <param name="Admitidas">Construções admitidas sem condição.</param>
+    /// <param name="Condicionais">Construção admitida só sob a condição do texto.</param>
+    private sealed record ConstrucoesDoMetodo(IReadOnlyList<string> Admitidas, IReadOnlyDictionary<string, string> Condicionais);
+
     /// <param name="Referencia">Ref própria da linha (ex.: a coluna da Tabela 38); nula = a da tabela.</param>
     private sealed record LinhaDeCapacidade(
         string Metodo, string Isolacao, string Material, int CondutoresCarregados, IReadOnlyDictionary<decimal, decimal> PorSecao, string? Referencia);
@@ -488,6 +535,44 @@ public sealed class PerfilNormativo
             }
 
             if (resultado.Count == 0) problemas.Add($"{nome}: linha sem valores");
+            return resultado;
+        }
+
+        public IReadOnlyDictionary<string, ConstrucoesDoMetodo> Construcoes(List<LinhaDeConstrucaoJson> linhas, string nome)
+        {
+            var resultado = new Dictionary<string, ConstrucoesDoMetodo>(StringComparer.Ordinal);
+            string? Valida(string? construcao, string metodo)
+            {
+                var texto = construcao?.Trim();
+                if (texto is not null && ConstrucoesDeCondutor.Todas.Contains(texto, StringComparer.Ordinal)) return texto;
+                problemas.Add($"{nome}: '{metodo}' com construção desconhecida '{construcao}' (use {string.Join(", ", ConstrucoesDeCondutor.Todas)})");
+                return null;
+            }
+
+            foreach (var linha in linhas)
+            {
+                var metodo = linha.Metodo?.Trim();
+                if (string.IsNullOrEmpty(metodo))
+                {
+                    problemas.Add($"{nome}: linha sem método");
+                    continue;
+                }
+
+                if (resultado.ContainsKey(metodo)) problemas.Add($"{nome}: método '{metodo}' repetido");
+                var admitidas = (linha.Construcoes ?? []).Select(construcao => Valida(construcao, metodo)).OfType<string>().ToList();
+                if (admitidas.Count == 0) problemas.Add($"{nome}: '{metodo}' sem construção admitida");
+                var condicionais = new Dictionary<string, string>(StringComparer.Ordinal);
+                foreach (var (construcao, condicao) in linha.Condicionais ?? [])
+                {
+                    if (Valida(construcao, metodo) is not { } valida) continue;
+                    if (string.IsNullOrWhiteSpace(condicao)) problemas.Add($"{nome}: '{metodo}' com '{valida}' condicional sem a condição");
+                    else if (admitidas.Contains(valida)) problemas.Add($"{nome}: '{metodo}' com '{valida}' admitida e condicional");
+                    else condicionais[valida] = condicao.Trim();
+                }
+
+                resultado[metodo] = new ConstrucoesDoMetodo(admitidas, condicionais);
+            }
+
             return resultado;
         }
 

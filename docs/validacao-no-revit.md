@@ -54,6 +54,8 @@ Use um projeto de teste com arquitetura vinculada ou com ambientes (Rooms/Spaces
      memória deve citar a Tabela 40 (solo) e a Tabela 44, e o agrupamento dos circuitos internos não deve entrar.
    - Num circuito no método E (ao ar livre), o cálculo deve terminar no IDR, sem eletroduto (`AMP_EletrodutoTipo`
      vazio), e a memória deve citar a coluna da Tabela 38.
+   - No método F com o Superastic (condutor isolado), o cálculo deve parar pedindo cabo unipolar. Com o Sintenax
+     unipolar, um circuito de iluminação de 1,5 mm² deve sair com PE de 4 mm² (condutor de proteção fora do cabo).
    - Em `Documentos\Ampere\{projeto}\Circuitos` devem aparecer as memórias (JSON, MD e PDF), `circuitos.csv` e
      `materiais.csv`. Abra os CSV no Excel e confira os acentos. `circuitos.csv` traz as seções do neutro e do PE; num
      circuito de 50 mm², o PE deve ser 25 mm², também em `materiais.csv`.

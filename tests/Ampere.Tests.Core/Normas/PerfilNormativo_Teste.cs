@@ -218,6 +218,37 @@ public class PerfilNormativo_Teste
     }
 
     [Test]
+    [Property("Fonte", "NBR 5410:2004, Tabela 33 e item 6.4.3.1.4")]
+    public async Task Construcoes_por_metodo_e_minimo_do_pe_fora_do_cabo()
+    {
+        var oficial = PerfilNormativo.NBR5410_2004;
+
+        await Assert.That(oficial.Construcao("B1", ConstrucoesDeCondutor.CondutorIsolado)!.Admitida).IsTrue();
+        await Assert.That(oficial.Construcao("E", ConstrucoesDeCondutor.CaboUnipolar)!.Admitida).IsFalse();
+        await Assert.That(oficial.Construcao("F", ConstrucoesDeCondutor.CaboMultipolar)!.Admitida).IsFalse();
+        await Assert.That(oficial.Construcao("C", ConstrucoesDeCondutor.CondutorIsolado)!.Condicao).StartsWith("só em perfilado");
+        await Assert.That(oficial.SoCaboMultipolar("E")).IsTrue();
+        await Assert.That(oficial.SoCaboMultipolar("C")).IsFalse();
+        await Assert.That(oficial.SecaoMinimaDoPeForaDoCaboMm2("Cobre")!.Valor).IsEqualTo(4m);
+        await Assert.That(oficial.SecaoMinimaDoPeForaDoCaboMm2("Alumínio")!.Valor).IsEqualTo(16m);
+        // Perfil sem as tabelas (opcionais): nada a conferir.
+        await Assert.That(Ficticio.Construcao("B1", ConstrucoesDeCondutor.CaboMultipolar)).IsNull();
+        await Assert.That(Ficticio.SecaoMinimaDoPeForaDoCaboMm2("Cobre")).IsNull();
+    }
+
+    [Test]
+    [Arguments("{ \"metodo\": \"B1\", \"construcoes\": [\"cabo tripolar\"] }", "construção desconhecida 'cabo tripolar'")]
+    [Arguments("{ \"metodo\": \"B1\", \"construcoes\": [\"cabo unipolar\"], \"condicionais\": { \"cabo unipolar\": \"x\" } }", "admitida e condicional")]
+    [Arguments("{ \"metodo\": \"Z9\", \"construcoes\": [\"cabo unipolar\"] }", "construcoes_por_metodo: método 'Z9' fora da tabela de capacidade")]
+    public async Task Construcoes_por_metodo_invalidas_sao_recusadas(string linha, string problema)
+    {
+        var json = PerfilFicticio.Json.Replace("\"protecao_diferencial_por_local\": {",
+            "\"construcoes_por_metodo\": { \"ref\": \"FICTÍCIO: construções\", \"valores\": [" + linha + "] }, \"protecao_diferencial_por_local\": {");
+
+        await Assert.That(() => PerfilNormativo.Carregar(json)).Throws<PerfilNormativoInvalidoException>().WithMessageContaining(problema);
+    }
+
+    [Test]
     public async Task Tabelas_que_dependem_umas_das_outras_precisam_concordar()
     {
         const string Ancora = "\"protecao_diferencial_por_local\": {";
