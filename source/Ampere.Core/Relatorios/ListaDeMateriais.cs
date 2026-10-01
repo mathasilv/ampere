@@ -22,8 +22,9 @@ public sealed record CircuitoForaDaLista(string Circuito, string Motivo);
 ///         <item>Condutores: comprimento do circuito × condutores (fases, neutro e proteção), sem sobras nem emendas, com as
 ///         seções da memória: neutro com a da fase, condutor de proteção pela tabela do perfil. Circuito sem a seção do
 ///         condutor de proteção fica fora da lista.</item>
-///         <item>Disjuntor com um polo por fase; IDR com um polo por condutor vivo (fases e neutro). Curva, capacidade de
-///         interrupção e tipo do IDR não são decididos pelo Ampere.</item>
+///         <item>Disjuntor com um polo por fase, e a capacidade de interrupção mínima quando as condições trazem a corrente
+///         de curto-circuito presumida; IDR com um polo por condutor vivo (fases e neutro). Curva e tipo do IDR não são
+///         decididos pelo Ampere.</item>
 ///         <item>Eletrodutos ficam de fora: vários circuitos dividem o mesmo trecho, e somar comprimentos de circuito daria
 ///         quantidade falsa. O quantitativo deles é o dos eletrodutos modelados no Revit.</item>
 ///     </list>
@@ -41,7 +42,7 @@ public sealed record ListaDeMateriais(IReadOnlyList<ItemDeMaterial> Itens, IRead
     public static ListaDeMateriais Montar(IReadOnlyList<ResultadoDoCircuito> resultados)
     {
         var condutores = new Dictionary<(string Tipo, string Isolamento, decimal Secao, int Funcao), Acumulado>();
-        var disjuntores = new Dictionary<(int Polos, decimal Corrente), Acumulado>();
+        var disjuntores = new Dictionary<(int Polos, decimal Corrente, decimal? Interrupcao), Acumulado>();
         var idrs = new Dictionary<(int Polos, decimal Corrente, decimal Sensibilidade), Acumulado>();
         var fora = new List<CircuitoForaDaLista>();
 
@@ -70,7 +71,7 @@ public sealed record ListaDeMateriais(IReadOnlyList<ItemDeMaterial> Itens, IRead
             Somar(condutores, (tipo, isolamento, secao, 0), entrada.ComprimentoM * fases, circuito);
             if (neutro) Somar(condutores, (tipo, isolamento, calculo.SecaoDoNeutroMm2 ?? secao, 1), entrada.ComprimentoM, circuito);
             Somar(condutores, (tipo, isolamento, calculo.SecaoDeProtecaoMm2!.Value, 2), entrada.ComprimentoM, circuito);
-            Somar(disjuntores, (fases, calculo.DisjuntorA!.Value), 1m, circuito);
+            Somar(disjuntores, (fases, calculo.DisjuntorA!.Value, calculo.CapacidadeDeInterrupcaoKa), 1m, circuito);
             if (calculo.IdrNominalA is { } nominal && calculo.IdrSensibilidadeMa is { } sensibilidade)
                 Somar(idrs, (polosDoIdr, nominal, sensibilidade), 1m, circuito);
         }
@@ -88,9 +89,13 @@ public sealed record ListaDeMateriais(IReadOnlyList<ItemDeMaterial> Itens, IRead
                     _ => "comprimento do circuito, sem sobras nem emendas; seção pela tabela do condutor de proteção"
                 })));
         itens.AddRange(disjuntores
-            .OrderBy(par => par.Key.Polos).ThenBy(par => par.Key.Corrente)
-            .Select(par => new ItemDeMaterial(Disjuntores, $"Disjuntor {par.Key.Polos}P {Numero(par.Key.Corrente)} A",
-                par.Value.Quantidade, "un", par.Value.Circuitos, "curva e capacidade de interrupção a definir")));
+            .OrderBy(par => par.Key.Polos).ThenBy(par => par.Key.Corrente).ThenBy(par => par.Key.Interrupcao ?? 0m)
+            .Select(par => new ItemDeMaterial(Disjuntores,
+                $"Disjuntor {par.Key.Polos}P {Numero(par.Key.Corrente)} A" + (par.Key.Interrupcao is { } icn ? $", Icn ≥ {Numero(icn)} kA" : string.Empty),
+                par.Value.Quantidade, "un", par.Value.Circuitos,
+                par.Key.Interrupcao is null
+                    ? "curva e capacidade de interrupção a definir (sem a corrente de curto-circuito presumida nas condições)"
+                    : "curva a definir; I²t que deixa passar no máximo o k²S² de cada circuito (memória)")));
         itens.AddRange(idrs
             .OrderBy(par => par.Key.Polos).ThenBy(par => par.Key.Corrente).ThenBy(par => par.Key.Sensibilidade)
             .Select(par => new ItemDeMaterial(Idr, $"IDR {par.Key.Polos}P {Numero(par.Key.Corrente)} A, IΔn {Numero(par.Key.Sensibilidade)} mA",

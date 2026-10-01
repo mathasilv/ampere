@@ -507,15 +507,62 @@ public class DimensionamentoDeCircuito_Teste
         await Assert.That(resultado.Eletroduto).IsNotNull();
     }
 
+    [Test]
+    [Property("Fonte", "NBR 5410:2004, 5.3.5.5.1, 5.3.5.5.2, 6.3.4.3.2 e Tabela 30")]
+    public async Task Com_a_Icc_presumida_verifica_capacidade_de_interrupcao_e_integral_de_Joule()
+    {
+        var resultado = NoPerfilOficial("B1", Superastic, curtoCircuitoKa: 5m);
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
+        await Assert.That(resultado.CapacidadeDeInterrupcaoKa).IsEqualTo(5m);
+        var capacidade = PassoDe(resultado, "Capacidade de interrupção mínima do disjuntor");
+        await Assert.That(capacidade.Referencia).StartsWith("NBR 5410:2004, item 5.3.5.5.1");
+        await Assert.That(capacidade.Expressao).IsEqualTo("Icn ≥ Icc");
+        var k = PassoDe(resultado, "Fator k do condutor");
+        await Assert.That(k.Resultado).IsEqualTo(115m);
+        await Assert.That(k.Expressao).IsEqualTo("k = tabela (Cobre; PVC; S ≤ 300 mm²)");
+        await Assert.That(k.Observacao!).Contains("abaixo de 10 mm²");
+        // 1,5 mm² de cobre com PVC: k²S² = 115² · 1,5² = 29 756,25 A²s; com 5 kA, t = 29 756,25 / 5000² = 0,00119 s.
+        await Assert.That(resultado.IntegralDeJouleA2s).IsEqualTo(29756.25m);
+        var integral = PassoDe(resultado, "Integral de Joule suportável pelo condutor");
+        await Assert.That(integral.Expressao).IsEqualTo("I²t ≤ k² · S²");
+        await Assert.That(integral.Observacao!).Contains("em até 0,00119 s");
+        // O curto vem antes do eletroduto na memória.
+        var descricoes = resultado.Memoria!.Passos.Select(passo => passo.Descricao).ToList();
+        await Assert.That(descricoes.IndexOf("Integral de Joule suportável pelo condutor")).IsLessThan(descricoes.IndexOf("Eletroduto adotado"));
+    }
+
+    [Test]
+    public async Task Sem_a_Icc_presumida_nada_de_curto_circuito_na_memoria()
+    {
+        var resultado = NoPerfilOficial("B1", Superastic);
+
+        await Assert.That(resultado.CapacidadeDeInterrupcaoKa).IsNull();
+        await Assert.That(resultado.IntegralDeJouleA2s).IsNull();
+        await Assert.That(resultado.Memoria!.Passos.Any(passo => passo.Descricao.Contains("interrupção", StringComparison.Ordinal))).IsFalse();
+        await Assert.That(resultado.Avisos).IsEmpty();
+    }
+
+    [Test]
+    public async Task Icc_presumida_nao_positiva_e_entrada_invalida()
+    {
+        var resultado = DimensionamentoDeCircuito.Dimensionar(Entrada(locais: ["Demais locais internos"]) with { CorrenteDeCurtoCircuitoKa = 0m },
+            PerfilNormativo.NBR5410_2004, CatalogosFicticiosCarregados);
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.EntradaInvalida);
+        await Assert.That(resultado.Problemas).Contains("corrente de curto-circuito presumida deve ser positiva");
+    }
+
     private const string Superastic = "Prysmian Superastic Flex 450/750 V";
     private const string SintenaxUnipolar = "Prysmian Sintenax Flex 0,6/1 kV unipolar";
 
     // Iluminação de 500 VA em 127 V: IB 3,94 A, fase de 1,5 mm² (seção mínima), sem IDR.
-    private static ResultadoDoDimensionamento NoPerfilOficial(string metodo, string? tipoDeCondutor) =>
+    private static ResultadoDoDimensionamento NoPerfilOficial(string metodo, string? tipoDeCondutor, decimal? curtoCircuitoKa = null) =>
         DimensionamentoDeCircuito.Dimensionar(
             Entrada(potenciaVA: 500m, tipo: TipoDeCarga.Iluminacao, locais: ["Demais locais internos"]) with
             {
-                MetodoDeInstalacao = metodo, TipoDeCondutor = tipoDeCondutor, TipoDeEletroduto = "Tigre Tigreflex amarelo"
+                MetodoDeInstalacao = metodo, TipoDeCondutor = tipoDeCondutor, TipoDeEletroduto = "Tigre Tigreflex amarelo",
+                CorrenteDeCurtoCircuitoKa = curtoCircuitoKa
             },
             PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao);
 

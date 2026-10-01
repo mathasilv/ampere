@@ -113,7 +113,8 @@ public class ListaDeMateriais_Teste
 
         await Assert.That(linhas[0]).IsEqualTo("Grupo;Item;Quantidade;Unidade;Circuitos;Observação");
         await Assert.That(linhas[1]).IsEqualTo("Condutores;FIO-TESTE (Cobre, PVC) 2,5 mm² — fase;30;m;QD1-TUG-01 | QD1-TUG-02;comprimento do circuito × fases, sem sobras nem emendas");
-        await Assert.That(linhas[7]).IsEqualTo("Disjuntores;Disjuntor 1P 10 A;2;un;QD1-TUG-01 | QD1-TUG-02;curva e capacidade de interrupção a definir");
+        await Assert.That(linhas[7]).IsEqualTo("Disjuntores;Disjuntor 1P 10 A;2;un;QD1-TUG-01 | QD1-TUG-02;" +
+            "curva e capacidade de interrupção a definir (sem a corrente de curto-circuito presumida nas condições)");
         await Assert.That(linhas[^1]).StartsWith("Fora da lista;QD1-TUG-03;;;;proteção não decidida: ");
         await Assert.That(linhas.Length).IsEqualTo(11);
     }
@@ -125,6 +126,18 @@ public class ListaDeMateriais_Teste
 
         await Assert.That(lista.Itens[0].Quantidade).IsEqualTo(15.124m); // 5,0006 m entra no cálculo arredondado ao milímetro
         await Assert.That(lista.Csv()).Contains(";15,124;m;");
+    }
+
+    [Test]
+    [Property("Fonte", "NBR 5410:2004, item 5.3.5.5.1")]
+    public async Task Com_a_Icc_presumida_o_disjuntor_sai_com_a_capacidade_de_interrupcao()
+    {
+        var comCurto = Condicoes with { CorrenteDeCurtoCircuitoKa = 6m };
+        var lista = ListaDeMateriais.Montar(DimensionamentoDoProjeto.Executar([1, 2], comCurto, Ficticio, Catalogos, new DocumentoFalso(TresCircuitos[..2])));
+
+        var disjuntor = lista.Itens.Single(item => item.Grupo == ListaDeMateriais.Disjuntores);
+        await Assert.That(disjuntor.Item).IsEqualTo("Disjuntor 1P 10 A, Icn ≥ 6 kA");
+        await Assert.That(disjuntor.Observacao).StartsWith("curva a definir");
     }
 
     private static ListaDeMateriais Montar(params DadosDoCircuito[] circuitos) =>

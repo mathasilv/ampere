@@ -27,6 +27,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <TextBlock Grid.Row="0" Text="Temperatura ambiente (°C)" VerticalAlignment="Center" />
@@ -47,6 +48,10 @@
 
             <TextBlock Grid.Row="4" Text="Material do condutor" VerticalAlignment="Center" />
             <ComboBox Grid.Row="4" Grid.Column="1" Margin="0,4" ItemsSource="{Binding Materiais}" SelectedItem="{Binding Material}" />
+
+            <TextBlock Grid.Row="5" Text="Curto-circuito presumido (kA)" VerticalAlignment="Center" />
+            <TextBox Grid.Row="5" Grid.Column="1" Margin="0,4" Text="{Binding CorrenteDeCurtoCircuitoKa, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Corrente de curto-circuito presumida no quadro de origem dos circuitos (5.3.5.1; a do ponto de entrada, informada pela distribuidora, vale a favor da segurança). Com ela, a memória dá a capacidade de interrupção mínima do disjuntor e a integral de Joule do condutor (5.3.5.5, Tabela 30). Vazio = sem essa verificação" />
         </Grid>
 
         <TextBlock Text="Padrões para circuitos sem o parâmetro" FontWeight="SemiBold" Margin="0,12,0,4" />

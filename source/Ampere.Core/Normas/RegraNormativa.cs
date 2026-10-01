@@ -25,5 +25,11 @@ public enum RegraNormativa
     DemandaDoQuadro,
 
     /// <summary>Seção do condutor neutro frente à das fases ("secao_do_neutro").</summary>
-    SecaoDoNeutro
+    SecaoDoNeutro,
+
+    /// <summary>
+    ///     Capacidade de interrupção do dispositivo frente à corrente de curto-circuito presumida ("capacidade_de_interrupcao");
+    ///     opcional: perfil sem ela cita TODO_NORMA.
+    /// </summary>
+    CapacidadeDeInterrupcao
 }

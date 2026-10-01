@@ -408,7 +408,8 @@ public static class DimensionamentoDeAlimentadores
             limite,
             Alimentador: true,
             CorrenteDeProjeto: correntes?.Corrente,
-            CorrenteDaQueda: correntes?.Queda);
+            CorrenteDaQueda: correntes?.Queda,
+            CorrenteDeCurtoCircuitoKa: condicoes.CorrenteDeCurtoCircuitoKa);
     }
 
     private const decimal Raiz3 = 1.7320508075688772935274463415m;

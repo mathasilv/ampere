@@ -24,12 +24,13 @@ public class PlanilhaDeCircuitos_Teste
 
         await Assert.That(linhas.Length).IsEqualTo(2);
         await Assert.That(linhas[0]).IsEqualTo(
-            "Quadro;Circuito;Tipo de carga;Situação;Potência (VA);IB (A);FCT;FCA;Seção (mm²);Neutro (mm²);PE (mm²);IZ (A);Disjuntor (A);IDR In (A);IDR IΔn (mA);" +
+            "Quadro;Circuito;Tipo de carga;Situação;Potência (VA);IB (A);FCT;FCA;Seção (mm²);Neutro (mm²);PE (mm²);IZ (A);Disjuntor (A);Icn mín. (kA);k²S² (A²s);" +
+            "IDR In (A);IDR IΔn (mA);" +
             "Queda de tensão (%);Eletroduto;Ocupação (%);Motivo;Avisos;Memória");
         var campos = linhas[1].Split(';');
-        await Assert.That(campos[..14]).IsEquivalentTo(["QD1", "TUG-01", "TUG", "Dimensionado", "1270", "10", "1", "1", "2,5", "2,5", "2,5", "20", "10", ""]);
-        await Assert.That(campos[15]).IsEqualTo("1,2598");
-        await Assert.That(campos[20]).StartsWith("sha256:");
+        await Assert.That(campos[..16]).IsEquivalentTo(["QD1", "TUG-01", "TUG", "Dimensionado", "1270", "10", "1", "1", "2,5", "2,5", "2,5", "20", "10", "", "", ""]);
+        await Assert.That(campos[17]).IsEqualTo("1,2598");
+        await Assert.That(campos[22]).StartsWith("sha256:");
     }
 
     [Test]
@@ -39,8 +40,8 @@ public class PlanilhaDeCircuitos_Teste
 
         await Assert.That(campos[3]).IsEqualTo("Interrompido antes da proteção");
         await Assert.That(campos[5]).IsEqualTo("10");
-        await Assert.That(campos[8..18].All(campo => campo.Length == 0)).IsTrue();
-        await Assert.That(campos[18]).Contains("sem local");
+        await Assert.That(campos[8..20].All(campo => campo.Length == 0)).IsTrue();
+        await Assert.That(campos[20]).Contains("sem local");
     }
 
     [Test]
@@ -51,8 +52,8 @@ public class PlanilhaDeCircuitos_Teste
         var campos = Linhas(semNumero)[1].Split(';');
 
         await Assert.That(campos[3]).IsEqualTo("Não calculado (dados faltando)");
-        await Assert.That(campos[18]).Contains("sem AMP_NumeroCircuito");
-        await Assert.That(campos[20]).IsEqualTo(string.Empty);
+        await Assert.That(campos[20]).Contains("sem AMP_NumeroCircuito");
+        await Assert.That(campos[22]).IsEqualTo(string.Empty);
     }
 
     [Test]

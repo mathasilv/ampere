@@ -8,14 +8,14 @@ namespace Ampere.Core.Entradas;
 ///     agrupados e material são obrigatórios — o Ampere não presume a condição de instalação; os padrões de método,
 ///     isolação e tipos são opcionais (vazio = cada circuito usa o seu AMP_*), como a temperatura do solo (vazio = as
 ///     linhas enterradas precisam de AMP_TemperaturaAmbienteC no circuito) e os circuitos agrupados no solo (vazio = elas
-///     precisam de AMP_CircuitosAgrupados).
+///     precisam de AMP_CircuitosAgrupados) e a corrente de curto-circuito presumida (vazio = sem a verificação de 5.3.5.5).
 /// </summary>
 public static class EntradaDeCondicoes
 {
     public static CondicoesDigitadas Interpretar(
         string? temperaturaC, string? temperaturaDoSoloC, string? circuitosAgrupados, string? circuitosAgrupadosNoSolo, string? material,
         string? metodoPadrao, string? isolacaoPadrao,
-        string? tipoDeCondutorPadrao, string? tipoDeEletroduto, CultureInfo cultura)
+        string? tipoDeCondutorPadrao, string? tipoDeEletroduto, CultureInfo cultura, string? correnteDeCurtoCircuitoKa = null)
     {
         var problemas = new List<string>();
 
@@ -43,6 +43,10 @@ public static class EntradaDeCondicoes
             else noSolo = (int)valorNoSolo;
         }
 
+        var curto = NumeroDigitado.Interpretar(correnteDeCurtoCircuitoKa, cultura);
+        if (curto.Problema is not null) problemas.Add($"corrente de curto-circuito: {curto.Problema}");
+        else if (curto.Valor is <= 0m) problemas.Add("a corrente de curto-circuito presumida precisa ser positiva (vazio = não verificar)");
+
         var materialEscolhido = Opcional(material);
         if (materialEscolhido is null) problemas.Add("escolha o material do condutor");
         if (problemas.Count > 0) return new CondicoesDigitadas(null, problemas);
@@ -56,7 +60,8 @@ public static class EntradaDeCondicoes
             Opcional(tipoDeCondutorPadrao),
             Opcional(tipoDeEletroduto),
             solo.Valor,
-            noSolo), []);
+            noSolo,
+            curto.Valor), []);
     }
 
     private static string? Opcional(string? texto) => string.IsNullOrWhiteSpace(texto) ? null : texto.Trim();

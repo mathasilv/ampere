@@ -249,6 +249,35 @@ public class PerfilNormativo_Teste
     }
 
     [Test]
+    [Property("Fonte", "NBR 5410:2004, Tabela 30 e item 5.3.5.5.1")]
+    public async Task Fator_k_da_tabela_30_e_regra_da_capacidade_de_interrupcao()
+    {
+        var oficial = PerfilNormativo.NBR5410_2004;
+
+        await Assert.That(oficial.FatorKDeCurtoCircuito("Cobre", "PVC", 300m)!.Valor).IsEqualTo(115m);
+        await Assert.That(oficial.FatorKDeCurtoCircuito("Cobre", "PVC", 400m)!.Valor).IsEqualTo(103m);
+        await Assert.That(oficial.FatorKDeCurtoCircuito("Cobre", "EPR ou XLPE", 10m)!.Valor).IsEqualTo(143m);
+        await Assert.That(oficial.FatorKDeCurtoCircuito("Alumínio", "PVC", 400m)!.Valor).IsEqualTo(68m);
+        await Assert.That(oficial.FatorKDeCurtoCircuito("Alumínio", "EPR ou XLPE", 500m)!.Valor).IsEqualTo(94m);
+        await Assert.That(oficial.FatorKDeCurtoCircuito("Cobre", "PVC", 10m)!.Referencia).StartsWith("NBR 5410:2004, item 5.3.5.5.2 e Tabela 30");
+        await Assert.That(oficial.ReferenciaDaRegra(RegraNormativa.CapacidadeDeInterrupcao)).StartsWith("NBR 5410:2004, item 5.3.5.5.1");
+        // Perfil sem a tabela e sem a regra (opcionais): nulo e TODO_NORMA, sem recusar o perfil.
+        await Assert.That(Ficticio.FatorKDeCurtoCircuito("Cobre", "PVC", 2.5m)).IsNull();
+        await Assert.That(Ficticio.ReferenciaDaRegra(RegraNormativa.CapacidadeDeInterrupcao)).IsEqualTo(PerfilNormativo.TodoNorma);
+    }
+
+    [Test]
+    public async Task Condutor_da_capacidade_sem_fator_k_e_recusado()
+    {
+        var json = PerfilFicticio.Json.Replace("\"protecao_diferencial_por_local\": {",
+            "\"fator_k_de_curto_circuito\": { \"ref\": \"FICTÍCIO: k\", \"valores\": [ { \"material\": \"Prata\", \"isolacao\": \"PVC\", " +
+            "\"ate_300_mm2\": 1, \"acima_de_300_mm2\": 1 } ] }, \"protecao_diferencial_por_local\": {");
+
+        await Assert.That(() => PerfilNormativo.Carregar(json)).Throws<PerfilNormativoInvalidoException>()
+            .WithMessageContaining("fator_k_de_curto_circuito: sem linha para Cobre com isolação PVC");
+    }
+
+    [Test]
     public async Task Tabelas_que_dependem_umas_das_outras_precisam_concordar()
     {
         const string Ancora = "\"protecao_diferencial_por_local\": {";

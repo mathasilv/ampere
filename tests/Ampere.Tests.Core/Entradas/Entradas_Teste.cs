@@ -270,6 +270,18 @@ public class EntradaDeCondicoes_Teste
     }
 
     [Test]
+    public async Task Corrente_de_curto_circuito_opcional_e_positiva()
+    {
+        var com = EntradaDeCondicoes.Interpretar("30", null, "1", null, "Cobre", null, null, null, null, PtBr, "4,5");
+        var zero = EntradaDeCondicoes.Interpretar("30", null, "1", null, "Cobre", null, null, null, null, PtBr, "0");
+        var vazia = EntradaDeCondicoes.Interpretar("30", null, "1", null, "Cobre", null, null, null, null, PtBr, " ");
+
+        await Assert.That(com.Condicoes!.CorrenteDeCurtoCircuitoKa).IsEqualTo(4.5m);
+        await Assert.That(zero.Problemas.Single()).Contains("precisa ser positiva");
+        await Assert.That(vazia.Condicoes!.CorrenteDeCurtoCircuitoKa).IsNull();
+    }
+
+    [Test]
     public async Task Padroes_vazios_ficam_nulos()
     {
         var entrada = EntradaDeCondicoes.Interpretar("30", null, "1", null, "Cobre", "", " ", null, "", PtBr);

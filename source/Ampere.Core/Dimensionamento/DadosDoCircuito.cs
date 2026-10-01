@@ -83,6 +83,11 @@ public sealed record DecisoesDoProjetista(
 /// <param name="TipoDeEletroduto">Tipo de eletroduto do catálogo usado no projeto; sem ele, o cálculo para no eletroduto.</param>
 /// <param name="TemperaturaDoSoloC">Temperatura do solo, em °C, para as linhas enterradas (método D); sem ela, o circuito enterrado precisa de AMP_TemperaturaAmbienteC.</param>
 /// <param name="CircuitosAgrupadosNoSolo">Circuitos agrupados das linhas enterradas (a tabela é outra); sem ele, o circuito enterrado precisa de AMP_CircuitosAgrupados.</param>
+/// <param name="CorrenteDeCurtoCircuitoKa">
+///     Corrente de curto-circuito presumida no quadro de origem dos circuitos, em kA (determinada pelo projetista ou pela
+///     distribuidora, por cálculo ou medição); a do ponto de entrada vale a favor da segurança. Sem ela, a capacidade de
+///     interrupção e a integral de Joule não são verificadas.
+/// </param>
 public sealed record CondicoesDoProjeto(
     decimal TemperaturaAmbienteC,
     int CircuitosAgrupados,
@@ -92,7 +97,8 @@ public sealed record CondicoesDoProjeto(
     string? TipoDeCondutorPadrao = null,
     string? TipoDeEletroduto = null,
     decimal? TemperaturaDoSoloC = null,
-    int? CircuitosAgrupadosNoSolo = null);
+    int? CircuitosAgrupadosNoSolo = null,
+    decimal? CorrenteDeCurtoCircuitoKa = null);
 
 /// <summary>
 ///     Monta a entrada do dimensionamento a partir dos dados do circuito: potência = soma dos pontos; tensão e fases =
@@ -151,7 +157,8 @@ public static class EntradaDoCircuito
             decisoes.DisjuntorA,
             decisoes.Justificativa,
             decisoes.OrigemDaTemperatura,
-            decisoes.OrigemDoAgrupamento);
+            decisoes.OrigemDoAgrupamento,
+            CorrenteDeCurtoCircuitoKa: condicoes.CorrenteDeCurtoCircuitoKa);
         return new EntradaMontada(entrada, []);
     }
 

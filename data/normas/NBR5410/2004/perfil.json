@@ -14,7 +14,8 @@
     "condutores_no_eletroduto": "NBR 5410:2004, item 6.2.11.1.6, alínea a (soma das seções transversais dos condutores previstos no eletroduto, pelo diâmetro externo)",
     "coordenacao_idr_disjuntor": "TODO_NORMA",
     "demanda_do_quadro": "TODO_NORMA",
-    "secao_do_neutro": "NBR 5410:2004, itens 6.2.6.2.2 a 6.2.6.2.4 (neutro com a seção das fases; a seção reduzida da Tabela 48, permitida em 6.2.6.2.6 acima de 25 mm², não é aplicada pelo Ampere)"
+    "secao_do_neutro": "NBR 5410:2004, itens 6.2.6.2.2 a 6.2.6.2.4 (neutro com a seção das fases; a seção reduzida da Tabela 48, permitida em 6.2.6.2.6 acima de 25 mm², não é aplicada pelo Ampere)",
+    "capacidade_de_interrupcao": "NBR 5410:2004, item 5.3.5.5.1 (capacidade de interrupção no mínimo igual à corrente de curto-circuito presumida no ponto de instalação) e item 5.3.6.1 (o dispositivo contra sobrecargas protege também contra curtos-circuitos com essa capacidade e atendendo a 5.3.5.5.2)"
   },
   "tabelas": {
     "secoes_nominais_mm2": {
@@ -2160,6 +2161,15 @@
         { "metodo": "E", "construcoes": ["cabo multipolar"] },
         { "metodo": "F", "construcoes": ["cabo unipolar"] },
         { "metodo": "G", "construcoes": ["condutor isolado", "cabo unipolar"] }
+      ]
+    },
+    "fator_k_de_curto_circuito": {
+      "ref": "NBR 5410:2004, item 5.3.5.5.2 e Tabela 30 (PVC: de 70 °C a 160 °C até 300 mm² e a 140 °C acima; EPR ou XLPE: de 90 °C a 250 °C; nota 1: para condutores de pequena seção, principalmente abaixo de 10 mm², e curtos-circuitos acima de 5 s, outros valores de k ainda não estão normalizados)",
+      "valores": [
+        { "material": "Cobre", "isolacao": "PVC", "ate_300_mm2": 115, "acima_de_300_mm2": 103 },
+        { "material": "Cobre", "isolacao": "EPR ou XLPE", "ate_300_mm2": 143, "acima_de_300_mm2": 143 },
+        { "material": "Alumínio", "isolacao": "PVC", "ate_300_mm2": 76, "acima_de_300_mm2": 68 },
+        { "material": "Alumínio", "isolacao": "EPR ou XLPE", "ate_300_mm2": 94, "acima_de_300_mm2": 94 }
       ]
     },
     "secao_minima_do_pe_fora_do_cabo_mm2": {

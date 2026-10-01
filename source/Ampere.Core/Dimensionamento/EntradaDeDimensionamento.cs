@@ -58,7 +58,8 @@ public sealed record EntradaDeDimensionamento(
     LimiteDeQuedaDoCircuito? LimiteDeQueda = null,
     bool Alimentador = false,
     CorrenteCalculada? CorrenteDeProjeto = null,
-    CorrenteDaQuedaDeTensao? CorrenteDaQueda = null)
+    CorrenteDaQuedaDeTensao? CorrenteDaQueda = null,
+    decimal? CorrenteDeCurtoCircuitoKa = null)
 {
     /// <summary>Problemas que impedem dimensionar; vazio se a entrada estiver válida.</summary>
     public IReadOnlyList<string> Validar()
@@ -83,6 +84,7 @@ public sealed record EntradaDeDimensionamento(
         if (CorrenteDaQueda is { Fator: <= 0m } or { CorrenteA: < 0m }) problemas.Add("fator e corrente da queda de tensão devem ser positivos");
         if (IdrDoProjetista is { Exigir: true, SensibilidadeMa: not > 0 }) problemas.Add("IDR exigido pelo projetista sem sensibilidade positiva");
         if (IdrDoProjetista is { Exigir: false, SensibilidadeMa: not null }) problemas.Add("IDR dispensado pelo projetista não leva sensibilidade");
+        if (CorrenteDeCurtoCircuitoKa is <= 0m) problemas.Add("corrente de curto-circuito presumida deve ser positiva");
         return problemas;
     }
 }
@@ -153,6 +155,8 @@ public enum SituacaoDoDimensionamento
 /// </param>
 /// <param name="SecaoDoNeutroMm2">Seção do neutro; nula sem neutro no circuito ou se o cálculo parou antes.</param>
 /// <param name="SecaoDeProtecaoMm2">Seção do condutor de proteção (PE); nula se o cálculo parou antes.</param>
+/// <param name="CapacidadeDeInterrupcaoKa">Capacidade de interrupção mínima do disjuntor (Icc presumida); nula sem a Icc nas condições.</param>
+/// <param name="IntegralDeJouleA2s">k²S² do condutor: a integral de Joule máxima que o disjuntor pode deixar passar; nula sem a Icc.</param>
 public sealed record ResultadoDoDimensionamento(
     string Circuito,
     SituacaoDoDimensionamento Situacao,
@@ -175,4 +179,6 @@ public sealed record ResultadoDoDimensionamento(
     IReadOnlyList<string> Avisos,
     bool IdrAvaliado = false,
     decimal? SecaoDoNeutroMm2 = null,
-    decimal? SecaoDeProtecaoMm2 = null);
+    decimal? SecaoDeProtecaoMm2 = null,
+    decimal? CapacidadeDeInterrupcaoKa = null,
+    decimal? IntegralDeJouleA2s = null);

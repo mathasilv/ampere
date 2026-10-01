@@ -9,8 +9,8 @@ Primeira versão do Ampere: projeto de instalações elétricas de baixa tensão
 - Parâmetros compartilhados `AMP_*` com GUIDs congelados, criados pelo comando "Injetar parâmetros".
 - Perfil normativo `data/normas/NBR5410/2004/perfil.json`: capacidade de condução (Tabelas 36 a 39, métodos A1 a G),
   fatores de temperatura (Tabela 40, ar e solo), de agrupamento (Tabelas 42 e 44), seções mínimas (Tabela 47), condutor
-  de proteção (Tabela 58), construções admitidas por método (Tabela 33), queda de tensão (6.2.7), ocupação do eletroduto
-  e IDR por local (5.1.3.2.2). Cada valor com a referência; o que não tem fonte fica em `data/DATA_GAPS.md`.
+  de proteção (Tabela 58), construções admitidas por método (Tabela 33), fator k de curto-circuito (Tabela 30), queda de
+  tensão (6.2.7), ocupação do eletroduto e IDR por local (5.1.3.2.2). Cada valor com a referência; o que não tem fonte fica em `data/DATA_GAPS.md`.
 - Previsão mínima de cargas dos locais de habitação (9.5.2) e divisão da instalação (9.5.3).
 - Seleção dos DPS (6.3.5.2, Figura 13 e Tabelas 31 e 49) em `data/normas/NBR5410/2004/dps.json`.
 - Catálogos Prysmian (Superastic Flex, Sintenax Flex unipolar) e Tigre (Tigreflex, Tigreflex Reforçado, PVC rígido
@@ -26,7 +26,9 @@ Primeira versão do Ampere: projeto de instalações elétricas de baixa tensão
 - **Criar circuitos**: agrupa os pontos em circuitos numerados no quadro; com as categorias da previsão, tomadas de
   cozinha e áreas de serviço em circuitos só delas e equipamento acima de 10 A sozinho no circuito.
 - **Dimensionar circuitos**: IB, seção, disjuntor, queda de tensão, IDR, neutro, PE e eletroduto, com memória (JSON,
-  Markdown e PDF), planilha dos circuitos e lista de materiais; as condições do projeto ficam guardadas no modelo.
+  Markdown e PDF), planilha dos circuitos e lista de materiais; as condições do projeto ficam guardadas no modelo. Com o
+  curto-circuito presumido, a capacidade de interrupção mínima do disjuntor e a integral de Joule do condutor (5.3.5.5,
+  Tabela 30).
 - **Montar quadro de cargas**: demanda por tipo de carga, cargas por fase e distribuição de fases sugerida.
 - **Dimensionar alimentadores**: o circuito de cada quadro pela demanda e pela queda que sobra do limite total.
 - **Demanda da entrada**: demanda pela distribuidora e padrão de entrada pela carga instalada.

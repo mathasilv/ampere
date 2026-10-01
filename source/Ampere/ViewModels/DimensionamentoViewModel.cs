@@ -16,6 +16,7 @@ public sealed class DimensionamentoViewModel : ObservableObject
     private string _temperaturaDoSoloC = string.Empty;
     private string _circuitosAgrupados = string.Empty;
     private string _circuitosAgrupadosNoSolo = string.Empty;
+    private string _correnteDeCurtoCircuitoKa = string.Empty;
     private string _material;
     private string _metodoPadrao = string.Empty;
     private string _isolacaoPadrao = string.Empty;
@@ -48,6 +49,7 @@ public sealed class DimensionamentoViewModel : ObservableObject
         _temperaturaDoSoloC = anteriores.TemperaturaDoSoloC?.ToString(CultureInfo.CurrentCulture) ?? string.Empty;
         _circuitosAgrupados = anteriores.CircuitosAgrupados.ToString(CultureInfo.CurrentCulture);
         _circuitosAgrupadosNoSolo = anteriores.CircuitosAgrupadosNoSolo?.ToString(CultureInfo.CurrentCulture) ?? string.Empty;
+        _correnteDeCurtoCircuitoKa = anteriores.CorrenteDeCurtoCircuitoKa?.ToString(CultureInfo.CurrentCulture) ?? string.Empty;
         _material = anteriores.Material;
         _metodoPadrao = anteriores.MetodoDeInstalacaoPadrao ?? string.Empty;
         _isolacaoPadrao = anteriores.IsolacaoPadrao ?? string.Empty;
@@ -98,6 +100,12 @@ public sealed class DimensionamentoViewModel : ObservableObject
         set => SetProperty(ref _circuitosAgrupadosNoSolo, value);
     }
 
+    public string CorrenteDeCurtoCircuitoKa
+    {
+        get => _correnteDeCurtoCircuitoKa;
+        set => SetProperty(ref _correnteDeCurtoCircuitoKa, value);
+    }
+
     public string Material
     {
         get => _material;
@@ -141,7 +149,8 @@ public sealed class DimensionamentoViewModel : ObservableObject
     public bool Confirmar()
     {
         var entrada = EntradaDeCondicoes.Interpretar(
-            TemperaturaC, TemperaturaDoSoloC, CircuitosAgrupados, CircuitosAgrupadosNoSolo, Material, MetodoPadrao, IsolacaoPadrao, TipoDeCondutorPadrao, TipoDeEletroduto, CultureInfo.CurrentCulture);
+            TemperaturaC, TemperaturaDoSoloC, CircuitosAgrupados, CircuitosAgrupadosNoSolo, Material, MetodoPadrao, IsolacaoPadrao, TipoDeCondutorPadrao, TipoDeEletroduto, CultureInfo.CurrentCulture,
+            CorrenteDeCurtoCircuitoKa);
         Condicoes = entrada.Condicoes;
         Problemas = string.Join(Environment.NewLine, entrada.Problemas);
         return Condicoes is not null;

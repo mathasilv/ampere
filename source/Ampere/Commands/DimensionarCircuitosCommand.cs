@@ -89,6 +89,8 @@ public class DimensionarCircuitosCommand : ExternalCommand
         cronometro.Stop();
 
         var texto = ResumoDoDimensionamento.Texto(resultados, perfil, cronometro.Elapsed, gravacao);
+        if (condicoes.CorrenteDeCurtoCircuitoKa is null)
+            texto += $"{Environment.NewLine}{Environment.NewLine}Sem o curto-circuito presumido nas condições: a capacidade de interrupção dos disjuntores e a integral de Joule dos condutores (NBR 5410, 5.3.5.5) não foram verificadas.";
         if (porta.CondicoesNaoGravadas is { } motivo)
             texto += $"{Environment.NewLine}{Environment.NewLine}As condições do projeto não foram atualizadas no modelo ({motivo}): o diálogo continua abrindo com as anteriores. As de cada circuito foram guardadas com os resultados.";
         TaskDialog.Show(TituloDaJanela, texto);

@@ -14,7 +14,7 @@ Desenvolvimento e testes no Revit 2027; compila também para 2025 e 2026.
 | | Locais pelos ambientes | O local de IDR (5.1.3.2.2) de todos os pontos de cada ambiente (Room/Space, inclusive de vínculo) |
 | | Previsão de cargas | Confere cada cômodo de habitação contra a previsão mínima (9.5.2) e a divisão dos circuitos (9.5.3) |
 | | Criar circuitos | Agrupa os pontos em circuitos numerados no quadro escolhido |
-| Dimensionamento | Dimensionar circuitos | IB, seção (Tabelas 36 a 39, fatores das Tabelas 40, 42 e 44), disjuntor, queda de tensão, IDR, neutro, PE (Tabela 58) e eletroduto, com memória, planilha e lista de materiais |
+| Dimensionamento | Dimensionar circuitos | IB, seção (Tabelas 36 a 39, fatores das Tabelas 40, 42 e 44), disjuntor, queda de tensão, IDR, neutro, PE (Tabela 58), curto-circuito (Icn e k²S², Tabela 30) e eletroduto, com memória, planilha e lista de materiais |
 | | Verificar projeto | Lista o que falta ou mudou, sem alterar o modelo, e seleciona os elementos de cada pendência |
 | Quadros | Montar quadro de cargas | Demanda por tipo de carga, cargas por fase e distribuição de fases sugerida |
 | | Dimensionar alimentadores | O circuito que alimenta cada quadro, pela demanda e pela queda que sobra do limite total |

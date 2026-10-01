@@ -33,7 +33,8 @@ internal sealed record TabelasDoPerfil(
     TabelaJson<List<string>>? MetodosComEletroduto = null,
     TabelaDeAgrupamentoJson? FatorDeAgrupamentoEnterrado = null,
     TabelaJson<List<LinhaDeConstrucaoJson>>? ConstrucoesPorMetodo = null,
-    TabelaJson<Dictionary<string, decimal>>? SecaoMinimaDoPeForaDoCaboMm2 = null);
+    TabelaJson<Dictionary<string, decimal>>? SecaoMinimaDoPeForaDoCaboMm2 = null,
+    TabelaJson<List<LinhaDeFatorKJson>>? FatorKDeCurtoCircuito = null);
 
 internal sealed record TabelaJson<T>(string? Ref, T? Valores);
 
@@ -55,6 +56,13 @@ internal sealed record LinhaDeTemperaturaJson(string? Isolacao, Dictionary<strin
 
 /// <param name="Condicionais">Construção admitida só sob uma condição (o texto vai para o aviso).</param>
 internal sealed record LinhaDeConstrucaoJson(string? Metodo, List<string>? Construcoes, Dictionary<string, string>? Condicionais);
+
+/// <summary>Uma linha da Tabela 30: k do material e da isolação, até 300 mm² e acima.</summary>
+internal sealed record LinhaDeFatorKJson(
+    string? Material,
+    string? Isolacao,
+    [property: JsonPropertyName("ate_300_mm2")] decimal? Ate300Mm2,
+    [property: JsonPropertyName("acima_de_300_mm2")] decimal? AcimaDe300Mm2);
 
 internal sealed record LinhaDeProtecaoDiferencialJson(string? Local, List<string>? TiposDeCarga, decimal? SensibilidadeMaximaMa);
 

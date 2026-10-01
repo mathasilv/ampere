@@ -8,7 +8,7 @@ namespace Ampere.Core.Dimensionamento;
 /// <summary>
 ///     Motor de dimensionamento de um circuito terminal: IB → condutores carregados → FCT → FCA → seção mínima →
 ///     seção pela capacidade de condução → disjuntor (IB ≤ In ≤ IZ) → queda de tensão → IDR → seções do neutro e do
-///     condutor de proteção → eletroduto (ocupação).
+///     condutor de proteção → curto-circuito (com a Icc presumida) → eletroduto (ocupação).
 /// </summary>
 /// <remarks>
 ///     <list type="bullet">
@@ -34,6 +34,10 @@ namespace Ampere.Core.Dimensionamento;
 ///         projetista é piso (abaixo da mínima da norma, vale a da norma, com aviso); o disjuntor do projetista é fixo, e a
 ///         seção sobe até IZ ≥ In. Seção fora das nominais ou In fora da série ou abaixo de IB interrompe o cálculo. A
 ///         memória registra cada decisão com a justificativa.</item>
+///         <item>Curto-circuito, só com a Icc presumida das condições: capacidade de interrupção mínima do disjuntor
+///         (Icn ≥ Icc) e k²S² do condutor (Tabela 30), a integral de Joule que o disjuntor pode deixar passar com essa
+///         corrente (6.3.4.3.2-b, conferida no catálogo). A corrente mínima no ponto mais distante (6.3.4.3.2-a) depende da
+///         impedância da fonte e não é verificada.</item>
 ///         <item>Aritmética em <c>decimal</c> e memória determinística.</item>
 ///     </list>
 /// </remarks>
@@ -72,6 +76,8 @@ public static class DimensionamentoDeCircuito
         private decimal? _idrNominal;
         private decimal? _idrSensibilidade;
         private bool _idrAvaliado;
+        private decimal? _capacidadeDeInterrupcao;
+        private decimal? _integralDeJoule;
         private readonly List<string> _avisos = [];
 
         public ResultadoDoDimensionamento Executar()
@@ -158,6 +164,7 @@ public static class DimensionamentoDeCircuito
                     _queda = queda;
                     Idr(disjuntor!.Value);
                     NeutroEProtecao(secao);
+                    CurtoCircuito(secao);
                     // C, E, F e G (sobre parede ou ao ar livre) não têm eletroduto: a memória termina no IDR.
                     if (perfil.ComEletroduto(entrada.MetodoDeInstalacao)) Eletroduto(secao);
                     return;
@@ -394,6 +401,36 @@ public static class DimensionamentoDeCircuito
             _secaoDeProtecao = minimo;
         }
 
+        // 5.3.5.5.1 e 5.3.5.5.2 (6.3.4.3.2-b): o disjuntor, que também protege contra curtos (5.3.6.1), interrompe a Icc
+        // presumida e deixa passar no máximo k²S². Sem a Icc nas condições, nada aqui (o resumo da rodada avisa uma vez).
+        private void CurtoCircuito(decimal secao)
+        {
+            if (entrada.CorrenteDeCurtoCircuitoKa is not { } icc) return;
+
+            Passo(perfil.ReferenciaDaRegra(RegraNormativa.CapacidadeDeInterrupcao), "Capacidade de interrupção mínima do disjuntor", "Icn ≥ Icc",
+                [new ValorDoPasso("Icc", icc, "kA")], icc, "kA",
+                "Icc presumida no quadro de origem, das condições do projeto (a do ponto de entrada vale a favor da segurança)");
+            _capacidadeDeInterrupcao = icc;
+
+            if (perfil.FatorKDeCurtoCircuito(entrada.Material, entrada.Isolacao, secao) is not { } dadoDeK)
+            {
+                _avisos.Add("perfil sem a tabela do fator k (Tabela 30): a integral de Joule do condutor não foi verificada");
+                return;
+            }
+
+            var faixa = secao <= 300m ? "S ≤ 300 mm²" : "S > 300 mm²";
+            var k = Consultar(dadoDeK, "Fator k do condutor", $"k = tabela ({entrada.Material}; {entrada.Isolacao}; {faixa})", [], string.Empty,
+                secao < 10m ? "seção abaixo de 10 mm²: a nota 1 da Tabela 30 diz que outros valores de k ainda não estão normalizados" : null);
+            var integral = k * k * secao * secao;
+            var correnteA = icc * 1000m;
+            var tempo = integral / (correnteA * correnteA);
+            Passo(dadoDeK.Referencia, "Integral de Joule suportável pelo condutor", "I²t ≤ k² · S²",
+                [new ValorDoPasso("k", k, string.Empty), new ValorDoPasso("S", secao, "mm²")], integral, "A²s",
+                $"o disjuntor pode deixar passar no máximo isso com Icc = {Numero(icc)} kA: confira a curva I²t do fabricante (6.3.4.3.2-b); "
+                + $"em curtos de 0,1 s a 5 s, equivale a eliminar o curto em até {Numero(tempo)} s (Icc² · t ≤ k² · S²)");
+            _integralDeJoule = integral;
+        }
+
         private void Eletroduto(decimal secao)
         {
             var referenciaDaRegra = perfil.ReferenciaDaRegra(RegraNormativa.CondutoresNoEletroduto);
@@ -582,7 +619,8 @@ public static class DimensionamentoDeCircuito
         private ResultadoDoDimensionamento Resultado(SituacaoDoDimensionamento situacao, IReadOnlyList<string> problemas) =>
             new(entrada.Circuito, situacao, perfil.Nome, _correnteDeProjeto, _condutoresCarregados, _fct, _fca, _secao, _capacidade, _disjuntor,
                 _idrNominal, _idrSensibilidade, _queda, _eletroduto, _diametroInterno, _ocupacao,
-                new MemoriaDeCalculo(entrada.Circuito, perfil.Nome, _passos), problemas, _avisos, _idrAvaliado, _secaoDoNeutro, _secaoDeProtecao);
+                new MemoriaDeCalculo(entrada.Circuito, perfil.Nome, _passos), problemas, _avisos, _idrAvaliado, _secaoDoNeutro, _secaoDeProtecao,
+                _capacidadeDeInterrupcao, _integralDeJoule);
 
         private static string Numero(decimal valor) => NumeroEmTexto.FormatarParaLeitura(valor);
 

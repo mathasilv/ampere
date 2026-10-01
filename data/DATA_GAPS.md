@@ -115,10 +115,11 @@ Resolvido (decisões do usuário):
 
 - ✅ Lista de materiais (01/10/2026): sai de cada rodada do "Dimensionar" (`materiais.csv`; da seleção,
   `materiais-selecao.csv`), com os circuitos de proteção decidida — os demais vão para o fim da planilha com o motivo.
-  Simplificações a validar: condutores = comprimento do circuito × condutores, **sem sobras nem emendas**; neutro e PE
-  com a **seção da fase** (a redução permitida pela norma não é aplicada — a Tabela 58 não está no perfil); disjuntor
-  com um polo por fase e IDR com um polo por condutor vivo; curva, capacidade de interrupção e tipo do IDR não são
-  decididos; **eletrodutos fora da lista** (circuitos dividem trechos; o quantitativo é o dos eletrodutos modelados).
+  Simplificações a validar: condutores = comprimento do circuito × condutores, **sem sobras nem emendas**; neutro com a
+  **seção da fase** (a redução permitida pela norma não é aplicada) e PE pela Tabela 58 (com o mínimo fora do cabo);
+  disjuntor com um polo por fase e IDR com um polo por condutor vivo; capacidade de interrupção mínima só com o
+  curto-circuito presumido nas condições (5.3.5.5.1); curva e tipo do IDR não são decididos; **eletrodutos fora da
+  lista** (circuitos dividem trechos; o quantitativo é o dos eletrodutos modelados).
 
 - ✅ Verificar projeto (01/10/2026): comando só de leitura que lista pontos sem classificação, fora de circuito ou sem
   local (quando o circuito não tem decisão do projetista sobre o IDR), circuitos criados fora do Ampere, com dados

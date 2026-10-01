@@ -49,6 +49,8 @@ public class CondicoesEmJson_Teste
     [Arguments("""{"versao":1,"temperatura_ambiente_c":30,"temperatura_do_solo_c":"20","circuitos_agrupados":1,"material":"Cobre"}""")]
     [Arguments("""{"versao":1,"temperatura_ambiente_c":30,"circuitos_agrupados":1,"circuitos_agrupados_no_solo":0,"material":"Cobre"}""")]
     [Arguments("""{"versao":1,"temperatura_ambiente_c":30,"circuitos_agrupados":1,"circuitos_agrupados_no_solo":1.5,"material":"Cobre"}""")]
+    [Arguments("""{"versao":1,"temperatura_ambiente_c":30,"circuitos_agrupados":1,"corrente_de_curto_circuito_ka":0,"material":"Cobre"}""")]
+    [Arguments("""{"versao":1,"temperatura_ambiente_c":30,"circuitos_agrupados":1,"corrente_de_curto_circuito_ka":"5","material":"Cobre"}""")]
     public async Task Texto_vazio_invalido_ou_de_outra_versao_nao_vira_condicao(string? json)
     {
         await Assert.That(CondicoesEmJson.Ler(json)).IsNull();
@@ -63,6 +65,15 @@ public class CondicoesEmJson_Teste
             """{"versao":1,"temperatura_ambiente_c":30,"temperatura_do_solo_c":20,"circuitos_agrupados":1,"circuitos_agrupados_no_solo":3,"material":"Cobre"}""");
         await Assert.That(CondicoesEmJson.Ler(json)!.TemperaturaDoSoloC).IsEqualTo(20m);
         await Assert.That(CondicoesEmJson.Ler(json)!.CircuitosAgrupadosNoSolo).IsEqualTo(3);
+    }
+
+    [Test]
+    public async Task Corrente_de_curto_circuito_e_opcional_sem_mudar_a_versao()
+    {
+        var json = CondicoesEmJson.Escrever(new CondicoesDoProjeto(30m, 1, "Cobre", CorrenteDeCurtoCircuitoKa: 4.5m));
+
+        await Assert.That(json).IsEqualTo("""{"versao":1,"temperatura_ambiente_c":30,"circuitos_agrupados":1,"corrente_de_curto_circuito_ka":4.5,"material":"Cobre"}""");
+        await Assert.That(CondicoesEmJson.Ler(json)!.CorrenteDeCurtoCircuitoKa).IsEqualTo(4.5m);
     }
 
     [Test]

@@ -31,8 +31,12 @@ public sealed class PerfilNormativo
         ["condutores_no_eletroduto"] = RegraNormativa.CondutoresNoEletroduto,
         ["coordenacao_idr_disjuntor"] = RegraNormativa.CoordenacaoIdrDisjuntor,
         ["demanda_do_quadro"] = RegraNormativa.DemandaDoQuadro,
-        ["secao_do_neutro"] = RegraNormativa.SecaoDoNeutro
+        ["secao_do_neutro"] = RegraNormativa.SecaoDoNeutro,
+        ["capacidade_de_interrupcao"] = RegraNormativa.CapacidadeDeInterrupcao
     };
+
+    // Regras acrescentadas depois: perfil anterior sem elas carrega, e a memória cita TODO_NORMA.
+    private static readonly IReadOnlySet<string> RegrasOpcionais = new HashSet<string>(StringComparer.Ordinal) { "capacidade_de_interrupcao" };
 
     private readonly Dictionary<RegraNormativa, string> _regras = [];
     private readonly Tabela<IReadOnlyList<decimal>> _secoes;
@@ -55,6 +59,7 @@ public sealed class PerfilNormativo
     private readonly IReadOnlyList<string> _metodosEnterrados = [];
     private readonly Tabela<IReadOnlyDictionary<string, ConstrucoesDoMetodo>>? _construcoes;
     private readonly Tabela<IReadOnlyDictionary<string, decimal>>? _peForaDoCabo;
+    private readonly Tabela<IReadOnlyDictionary<(string Material, string Isolacao), (decimal Ate300, decimal Acima300)>>? _fatorK;
 
     private PerfilNormativo(string nome, bool ficticio, Leitor leitor, TabelasDoPerfil tabelas)
     {
@@ -104,6 +109,12 @@ public sealed class PerfilNormativo
 
         if (tabelas.SecaoMinimaDoPeForaDoCaboMm2 is { } peForaDoCabo) _peForaDoCabo = leitor.PorTexto("secao_minima_do_pe_fora_do_cabo_mm2", peForaDoCabo);
 
+        if (tabelas.FatorKDeCurtoCircuito is { } fatorK)
+        {
+            _fatorK = leitor.Ler<List<LinhaDeFatorKJson>, IReadOnlyDictionary<(string Material, string Isolacao), (decimal Ate300, decimal Acima300)>>(
+                "fator_k_de_curto_circuito", fatorK, valores => valores.Count == 0, leitor.FatorK);
+        }
+
         if (tabelas.FatorDeAgrupamentoEnterrado is { } enterrado)
         {
             _agrupamentoEnterrado = leitor.PorInteiro("fator_de_agrupamento_enterrado", new TabelaJson<Dictionary<string, decimal>>(enterrado.Ref, enterrado.Valores));
@@ -145,6 +156,13 @@ public sealed class PerfilNormativo
                 leitor.Problema($"fator_de_temperatura: linha de {linha.Isolacao} sem métodos vale também para o método enterrado {string.Join(", ", enterrados)}");
             else if (linha.Metodos.Any(metodo => !_metodosEnterrados.Contains(metodo, StringComparer.Ordinal)))
                 leitor.Problema($"fator_de_temperatura: linha de {linha.Isolacao} mistura método enterrado ({string.Join(", ", enterrados)}) com métodos ao ar");
+        }
+
+        // Todo condutor que o motor dimensiona tem k: senão, a verificação de curto-circuito pararia o cálculo.
+        if (_fatorK is { Pendente: false } fatorK)
+        {
+            foreach (var (material, isolacao) in capacidade.Select(linha => (linha.Material, linha.Isolacao)).Distinct().Where(par => !fatorK.Valores.ContainsKey(par)))
+                leitor.Problema($"fator_k_de_curto_circuito: sem linha para {material} com isolação {isolacao}, que a capacidade de condução tem");
         }
 
         var metodos = capacidade.Select(linha => linha.Metodo).ToHashSet(StringComparer.Ordinal);
@@ -279,6 +297,19 @@ public sealed class PerfilNormativo
             : PorChave(_peForaDoCabo, "secao_minima_do_pe_fora_do_cabo_mm2", material, $"sem seção mínima do condutor de proteção fora do cabo para {material}");
 
     /// <summary>
+    ///     Fator k do condutor para a integral de Joule (k²S²), pelo material, pela isolação e pela seção (até 300 mm² ou
+    ///     acima); nulo sem a tabela no perfil.
+    /// </summary>
+    public DadoNormativo<decimal>? FatorKDeCurtoCircuito(string material, string isolacao, decimal secaoMm2)
+    {
+        if (_fatorK is null) return null;
+        if (_fatorK.Pendente) return Pendente<decimal>("fator_k_de_curto_circuito");
+        return _fatorK.Valores.TryGetValue((material, isolacao), out var fator)
+            ? DadoNormativo<decimal>.Com(secaoMm2 <= 300m ? fator.Ate300 : fator.Acima300, _fatorK.Referencia)
+            : DadoNormativo<decimal>.Ausente(_fatorK.Referencia, $"sem fator k para {material} com isolação {isolacao}");
+    }
+
+    /// <summary>
     ///     Linha enterrada: o método tem tabela de agrupamento própria (fator_de_agrupamento_enterrado) e a temperatura que
     ///     vale para ele é a do solo.
     /// </summary>
@@ -391,7 +422,7 @@ public sealed class PerfilNormativo
             var referencia = regras?.GetValueOrDefault(chave)?.Trim();
             if (string.IsNullOrEmpty(referencia))
             {
-                problemas.Add($"regra {chave} sem ref (use o item da norma ou TODO_NORMA)");
+                if (!RegrasOpcionais.Contains(chave) || regras?.ContainsKey(chave) == true) problemas.Add($"regra {chave} sem ref (use o item da norma ou TODO_NORMA)");
                 referencia = TodoNorma;
             }
             else
@@ -489,6 +520,26 @@ public sealed class PerfilNormativo
             }
 
             return new Tabela<TResultado>(referencia, converter(tabela.Valores!, nome), false);
+        }
+
+        public IReadOnlyDictionary<(string Material, string Isolacao), (decimal Ate300, decimal Acima300)> FatorK(List<LinhaDeFatorKJson> linhas, string nome)
+        {
+            var resultado = new Dictionary<(string, string), (decimal, decimal)>();
+            foreach (var linha in linhas)
+            {
+                var material = linha.Material?.Trim() ?? string.Empty;
+                var isolacao = linha.Isolacao?.Trim() ?? string.Empty;
+                if (material.Length == 0 || isolacao.Length == 0)
+                {
+                    problemas.Add($"{nome}: linha sem material ou sem isolação");
+                    continue;
+                }
+
+                var fator = (Positivo($"{nome} ({material}; {isolacao})", linha.Ate300Mm2 ?? 0m), Positivo($"{nome} ({material}; {isolacao})", linha.AcimaDe300Mm2 ?? 0m));
+                if (!resultado.TryAdd((material, isolacao), fator)) problemas.Add($"{nome}: {material} com isolação {isolacao} repetido");
+            }
+
+            return resultado;
         }
 
         public Tabela<IReadOnlyList<decimal>> Lista(string nome, TabelaJson<List<decimal>>? tabela) =>
