@@ -1,10 +1,14 @@
 {
   "$meta": {
     "fonte": "Especificação do MVP Ampere v0.1, §5 (cópia versionada de 10_Parametros_Compartilhados_Ampere.json)",
-    "versao": "0.1",
-    "data": "2026-09-28",
+    "versao": "0.2",
+    "data": "2026-10-01",
     "regra": "GUIDs congelados: nunca alterar nem reutilizar. Parâmetro novo = GUID novo registrado aqui.",
-    "categorias": "Matriz de vínculo aprovada pelo usuário em 2026-09-28 (F1.1): carga nos pontos, dimensionamento nos circuitos."
+    "categorias": "Matriz de vínculo aprovada pelo usuário em 2026-09-28 (F1.1): carga nos pontos, dimensionamento nos circuitos.",
+    "alteracoes": [
+      "0.2 (2026-10-01, decisão do usuário): AMP_Local, GUID novo fora da tabela §5 da especificação — local do ponto no vocabulário da tabela de IDR do perfil, para o comando 'Dimensionar'.",
+      "0.2 (2026-10-01, decisão do usuário): AMP_MemoriaCalculoId também em EquipamentosEletricos — o quadro guarda o hash da memória do quadro de cargas; o circuito, o da memória do seu dimensionamento."
+    ]
   },
   "produto": "Ampere",
   "grupo_revit": "Ampere",
@@ -189,7 +193,14 @@
       "nome": "AMP_MemoriaCalculoId",
       "tipo": "TEXT",
       "descricao": "ID/hash da memória de cálculo auditável",
-      "categorias": ["CircuitosEletricos"]
+      "categorias": ["EquipamentosEletricos", "CircuitosEletricos"]
+    },
+    {
+      "guid": "8560ddec-2524-4c1c-a814-aca3a0346b22",
+      "nome": "AMP_Local",
+      "tipo": "TEXT",
+      "descricao": "Local do ponto na tabela de proteção diferencial do perfil (ex.: Local com banheira ou chuveiro)",
+      "categorias": ["Luminarias", "DispositivosEletricos", "EquipamentosMecanicos"]
     }
   ]
 }

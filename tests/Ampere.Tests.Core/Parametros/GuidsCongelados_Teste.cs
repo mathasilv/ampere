@@ -8,7 +8,7 @@ namespace Ampere.Tests.Core.Parametros;
 /// <remarks>
 ///     Os literais abaixo são a tabela da especificação do MVP (§5), fonte independente do JSON embarcado — os
 ///     dois precisam concordar. Nunca altere um GUID aqui para "fazer o teste passar": GUID novo exige decisão
-///     registrada no catálogo versionado.
+///     registrada no catálogo versionado, e entra em <see cref="AdicionadosPorDecisao" />, nunca na tabela da especificação.
 /// </remarks>
 public class GuidsCongelados_Teste
 {
@@ -42,6 +42,13 @@ public class GuidsCongelados_Teste
         ("AMP_MemoriaCalculoId", "9c91f208-216c-4f76-a56c-d549fbd6d423", "TEXT")
     ];
 
+    /// <summary>Parâmetros fora da tabela da especificação, cada um com a decisão registrada no $meta do catálogo.</summary>
+    private static readonly (string Nome, string Guid, string Tipo)[] AdicionadosPorDecisao =
+    [
+        // Catálogo 0.2 (01/10/2026, decisão do usuário): local do ponto para a exigência de IDR no "Dimensionar".
+        ("AMP_Local", "8560ddec-2524-4c1c-a814-aca3a0346b22", "TEXT")
+    ];
+
     private static readonly Dictionary<string, TipoDeDadoDoParametro> TipoNaEspecificacao = new()
     {
         ["TEXT"] = TipoDeDadoDoParametro.Texto,
@@ -52,9 +59,9 @@ public class GuidsCongelados_Teste
     };
 
     [Test]
-    public async Task Catalogo_embarcado_tem_exatamente_os_parametros_da_especificacao()
+    public async Task Catalogo_embarcado_tem_exatamente_os_parametros_da_especificacao_e_os_adicionados_por_decisao()
     {
-        var esperado = Especificacao
+        var esperado = Especificacao.Concat(AdicionadosPorDecisao)
             .Select(parametro => (parametro.Nome, Guid.Parse(parametro.Guid), TipoNaEspecificacao[parametro.Tipo]))
             .ToArray();
         var atual = CatalogoDeParametros.Padrao.Parametros
@@ -63,6 +70,14 @@ public class GuidsCongelados_Teste
 
         await Assert.That(atual.Except(esperado)).IsEmpty();
         await Assert.That(esperado.Except(atual)).IsEmpty();
-        await Assert.That(atual.Length).IsEqualTo(Especificacao.Length);
+        await Assert.That(atual.Length).IsEqualTo(Especificacao.Length + AdicionadosPorDecisao.Length);
+    }
+
+    [Test]
+    public async Task Parametro_adicionado_nunca_reaproveita_GUID_da_especificacao()
+    {
+        var daEspecificacao = Especificacao.Select(parametro => Guid.Parse(parametro.Guid)).ToHashSet();
+
+        await Assert.That(AdicionadosPorDecisao.Where(parametro => daEspecificacao.Contains(Guid.Parse(parametro.Guid)))).IsEmpty();
     }
 }
