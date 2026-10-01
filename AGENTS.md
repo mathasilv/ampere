@@ -99,8 +99,7 @@ quebre R2025/R2026: perguntar antes de aposentar essas configurações.
   direto (`$"{valor}"`) usa a cultura do Windows: a memória muda de hash entre máquinas. Os testes do Core rodam numa
   cultura "hostil" (`CulturaDosTestes`, separador decimal `‹d›`) para isso falhar também na nuvem, que não é pt-BR.
 - Finais de linha: LF em todo checkout (`.gitattributes`: `* text=auto eol=lf`). Com CRLF no Windows, testes que
-  substituem trechos com `
-` em JSON lidos do disco passavam na nuvem e falhavam aqui.
+  substituem trechos com `\n` em JSON lidos do disco passavam na nuvem e falhavam aqui.
 - `Ampere.Core` compila para net8.0: nada de API do .NET 9+ (ex.: `System.Threading.Lock`), mesmo que o teste em net10.0
   passe.
 - PDFsharp: `GlobalFontSettings.FontResolver` é global e só aceita um registro por processo. `FontesDoRelatorio.Registrar()`
