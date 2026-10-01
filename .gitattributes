@@ -1,5 +1,3 @@
-# Normaliza finais de linha: LF no repositório, checkout conforme a plataforma.
-* text=auto
-
-# Golden files: comparados byte a byte pelos testes, LF em qualquer plataforma.
-tests/Ampere.Tests.Core/Relatorios/Referencias/** text eol=lf
+# Finais de linha: LF no repositório e em qualquer checkout (Windows e nuvem). Os testes leem JSON do disco e fazem
+# substituições com "\n"; com CRLF no Windows, passavam na nuvem e falhavam aqui. Recursos embutidos ficam iguais.
+* text=auto eol=lf
