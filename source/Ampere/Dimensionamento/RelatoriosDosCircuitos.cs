@@ -7,20 +7,21 @@ using Ampere.Relatorios;
 namespace Ampere.Dimensionamento;
 
 /// <summary>
-///     Grava a memória (JSON), o relatório (Markdown) e o PDF de cada circuito com memória em
-///     Documentos\Ampere\{projeto}\Circuitos, com o quadro, o número e o início do hash no nome. Falha de gravação não
-///     derruba o comando — o dimensionamento já está no modelo; volta como erro para o resumo. PDF indisponível (fontes
-///     do PDFsharp tomadas por outro add-in) não impede JSON e Markdown.
+///     Grava em Documentos\Ampere\{projeto}\Circuitos a planilha de todos os circuitos (circuitos.csv, refeita a cada
+///     rodada) e a memória (JSON), o relatório (Markdown) e o PDF de cada circuito com memória, com o quadro, o número e o
+///     início do hash no nome. Falha de gravação não derruba o comando — o dimensionamento já está no modelo; volta como
+///     erro para o resumo. PDF indisponível (fontes do PDFsharp tomadas por outro add-in) não impede JSON e Markdown.
 /// </summary>
 internal static class RelatoriosDosCircuitos
 {
     public const string Subpasta = "Circuitos";
+    public const string NomeDaPlanilha = "circuitos.csv";
 
-    /// <summary>Retorna a pasta (nula se nada foi gravado), quantos circuitos saíram e os erros.</summary>
-    public static (string? Pasta, int Gerados, IReadOnlyList<string> Erros) Gravar(IReadOnlyList<ResultadoDoCircuito> resultados, string nomeDoProjeto)
+    /// <summary>A pasta (nula se nada foi gravado), quantas memórias saíram, a planilha (nula se não foi gravada) e os erros.</summary>
+    public static (string? Pasta, int Gerados, string? Planilha, IReadOnlyList<string> Erros) Gravar(
+        IReadOnlyList<ResultadoDoCircuito> resultados, string nomeDoProjeto)
     {
-        var comMemoria = resultados.Where(resultado => resultado.Memoria is not null).ToList();
-        if (comMemoria.Count == 0) return (null, 0, []);
+        if (resultados.Count == 0) return (null, 0, null, []);
 
         var pasta = PastaDeRelatorios.Caminho(nomeDoProjeto, Subpasta);
         try
@@ -29,10 +30,23 @@ internal static class RelatoriosDosCircuitos
         }
         catch (Exception excecao) when (excecao is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
-            return (null, 0, [$"não foi possível criar a pasta {pasta}: {excecao.Message}"]);
+            return (null, 0, null, [$"não foi possível criar a pasta {pasta}: {excecao.Message}"]);
         }
 
         var erros = new List<string>();
+        string? planilha = Path.Combine(pasta, NomeDaPlanilha);
+        try
+        {
+            // Com BOM: o Excel só reconhece os acentos de um CSV em UTF-8 se ele começar com a marca.
+            File.WriteAllText(planilha, PlanilhaDeCircuitos.Csv(resultados), new UTF8Encoding(true));
+        }
+        catch (Exception excecao) when (excecao is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            erros.Add($"planilha {NomeDaPlanilha} (aberta no Excel?): {excecao.Message}");
+            planilha = null;
+        }
+
+        var comMemoria = resultados.Where(resultado => resultado.Memoria is not null).ToList();
         var gerados = 0;
         var pdfDisponivel = true;
         foreach (var resultado in comMemoria)
@@ -56,6 +70,6 @@ internal static class RelatoriosDosCircuitos
             }
         }
 
-        return (gerados > 0 ? pasta : null, gerados, erros);
+        return (gerados > 0 || planilha is not null ? pasta : null, gerados, planilha, erros);
     }
 }

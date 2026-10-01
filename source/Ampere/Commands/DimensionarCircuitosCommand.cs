@@ -76,10 +76,10 @@ public class DimensionarCircuitosCommand : ExternalCommand
             return;
         }
 
-        var (pasta, gerados, errosDeDisco) = RelatoriosDosCircuitos.Gravar(resultados, Path.GetFileNameWithoutExtension(documento.PathName));
+        var (pasta, gerados, planilha, errosDeDisco) = RelatoriosDosCircuitos.Gravar(resultados, Path.GetFileNameWithoutExtension(documento.PathName));
         cronometro.Stop();
 
-        TaskDialog.Show(TituloDaJanela, ResumoDoDimensionamento.Texto(resultados, perfil, cronometro.Elapsed, pasta, gerados, errosDeDisco));
+        TaskDialog.Show(TituloDaJanela, ResumoDoDimensionamento.Texto(resultados, perfil, cronometro.Elapsed, pasta, gerados, planilha, errosDeDisco));
     }
 
     private void Cancelar(string mensagem)

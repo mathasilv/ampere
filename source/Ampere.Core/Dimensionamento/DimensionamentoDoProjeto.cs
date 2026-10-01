@@ -21,12 +21,16 @@ public interface IDocumentoDeDimensionamento : IDocumentoTransacional
 
 /// <summary>Resultado de um circuito: o dimensionamento, ou os problemas de dados que o impediram.</summary>
 /// <param name="Quadro">AMP_Quadro do circuito (para relatórios e resumo).</param>
+/// <param name="TipoDeCarga">AMP_TipoCarga do circuito, como lido.</param>
+/// <param name="PotenciaVA">Soma das potências dos pontos; nula se algum ponto não tem potência.</param>
 public sealed record ResultadoDoCircuito(
     long Id,
     string? Numero,
     ResultadoDoDimensionamento? Dimensionamento,
     IReadOnlyList<string> ProblemasDeDados,
-    string? Quadro = null)
+    string? Quadro = null,
+    string? TipoDeCarga = null,
+    decimal? PotenciaVA = null)
 {
     /// <summary>A memória a gravar, se o circuito chegou a ser calculado.</summary>
     public MemoriaDeCalculo? Memoria => Dimensionamento?.Memoria;
@@ -55,9 +59,13 @@ public static class DimensionamentoDoProjeto
             .Select(dados =>
             {
                 var montada = EntradaDoCircuito.Montar(dados, condicoes);
+                var potencia = dados.Pontos.Count > 0 && dados.Pontos.All(ponto => ponto.PotenciaVA is not null)
+                    ? dados.Pontos.Sum(ponto => ponto.PotenciaVA!.Value)
+                    : (decimal?)null;
                 return montada.Entrada is null
-                    ? new ResultadoDoCircuito(dados.Id, dados.Numero, null, montada.Problemas, dados.Quadro)
-                    : new ResultadoDoCircuito(dados.Id, dados.Numero, DimensionamentoDeCircuito.Dimensionar(montada.Entrada, perfil, catalogos), [], dados.Quadro);
+                    ? new ResultadoDoCircuito(dados.Id, dados.Numero, null, montada.Problemas, dados.Quadro, dados.TipoDeCarga, potencia)
+                    : new ResultadoDoCircuito(dados.Id, dados.Numero, DimensionamentoDeCircuito.Dimensionar(montada.Entrada, perfil, catalogos), [],
+                        dados.Quadro, dados.TipoDeCarga, potencia);
             })
             .ToList();
 

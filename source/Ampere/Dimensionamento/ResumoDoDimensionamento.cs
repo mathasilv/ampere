@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text;
 using Ampere.Core.Dimensionamento;
 using Ampere.Core.Normas;
@@ -11,7 +12,7 @@ internal static class ResumoDoDimensionamento
 
     public static string Texto(
         IReadOnlyList<ResultadoDoCircuito> resultados, PerfilNormativo perfil, TimeSpan tempo,
-        string? pastaDosRelatorios, int relatoriosGerados, IReadOnlyList<string> errosDeGravacao)
+        string? pastaDosRelatorios, int relatoriosGerados, string? planilha, IReadOnlyList<string> errosDeGravacao)
     {
         var texto = new StringBuilder();
         var dimensionados = resultados.Count(resultado => resultado.Dimensionamento?.Situacao == SituacaoDoDimensionamento.Dimensionado);
@@ -35,6 +36,7 @@ internal static class ResumoDoDimensionamento
         {
             texto.AppendLine();
             texto.AppendLine($"Memórias gravadas (JSON, Markdown e PDF): {relatoriosGerados}");
+            if (planilha is not null) texto.AppendLine($"Planilha de todos os circuitos: {Path.GetFileName(planilha)}");
             texto.AppendLine(pastaDosRelatorios);
         }
 
