@@ -98,7 +98,19 @@ quebre R2025/R2026: perguntar antes de aposentar essas configurações.
   (`*.pdf.txt`), igual em qualquer máquina porque a métrica vem das fontes embutidas.
 - Parâmetro AMP_* que o dimensionamento grava (ex.: `AMP_IDR_SensibilidadeMa`) não pode ser lido de volta como
   entrada: na rodada seguinte o valor calculado viraria "decisão do projetista". Decisão manual precisa de fonte
-  própria (ex.: `DecisaoDeIdr` do Core, alimentada por um campo que o motor nunca escreve).
+  própria (ex.: `DecisaoDeIdr` do Core, alimentada por um campo que o motor nunca escreve). O mesmo vale ao contrário:
+  entrada (`AMP_ComprimentoRotaM`, `AMP_MetodoInstalacao`, padrões do projeto) nunca é gravada pelo dimensionamento.
+- Parâmetro compartilhado numérico não volta a "sem valor" (`Parameter.ClearValue` só funciona com HideWhenNoValue, que
+  a injeção não usa). Resultado que deixou de valer é apagado com 0 por `ParametrosAmpere.GravarNumeroOuApagar` (texto:
+  vazio); nunca deixe o valor da rodada anterior no modelo.
+- `AMP_MemoriaCalculoId`: no circuito é a memória do dimensionamento; no quadro (painel), a do quadro de cargas.
+- Comprimento do circuito: leia `RBS_ELEC_CIRCUIT_LENGTH_PARAM` — `ElectricalSystem.Length` lança exceção quando o
+  comprimento é zero ou o circuito não tem quadro.
+- TUnit: `IsEquivalentTo` sobre `IEnumerable<string?>` não compila (CS8631, restrição de nulidade) — compare
+  `string.Join` com `IsEqualTo`.
+- Sessão sem Windows (nuvem, Linux): o SDK do apt (10.0.1xx) não atende o `global.json` (10.0.300) — ajuste-o só na
+  cópia local, sem commit. O add-in e os testes de integração compilam com `-p:EnableWindowsTargeting=true` (API do Revit
+  vem do NuGet); os testes de integração só rodam no Windows com o Revit.
 
 ## Commits
 

@@ -64,15 +64,41 @@ Não são valores de norma, mas decisões de engenharia do `DimensionamentoDeCir
 - IDR por circuito: cada circuito que exige recebe o seu (proteção de um grupo de circuitos por um só IDR fica para o
   quadro, F1.4). I<sub>Δn</sub> = a menor máxima entre os locais dos pontos que exigem; corrente nominal = a menor da
   série com In(IDR) ≥ In(disjuntor).
+- Comprimento L: AMP_ComprimentoRotaM do circuito (projetista) ou, vazio, o "Comprimento" que o Revit calcula para o
+  circuito no modo de caminho dele (padrão: do quadro ao ponto mais distante; "todos os pontos" ou caminho editado
+  também valem e a memória registra qual). Arredondado ao milímetro. Comprimento zero do Revit é problema de dados.
+- Tipo de condutor ou de eletroduto não informado não bloqueia o circuito: o cálculo vai até o IDR e para no
+  eletroduto, explicando o que falta (enquanto os catálogos estão vazios, para sempre ali — GAP-004).
 - Ponto sem local ou local fora da tabela interrompe o cálculo, a menos que o projetista decida. A decisão do
   projetista prevalece; a memória registra o que a tabela daria e o resultado traz um aviso quando divergem.
 - O IDR é calculado antes do eletroduto: um impedimento no IDR deixa o eletroduto sem cálculo.
 
-## Descoberto na preparação do comando "Dimensionar" (30/09/2026)
+## Comando "Dimensionar" — decisões e pendências (01/10/2026)
 
-- **Local do ponto não tem parâmetro AMP_***: o vocabulário de locais da tabela de IDR (5.1.3.2.2) não chega ao Revit — o dimensionamento no documento interromperia na exigência de IDR (motor já trata com explicação). Próximo passo: decidir GUID novo `AMP_Local` no catálogo versionado (regra dos GUIDs congelados) ou padrão de projeto em `CondicoesDoProjeto`.
-- `AMP_ComprimentoRotaM` também não é gravado por nenhum comando (necessário à queda de tensão): definir origem (desenho da fiação? digitado?) antes do comando.
-- Adapter `IDocumentoDeDimensionamento` (ler circuitos/gravar resultados em AMP_*) é o elo restante; contratos no Core prontos (`DadosDoCircuito`, `CondicoesDoProjeto`, `ResultadoDoCircuito`).
+Resolvido (decisões do usuário):
+
+- ✅ Local do ponto: parâmetro novo `AMP_Local` (catálogo 0.2, GUID novo registrado no `$meta`), preenchido no
+  "Classificar cargas" com os locais da tabela de IDR do perfil.
+- ✅ Comprimento: `AMP_ComprimentoRotaM` informado prevalece; vazio, vale o calculado pelo Revit. O Ampere nunca grava o
+  comprimento de volta.
+- ✅ `AMP_MemoriaCalculoId`: no circuito, a memória do dimensionamento; no quadro (categoria ampliada no catálogo 0.2), a
+  memória do quadro de cargas.
+- ✅ Adapter `DocumentoDeDimensionamentoRevit` e comando "Dimensionar circuitos".
+
+Comportamento do modelo a validar pelo projetista:
+
+- Resultado que deixou de ser calculado (IDR que deixou de ser exigido, circuito que perdeu um dado, cálculo que parou
+  antes) apaga o valor anterior. O Revit não devolve parâmetro compartilhado numérico a "sem valor" (`ClearValue` exige
+  HideWhenNoValue, que a injeção não usa): o valor anterior vira **0**; parâmetro que nunca teve valor continua vazio.
+  Em tabelas, 0 em AMP_IDR_* = sem IDR; 0 nos demais = não calculado (ver a memória).
+
+Pendente:
+
+- **Decisão do projetista sobre o IDR** (`DecisaoDeIdr`, já no Core) não tem fonte no modelo: o comando passa sempre
+  "sem decisão" e a tabela por local decide. Precisa de um campo que o motor nunca escreve (AMP_IDR_SensibilidadeMa é
+  resultado — ler de volta transformaria o cálculo em "decisão"): parâmetro novo (GUID novo, decisão do usuário) ou
+  campo no diálogo por circuito.
+- Seleção: o comando dimensiona todos os circuitos do Ampere no projeto; dimensionar só os selecionados fica para depois.
 
 ## Previstas (ainda sem código)
 

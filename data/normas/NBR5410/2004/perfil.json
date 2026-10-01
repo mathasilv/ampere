@@ -4,7 +4,7 @@
     "versao": "2004",
     "data": "2026-09-30",
     "ficticio": false,
-    "situacao": "Pacote 1 preenchido (itens 5.3.4.1, 6.2.7.1/2, 6.2.11.1.6; Tabelas 40-ar e 42-feixe). Pendentes: Tabelas 36/37 (capacidade), 47 (seção mínima), 40-solo, fatores de demanda, IDR — ver data/DATA_GAPS.md."
+    "situacao": "Pacotes 1 a 4 preenchidos (itens 5.1.3.2.2, 5.3.4.1, 6.2.6.1.1, 6.2.7.1/2, 6.2.11.1.6; Tabelas 36, 37, 40-ar, 42-feixe e 47; séries de proteção). Pendentes: Tabela 40-solo, Tabelas 38-39 (métodos E, F, G), fatores de demanda e as regras condutores_no_eletroduto, coordenacao_idr_disjuntor e demanda_do_quadro — ver data/DATA_GAPS.md."
   },
   "perfil": "NBR5410:2004",
   "regras": {
