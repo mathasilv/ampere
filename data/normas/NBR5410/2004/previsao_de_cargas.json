@@ -35,7 +35,8 @@
       {
         "comodo": "Varanda",
         "alinea": "c",
-        "minimo": 1
+        "minimo": 1,
+        "tomada_fora_do_comodo": "admite-se o ponto próximo do acesso, fora da varanda, quando ela não o comporta por razões construtivas, tem menos de 2 m² ou menos de 0,80 m de profundidade (nota da alínea c)"
       },
       {
         "comodo": "Sala ou dormitório",
@@ -47,7 +48,9 @@
         "alinea": "e",
         "minimo": 1,
         "perimetro_por_ponto_m": 5,
-        "perimetro_acima_de_m2": 6
+        "perimetro_acima_de_m2": 6,
+        "tomada_fora_do_comodo": "com até 2,25 m², admite-se o ponto fora do cômodo, a até 0,80 m da porta de acesso",
+        "tomada_fora_do_comodo_ate_m2": 2.25
       }
     ]
   },

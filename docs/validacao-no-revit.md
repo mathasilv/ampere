@@ -33,14 +33,14 @@ Use um projeto de teste com arquitetura vinculada ou com ambientes (Rooms/Spaces
    Chuveiro). Reclassifique o chuveiro como TUG e de volta: o aparelho deve sumir e precisar ser escolhido de novo.
 3. **Locais pelos ambientes.** O diálogo deve listar os ambientes com os pontos. Escolha um local para cada ambiente
    (banheiro = "Local com banheira ou chuveiro").
-4. **Previsão de cargas.** O diálogo deve listar os nomes de ambiente. Escolha "Sala ou dormitório" para um quarto
-   e "Banheiro" para o banheiro. O resumo deve dizer quantos cômodos atendem; um quarto de 12 m² com uma luminária de
+4. **Previsão de cargas.** O diálogo deve listar os nomes de ambiente. Escolha "Sala ou dormitório" para um quarto e
+   para a sala, "Banheiro" para o banheiro e "Cozinha, copa, área de serviço ou lavanderia" para a cozinha. O resumo deve dizer quantos cômodos atendem; um quarto de 12 m² com uma luminária de
    100 VA deve aparecer com "iluminação de 100 VA, abaixo dos 160 VA mínimos". Rode de novo: o diálogo deve abrir com
    as categorias escolhidas (guardadas no projeto), também depois de fechar e reabrir. Em `Documentos\Ampere\{projeto}\Previsao`
    devem sair `previsao.md` e `previsao.csv`. Com a arquitetura em vínculo, os Rooms do vínculo devem aparecer. Depois
    do 'Criar circuitos' (passo 5), ponha uma tomada da cozinha e uma da sala no mesmo circuito e rode de novo: o resumo
    deve apontar a divisão dos circuitos ("tomadas de cozinha ou área de serviço com 1 ponto de outro tipo ou de outro
-   cômodo").
+   cômodo"). Um ambiente de uma fase anterior (ex.: "Existente") não deve aparecer.
 5. **Criar circuitos.** Os circuitos devem ser numerados no quadro escolhido.
 6. **Dimensionar circuitos** (sem seleção).
    - O diálogo abre vazio na primeira vez. Nas vezes seguintes, abre com as condições guardadas no modelo; feche e

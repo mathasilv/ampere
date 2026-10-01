@@ -34,10 +34,11 @@ internal static class BuscaDeAmbiente
             .OfCategory(BuiltInCategory.OST_RvtLinks)
             .OfClass(typeof(RevitLinkInstance))
             .Cast<RevitLinkInstance>()
-            .Select(vinculo => new VinculoDeAmbientes(vinculo.GetLinkDocument(), vinculo.GetTotalTransform().Inverse, vinculo.Id.Value))
+            .Select(vinculo => new VinculoDeAmbientes(vinculo.GetLinkDocument(), vinculo.GetTotalTransform().Inverse, vinculo.Id.Value, vinculo.Name))
             .Where(vinculo => vinculo.Documento is not null)
             .ToList();
 }
 
 /// <param name="Inversa">Leva um ponto do modelo para as coordenadas do vínculo.</param>
-internal sealed record VinculoDeAmbientes(Document Documento, Transform Inversa, long Instancia);
+/// <param name="Nome">Nome da instância do vínculo no Revit (arquivo e posição), para os relatórios.</param>
+internal sealed record VinculoDeAmbientes(Document Documento, Transform Inversa, long Instancia, string Nome);

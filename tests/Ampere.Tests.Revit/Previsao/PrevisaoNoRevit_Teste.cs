@@ -31,6 +31,7 @@ public sealed class PrevisaoNoRevit_Teste : TesteComProjetoEletrico
             await Assert.That(comodo.PerimetroM).IsEqualTo(Math.Round((decimal)UnitUtils.ConvertFromInternalUnits(ambiente.Perimeter, UnitTypeId.Meters), 3));
             await Assert.That(comodo.AreaM2).IsGreaterThan(0m);
             await Assert.That(comodo.Chave).IsEqualTo($"0:{room.Id.Value}");
+            await Assert.That(comodo.Unidade).IsEqualTo("modelo");
         }
 
         // As tomadas estão numa das faces da parede do meio: todas no mesmo cômodo.

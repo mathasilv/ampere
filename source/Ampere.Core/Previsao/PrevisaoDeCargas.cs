@@ -13,6 +13,10 @@ public sealed record PontoDoComodo(long Id, TipoDeCarga Tipo, decimal? PotenciaV
 /// <param name="Chave">Identifica o cômodo no documento (o mesmo cômodo de um vínculo repetido aparece uma vez por instância).</param>
 /// <param name="Nome">Nome do ambiente: a categoria é escolhida por nome.</param>
 /// <param name="AreaM2">Área; zero = ambiente não fechado ou não colocado.</param>
+/// <param name="Unidade">
+///     Onde o cômodo está (o modelo, ou cada instância de vínculo): o conjunto dos cômodos molhados da alternativa de potência
+///     é contado por unidade. Nulo = todos numa unidade só.
+/// </param>
 public sealed record ComodoDoProjeto(
     string Chave,
     string Nome,
@@ -20,7 +24,8 @@ public sealed record ComodoDoProjeto(
     string? Pavimento,
     decimal AreaM2,
     decimal PerimetroM,
-    IReadOnlyList<PontoDoComodo> Pontos);
+    IReadOnlyList<PontoDoComodo> Pontos,
+    string? Unidade = null);
 
 /// <summary>O que a previsão lê do documento.</summary>
 /// <param name="Comodos">Rooms do modelo e dos vínculos ou, sem nenhum, Spaces, com os pontos classificados de cada um.</param>
@@ -58,7 +63,10 @@ public enum SituacaoDoComodo
     /// <summary>Atende à previsão mínima.</summary>
     Atende,
 
-    /// <summary>Atende só pela alternativa de potência admitida quando o conjunto de cômodos molhados passa do limite.</summary>
+    /// <summary>
+    ///     Atende só pela alternativa de potência admitida quando o conjunto de cômodos molhados passa do limite — o conjunto
+    ///     contado é o do modelo ou do vínculo; o projetista confere se é o da unidade habitacional.
+    /// </summary>
     AtendePelaAlternativa,
 
     NaoAtende,
@@ -91,9 +99,13 @@ public sealed record AvaliacaoDoComodo(
     IReadOnlyList<string> Observacoes);
 
 /// <summary>Resultado da previsão: um item por cômodo, na ordem do relatório, e as faltas na divisão dos circuitos.</summary>
-/// <param name="PontosNoConjunto">Pontos de tomada de uso geral no conjunto dos cômodos da potência maior (banheiros, cozinhas…).</param>
+/// <param name="PontosNoConjunto">
+///     Pontos de tomada de uso geral no conjunto dos cômodos da potência maior (banheiros, cozinhas…), por unidade (vazio = a
+///     unidade sem nome).
+/// </param>
 /// <param name="Divisao">Circuitos dos cômodos de habitação que não atendem à divisão da instalação, na ordem dos nomes.</param>
-public sealed record ResultadoDaPrevisao(IReadOnlyList<AvaliacaoDoComodo> Comodos, int PontosNoConjunto, NormaDePrevisao Norma, IReadOnlyList<FaltaDeDivisao> Divisao)
+public sealed record ResultadoDaPrevisao(
+    IReadOnlyList<AvaliacaoDoComodo> Comodos, IReadOnlyDictionary<string, int> PontosNoConjunto, NormaDePrevisao Norma, IReadOnlyList<FaltaDeDivisao> Divisao)
 {
     public int Contar(SituacaoDoComodo situacao) => Comodos.Count(comodo => comodo.Situacao == situacao);
 }
@@ -110,7 +122,10 @@ public sealed record ResultadoDaPrevisao(IReadOnlyList<AvaliacaoDoComodo> Comodo
 ///         <item>Tomadas: só os pontos TUG (a tomada de uso específico, TUE, atende a um aparelho e não entra na contagem).
 ///         Potência: nos cômodos da potência maior, os primeiros pontos (os de maior potência) precisam dela e os demais da
 ///         menor; a alternativa da norma (menos pontos com a potência maior) só vale quando o conjunto desses cômodos passa do
-///         limite — o conjunto avaliado é o do projeto todo, então o relatório pede que o projetista confira o da unidade.</item>
+///         limite — contado no modelo ou em cada instância de vínculo, que pode não ser a unidade habitacional: a situação
+///         própria pede que o projetista confira.</item>
+///         <item>Cômodo em que a norma admite a tomada fora dele (varanda, cômodo pequeno): continua com a falta, e a
+///         observação diz a admissão, que o modelo não permite conferir.</item>
 ///         <item>Ponto sem potência é falta: o cômodo não é dado como atendido com dado faltando.</item>
 ///         <item>Divisão (9.5.3), só para pontos em cômodos de habitação: equipamento acima do limite de corrente (TUE, ar
 ///         condicionado e motor — critério do Ampere para "equipamento", a TUG e a iluminação não são de um equipamento)
@@ -172,14 +187,15 @@ public static class PrevisaoDeCargas
 
         var conjunto = comodos
             .Where(comodo => comodo.AreaM2 > 0m && norma.Regra(Categoria(comodo)) is { SeiscentosVa: true })
-            .Sum(comodo => comodo.Pontos.Count(ponto => ponto.Tipo == TipoDeCarga.TUG));
+            .GroupBy(comodo => comodo.Unidade ?? string.Empty, StringComparer.Ordinal)
+            .ToDictionary(grupo => grupo.Key, grupo => grupo.Sum(comodo => comodo.Pontos.Count(ponto => ponto.Tipo == TipoDeCarga.TUG)), StringComparer.Ordinal);
 
         var avaliacoes = comodos
             .OrderBy(comodo => comodo.Pavimento ?? string.Empty, StringComparer.Ordinal)
             .ThenBy(comodo => comodo.Nome, StringComparer.Ordinal)
             .ThenBy(comodo => comodo.Numero ?? string.Empty, StringComparer.Ordinal)
             .ThenBy(comodo => comodo.Chave, StringComparer.Ordinal)
-            .Select(comodo => Avaliar(comodo, Categoria(comodo), conjunto, norma))
+            .Select(comodo => Avaliar(comodo, Categoria(comodo), conjunto.GetValueOrDefault(comodo.Unidade ?? string.Empty), norma))
             .ToList();
         // Um ponto fica num cômodo só (o adapter acha um); se vier repetido, vale o primeiro, sem exceção.
         var regraDoPonto = new Dictionary<long, RegraDoComodo>();
@@ -202,7 +218,9 @@ public static class PrevisaoDeCargas
             .Select(grupo => (Nome: leitura.Circuitos.GetValueOrDefault(grupo.Key) ?? $"circuito {grupo.Key}", Pontos: grupo.OrderBy(ponto => ponto.Id).ToList()))
             .OrderBy(circuito => circuito.Nome, StringComparer.Ordinal);
         bool NaHabitacao(PontoDoComodo ponto) => regraDoPonto.ContainsKey(ponto.Id);
-        bool DeCozinha(PontoDoComodo ponto) => ponto.Tipo == TipoDeCarga.TUG && regraDoPonto.GetValueOrDefault(ponto.Id) is { CircuitoExclusivo: true };
+        // Ponto de tomada (TUG ou TUE) num cômodo de circuito exclusivo: a TUE acima do limite já cai na regra anterior.
+        bool DeCozinha(PontoDoComodo ponto) =>
+            (ponto.Tipo is TipoDeCarga.TUG or TipoDeCarga.TUE) && regraDoPonto.GetValueOrDefault(ponto.Id) is { CircuitoExclusivo: true };
 
         foreach (var (nome, pontos) in porCircuito)
         {
@@ -220,7 +238,7 @@ public static class PrevisaoDeCargas
                     acimaDoLimite.Select(par => par.Ponto.Id).ToList()));
             }
 
-            if (pontos.Any(DeCozinha) && pontos.Where(ponto => !DeCozinha(ponto)).ToList() is { Count: > 0 } outros)
+            if (pontos.Any(ponto => ponto.Tipo == TipoDeCarga.TUG && DeCozinha(ponto)) && pontos.Where(ponto => !DeCozinha(ponto)).ToList() is { Count: > 0 } outros)
             {
                 faltas.Add(new FaltaDeDivisao("tomadas de cozinha", nome,
                     $"tomadas de cozinha ou área de serviço com {Contagem(outros.Count, "ponto", "pontos")} de outro tipo ou de outro cômodo: " +
@@ -266,7 +284,11 @@ public static class PrevisaoDeCargas
 
         var tomadasMinimas = regra.PontosMinimos(comodo.AreaM2, comodo.PerimetroM);
         if (tomadas.Count < tomadasMinimas)
+        {
             faltas.Add($"{Contagem(tomadas.Count, "ponto de tomada", "pontos de tomada")}, abaixo dos {tomadasMinimas} mínimos ({regra.Descrever()})");
+            if (regra.TomadaForaDoComodo is { } admissao && (regra.TomadaForaDoComodoAteM2 is not { } ate || comodo.AreaM2 <= ate))
+                observacoes.Add($"{admissao}: confira se é o caso");
+        }
 
         var semPotencia = comodo.Pontos.Count(ponto => (ponto.Tipo is TipoDeCarga.Iluminacao or TipoDeCarga.TUG) && ponto.PotenciaVA is null);
         if (semPotencia > 0) faltas.Add($"{Contagem(semPotencia, "ponto", "pontos")} sem AMP_PotenciaInstaladaVA");
@@ -288,8 +310,9 @@ public static class PrevisaoDeCargas
                 var descricao = $"{Contagem(comAPotenciaMaior, "ponto de tomada", "pontos de tomada")} com {N(norma.SeiscentosVA)} VA ou mais, de {exigidos} exigidos";
                 if (comAPotenciaMaior >= naAlternativa && conjunto > norma.ConjuntoAcimaDePontos)
                 {
+                    var onde = comodo.Unidade is { Length: > 0 } unidade ? $"em {unidade}" : "nos cômodos avaliados";
                     observacoes.Add($"{descricao}: atende pela alternativa de {naAlternativa}, admitida com mais de {norma.ConjuntoAcimaDePontos} pontos " +
-                                    $"no conjunto desses cômodos ({conjunto} nos cômodos avaliados; confira o conjunto da unidade)");
+                                    $"no conjunto desses cômodos da unidade ({conjunto} {onde}; confira se é uma unidade só)");
                     if (situacao == SituacaoDoComodo.Atende) situacao = SituacaoDoComodo.AtendePelaAlternativa;
                 }
                 else

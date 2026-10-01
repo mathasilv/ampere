@@ -13,6 +13,8 @@ namespace Ampere.Core.Previsao;
 /// <param name="SeiscentosVa">Cômodo em que os primeiros pontos de tomada recebem a potência maior (banheiros, cozinhas…).</param>
 /// <param name="Nota">O que a norma pede e o modelo não permite conferir (ex.: tomadas acima da bancada).</param>
 /// <param name="CircuitoExclusivo">As tomadas do cômodo vão em circuitos só de tomadas desses cômodos.</param>
+/// <param name="TomadaForaDoComodo">Quando a norma admite o ponto de tomada fora do cômodo (o modelo não mostra: o projetista confere).</param>
+/// <param name="TomadaForaDoComodoAteM2">A admissão só vale até esta área; nula = qualquer área.</param>
 public sealed record RegraDoComodo(
     string Comodo,
     string Alinea,
@@ -21,7 +23,9 @@ public sealed record RegraDoComodo(
     decimal? PerimetroAcimaDeM2,
     bool SeiscentosVa,
     string? Nota,
-    bool CircuitoExclusivo = false)
+    bool CircuitoExclusivo = false,
+    string? TomadaForaDoComodo = null,
+    decimal? TomadaForaDoComodoAteM2 = null)
 {
     /// <summary>Pontos de tomada mínimos para a área e o perímetro do cômodo.</summary>
     public int PontosMinimos(decimal areaM2, decimal perimetroM)
@@ -192,9 +196,23 @@ public sealed class NormaDePrevisao
                 if (comodo.Minimo is null && comodo.PerimetroPorPontoM is null) problemas.Add($"tomadas: '{nome}' sem mínimo nem perímetro por ponto");
                 if (comodo.Minimo is not null) Positivo($"tomadas: '{nome}'.minimo", comodo.Minimo);
                 if (comodo.PerimetroPorPontoM is not null) Positivo($"tomadas: '{nome}'.perimetro_por_ponto_m", comodo.PerimetroPorPontoM);
-                if (comodo.PerimetroAcimaDeM2 is not null) Positivo($"tomadas: '{nome}'.perimetro_acima_de_m2", comodo.PerimetroAcimaDeM2);
+                if (comodo.PerimetroAcimaDeM2 is not null)
+                {
+                    Positivo($"tomadas: '{nome}'.perimetro_acima_de_m2", comodo.PerimetroAcimaDeM2);
+                    if (comodo.PerimetroPorPontoM is null) problemas.Add($"tomadas: '{nome}' com perimetro_acima_de_m2 sem perimetro_por_ponto_m");
+                }
+
+                if (comodo.TomadaForaDoComodoAteM2 is not null)
+                {
+                    Positivo($"tomadas: '{nome}'.tomada_fora_do_comodo_ate_m2", comodo.TomadaForaDoComodoAteM2);
+                    if (string.IsNullOrWhiteSpace(comodo.TomadaForaDoComodo)) problemas.Add($"tomadas: '{nome}' com tomada_fora_do_comodo_ate_m2 sem tomada_fora_do_comodo");
+                }
+
+                if (string.Equals(nome, PrevisaoDeCargas.ForaDaHabitacao, StringComparison.OrdinalIgnoreCase))
+                    problemas.Add($"tomadas: '{nome}' é a categoria do Ampere para o cômodo fora da habitação");
                 regras.Add(new RegraDoComodo(nome, comodo.Alinea?.Trim() ?? string.Empty, comodo.Minimo, comodo.PerimetroPorPontoM, comodo.PerimetroAcimaDeM2,
-                    comodo.SeiscentosVa ?? false, string.IsNullOrWhiteSpace(comodo.Nota) ? null : comodo.Nota.Trim(), comodo.CircuitoExclusivo ?? false));
+                    comodo.SeiscentosVa ?? false, string.IsNullOrWhiteSpace(comodo.Nota) ? null : comodo.Nota.Trim(), comodo.CircuitoExclusivo ?? false,
+                    string.IsNullOrWhiteSpace(comodo.TomadaForaDoComodo) ? null : comodo.TomadaForaDoComodo.Trim(), comodo.TomadaForaDoComodoAteM2));
             }
 
             if (regras.Count == 0) problemas.Add("tomadas: nenhum cômodo");
@@ -216,6 +234,8 @@ public sealed class NormaDePrevisao
             Positivo("potencia_das_tomadas.pontos_de_seiscentos_na_alternativa", potencia.PontosDeSeiscentosNaAlternativa);
             Positivo("potencia_das_tomadas.conjunto_acima_de_pontos", potencia.ConjuntoAcimaDePontos);
             Positivo("potencia_das_tomadas.demais_va", potencia.DemaisVa);
+            if (potencia.PontosDeSeiscentosNaAlternativa > potencia.PontosDeSeiscentos)
+                problemas.Add("potencia_das_tomadas: a alternativa não pode exigir mais pontos de potência maior que a regra");
         }
 
         if (arquivo.Meta?.Ficticio == false && referencias.Any(referencia => Normalizar(referencia).Contains("FICTICIO")))
@@ -260,7 +280,8 @@ internal sealed record IluminacaoJson(string? Ref, int? PontosMinimos, decimal? 
 internal sealed record TomadasJson(string? Ref, List<ComodoJson>? Comodos);
 
 internal sealed record ComodoJson(
-    string? Comodo, string? Alinea, int? Minimo, decimal? PerimetroPorPontoM, decimal? PerimetroAcimaDeM2, bool? SeiscentosVa, string? Nota, bool? CircuitoExclusivo);
+    string? Comodo, string? Alinea, int? Minimo, decimal? PerimetroPorPontoM, decimal? PerimetroAcimaDeM2, bool? SeiscentosVa, string? Nota, bool? CircuitoExclusivo,
+    string? TomadaForaDoComodo, decimal? TomadaForaDoComodoAteM2);
 
 internal sealed record DivisaoJson(string? Ref, decimal? CorrenteIndependenteAcimaDeA);
 

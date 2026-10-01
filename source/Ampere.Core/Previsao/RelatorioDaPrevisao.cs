@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using Ampere.Core.Relatorios;
 
@@ -35,8 +36,11 @@ public static class RelatorioDaPrevisao
             texto.Append($"  - {regra.Comodo} (alínea {regra.Alinea}): {regra.Descrever()}; {potencia}.\n");
         }
 
-        texto.Append($"- **Potência das tomadas** ({norma.ReferenciaDaPotencia}). Pontos de tomada de uso geral no conjunto dos cômodos da potência maior: " +
-                     $"{resultado.PontosNoConjunto}.\n");
+        var conjuntos = resultado.PontosNoConjunto.OrderBy(par => par.Key, StringComparer.Ordinal)
+            .Select(par => par.Key.Length == 0 ? par.Value.ToString(CultureInfo.InvariantCulture) : $"{par.Key}: {par.Value.ToString(CultureInfo.InvariantCulture)}")
+            .ToList();
+        texto.Append($"- **Potência das tomadas** ({norma.ReferenciaDaPotencia}). Pontos de tomada de uso geral no conjunto dos cômodos da potência maior, " +
+                     $"por unidade: {(conjuntos.Count == 0 ? "nenhum" : string.Join("; ", conjuntos))}.\n");
         texto.Append($"- **Divisão em circuitos** ({norma.ReferenciaDaDivisao}): equipamento (TUE, ar condicionado ou motor) acima de " +
                      $"{N(norma.CorrenteIndependenteAcimaDeA)} A em circuito próprio; tomadas das categorias com circuito exclusivo " +
                      $"({string.Join(", ", norma.Comodos.Where(regra => regra.CircuitoExclusivo).Select(regra => regra.Comodo))}) em circuitos só delas.\n");
@@ -90,7 +94,7 @@ public static class RelatorioDaPrevisao
         var partes = new List<string>
         {
             $"{avaliados} avaliado(s): {resultado.Contar(SituacaoDoComodo.Atende)} atende(m), " +
-            $"{resultado.Contar(SituacaoDoComodo.AtendePelaAlternativa)} pela alternativa de potência, {resultado.Contar(SituacaoDoComodo.NaoAtende)} não atende(m)"
+            $"{resultado.Contar(SituacaoDoComodo.AtendePelaAlternativa)} pela alternativa de potência (conferir a unidade), {resultado.Contar(SituacaoDoComodo.NaoAtende)} não atende(m)"
         };
         if (resultado.Contar(SituacaoDoComodo.SemCategoria) is > 0 and var semCategoria) partes.Add($"{semCategoria} sem categoria");
         if (resultado.Contar(SituacaoDoComodo.ForaDaHabitacao) is > 0 and var fora) partes.Add($"{fora} fora da habitação");
@@ -104,7 +108,7 @@ public static class RelatorioDaPrevisao
     public static string Situacao(SituacaoDoComodo situacao) => situacao switch
     {
         SituacaoDoComodo.Atende => "Atende",
-        SituacaoDoComodo.AtendePelaAlternativa => "Atende pela alternativa",
+        SituacaoDoComodo.AtendePelaAlternativa => "Atende pela alternativa (conferir a unidade)",
         SituacaoDoComodo.NaoAtende => "Não atende",
         SituacaoDoComodo.SemCategoria => "Sem categoria",
         SituacaoDoComodo.ForaDaHabitacao => "Fora da habitação",

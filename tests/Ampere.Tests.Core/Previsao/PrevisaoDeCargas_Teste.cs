@@ -60,6 +60,12 @@ public class NormaDePrevisao_Teste
             .Throws<PrevisaoInvalidaException>().WithMessageContaining("arquivo real com referência fictícia");
         await Assert.That(() => NormaDePrevisao.Carregar(json.Replace("\"perimetro_por_ponto_m\": 3.5,", "\"perimetro_por_ponto_m\": 0,")))
             .Throws<PrevisaoInvalidaException>().WithMessageContaining("perimetro_por_ponto_m: ausente ou não positivo");
+        await Assert.That(() => NormaDePrevisao.Carregar(json.Replace("\"pontos_de_seiscentos_na_alternativa\": 2,", "\"pontos_de_seiscentos_na_alternativa\": 4,")))
+            .Throws<PrevisaoInvalidaException>().WithMessageContaining("a alternativa não pode exigir mais pontos");
+        await Assert.That(() => NormaDePrevisao.Carregar(json.Replace("\"comodo\": \"Varanda\",", "\"comodo\": \"Não é local de habitação\",")))
+            .Throws<PrevisaoInvalidaException>().WithMessageContaining("é a categoria do Ampere para o cômodo fora da habitação");
+        await Assert.That(() => NormaDePrevisao.Carregar(json.Replace("\"perimetro_por_ponto_m\": 5,\n        \"perimetro_acima_de_m2\"", "\"perimetro_acima_de_m2\"")))
+            .Throws<PrevisaoInvalidaException>().WithMessageContaining("com perimetro_acima_de_m2 sem perimetro_por_ponto_m");
     }
 
     private static string Recurso()
@@ -102,10 +108,43 @@ public class PrevisaoDeCargas_Teste
 
         await Assert.That(sozinha.Situacao).IsEqualTo(SituacaoDoComodo.NaoAtende);
         await Assert.That(sozinha.Faltas.Single()).IsEqualTo("2 pontos de tomada com 600 VA ou mais, de 3 exigidos");
-        await Assert.That(comBanheiros.PontosNoConjunto).IsEqualTo(7);
+        await Assert.That(comBanheiros.PontosNoConjunto[""]).IsEqualTo(7);
         var cozinhaNoConjunto = comBanheiros.Comodos.Single(avaliacao => avaliacao.Comodo.Nome == "Cozinha");
         await Assert.That(cozinhaNoConjunto.Situacao).IsEqualTo(SituacaoDoComodo.AtendePelaAlternativa);
-        await Assert.That(cozinhaNoConjunto.Observacoes[0]).Contains("atende pela alternativa de 2, admitida com mais de 6 pontos no conjunto desses cômodos (7 nos cômodos avaliados");
+        await Assert.That(cozinhaNoConjunto.Observacoes[0]).Contains(
+            "atende pela alternativa de 2, admitida com mais de 6 pontos no conjunto desses cômodos da unidade (7 nos cômodos avaliados; confira se é uma unidade só)");
+    }
+
+    [Test]
+    public async Task Conjunto_da_alternativa_e_contado_por_unidade()
+    {
+        // Dez apartamentos (vínculos) com cozinha 600 + 600 + 100 e banheiro 600: 4 pontos por unidade, nenhuma passa de 6.
+        var comodos = Enumerable.Range(1, 10).SelectMany(apartamento => new[]
+        {
+            Comodo("Cozinha", 9m, 10m, Luz(100m), Tug(600m), Tug(600m), Tug(100m)) with { Chave = $"c{apartamento}", Unidade = $"vínculo Apto {apartamento}" },
+            Comodo("Banho", 3m, 7m, Luz(100m), Tug(600m)) with { Chave = $"b{apartamento}", Unidade = $"vínculo Apto {apartamento}" }
+        }).ToList();
+
+        var resultado = Avaliar(comodos, ("Cozinha", Cozinha), ("Banho", "Banheiro"));
+
+        await Assert.That(resultado.PontosNoConjunto.Values.Distinct().Single()).IsEqualTo(4);
+        await Assert.That(resultado.Contar(SituacaoDoComodo.NaoAtende)).IsEqualTo(10);
+        await Assert.That(resultado.Contar(SituacaoDoComodo.AtendePelaAlternativa)).IsEqualTo(0);
+        await Assert.That(RelatorioDaPrevisao.Markdown(resultado)).Contains("por unidade: vínculo Apto 1: 4; vínculo Apto 10: 4;");
+    }
+
+    [Test]
+    public async Task Comodo_pequeno_sem_tomada_tem_a_falta_e_a_admissao_da_tomada_fora_dele()
+    {
+        var lavabo = Comodo("Lavabo", 2m, 6m, Luz(100m));
+        var deposito = Comodo("Depósito", 5m, 9m, Luz(100m));
+
+        var resultado = Avaliar([lavabo, deposito], ("Lavabo", "Demais cômodos"), ("Depósito", "Demais cômodos"));
+
+        var doLavabo = resultado.Comodos.Single(avaliacao => avaliacao.Comodo.Nome == "Lavabo");
+        await Assert.That(doLavabo.Situacao).IsEqualTo(SituacaoDoComodo.NaoAtende);
+        await Assert.That(doLavabo.Observacoes.Single()).IsEqualTo("com até 2,25 m², admite-se o ponto fora do cômodo, a até 0,80 m da porta de acesso: confira se é o caso");
+        await Assert.That(resultado.Comodos.Single(avaliacao => avaliacao.Comodo.Nome == "Depósito").Observacoes).IsEmpty();
     }
 
     [Test]
@@ -146,7 +185,7 @@ public class PrevisaoDeCargas_Teste
         await Assert.That(string.Join("|", resultado.Comodos.Select(avaliacao => $"{avaliacao.Comodo.Nome}:{avaliacao.Situacao}")))
             .IsEqualTo("Depósito:SemCategoria|Hall:SemArea|Loja:ForaDaHabitacao");
         await Assert.That(RelatorioDaPrevisao.Resumo(resultado))
-            .IsEqualTo("0 avaliado(s): 0 atende(m), 0 pela alternativa de potência, 0 não atende(m); 1 sem categoria; 1 fora da habitação; 1 sem área");
+            .IsEqualTo("0 avaliado(s): 0 atende(m), 0 pela alternativa de potência (conferir a unidade), 0 não atende(m); 1 sem categoria; 1 fora da habitação; 1 sem área");
     }
 
     [Test]
@@ -181,6 +220,10 @@ public class PrevisaoDeCargas_Teste
         var comSala = Avaliar(Leitura([cozinha, sala], foraDeComodo), ("Cozinha", Cozinha), ("Sala", "Sala ou dormitório"));
 
         await Assert.That(mesmaCategoria.Divisao).IsEmpty();
+        // A TUE da cozinha (até 10 A) é ponto de tomada do cômodo: pode ficar no circuito exclusivo.
+        var comTue = Avaliar(Leitura([Comodo("Cozinha", 9m, 10m, new PontoDoComodo(64, TipoDeCarga.TUG, 600m, 1), new PontoDoComodo(65, TipoDeCarga.TUE, 1200m, 1, 127m, "F+N"))]),
+            ("Cozinha", Cozinha));
+        await Assert.That(comTue.Divisao).IsEmpty();
         var falta = comSala.Divisao.Single();
         await Assert.That(falta.Regra).IsEqualTo("tomadas de cozinha");
         await Assert.That(falta.Descricao).StartsWith("tomadas de cozinha ou área de serviço com 2 pontos de outro tipo ou de outro cômodo");

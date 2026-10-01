@@ -16,7 +16,9 @@ namespace Ampere.Revit.Previsao;
 ///     <list type="bullet">
 ///         <item>Cômodos: os Rooms colocados do modelo e dos vínculos carregados (um por instância de vínculo: o
 ///         apartamento-tipo repetido conta em cada posição); sem nenhum Room, os Spaces do modelo. Nunca os dois juntos —
-///         o mesmo cômodo contaria duas vezes.</item>
+///         o mesmo cômodo contaria duas vezes. Só os da última fase de cada documento (a fase em que o Revit acha o
+///         ambiente de um ponto) e fora das opções de projeto secundárias. A unidade de cada cômodo é o modelo ou a
+///         instância de vínculo.</item>
 ///         <item>Pontos: os de <see cref="PontosDeCarga" /> com AMP_TipoCarga, no cômodo achado pela mesma busca dos "Locais
 ///         pelos ambientes" (<see cref="BuscaDeAmbiente" />), mas só entre os cômodos listados; os outros vão como fora dos
 ///         cômodos. Circuito do ponto: o circuito de força de que ele é membro (o de menor Id, se houver mais de um), com o
@@ -41,11 +43,11 @@ public sealed class DocumentoDePrevisaoRevit(Document documento) : IDocumentoDeP
     public LeituraDaPrevisao Ler()
     {
         var vinculos = BuscaDeAmbiente.Vinculos(documento);
-        var ambientes = Ambientes(documento, 0, BuiltInCategory.OST_Rooms)
-            .Concat(vinculos.SelectMany(vinculo => Ambientes(vinculo.Documento, vinculo.Instancia, BuiltInCategory.OST_Rooms)))
+        var ambientes = Ambientes(documento, 0, "modelo", BuiltInCategory.OST_Rooms)
+            .Concat(vinculos.SelectMany(vinculo => Ambientes(vinculo.Documento, vinculo.Instancia, $"vínculo {vinculo.Nome}", BuiltInCategory.OST_Rooms)))
             .ToList();
         var espacos = ambientes.Count == 0;
-        if (espacos) ambientes = Ambientes(documento, 0, BuiltInCategory.OST_MEPSpaces).ToList();
+        if (espacos) ambientes = Ambientes(documento, 0, "modelo", BuiltInCategory.OST_MEPSpaces).ToList();
         var listados = ambientes.Select(ambiente => ambiente.Chave).ToHashSet(StringComparer.Ordinal);
 
         var pontos = new Dictionary<string, List<PontoDoComodo>>(StringComparer.Ordinal);
@@ -77,7 +79,7 @@ public sealed class DocumentoDePrevisaoRevit(Document documento) : IDocumentoDeP
 
         var comodos = ambientes
             .Select(ambiente => new ComodoDoProjeto(ambiente.Chave, ambiente.Nome, ambiente.Numero, ambiente.Pavimento, ambiente.AreaM2, ambiente.PerimetroM,
-                pontos.TryGetValue(ambiente.Chave, out var doComodo) ? doComodo.OrderBy(ponto => ponto.Id).ToList() : []))
+                pontos.TryGetValue(ambiente.Chave, out var doComodo) ? doComodo.OrderBy(ponto => ponto.Id).ToList() : [], ambiente.Unidade))
             .ToList();
         return new LeituraDaPrevisao(comodos, fora.OrderBy(ponto => ponto.Id).ToList(), circuitos);
     }
@@ -122,24 +124,31 @@ public sealed class DocumentoDePrevisaoRevit(Document documento) : IDocumentoDeP
         return null;
     }
 
-    private static IEnumerable<Ambiente> Ambientes(Document origem, long vinculo, BuiltInCategory categoria) =>
-        new FilteredElementCollector(origem)
+    private static IEnumerable<Ambiente> Ambientes(Document origem, long vinculo, string unidade, BuiltInCategory categoria)
+    {
+        var ultimaFase = origem.Phases.Size > 0 ? origem.Phases.get_Item(origem.Phases.Size - 1).Id : null;
+        return new FilteredElementCollector(origem)
             .OfCategory(categoria)
             .WhereElementIsNotElementType()
             .OfType<SpatialElement>()
             .Where(ambiente => ambiente.Location is not null)
+            .Where(ambiente => ambiente.DesignOption is null || ambiente.DesignOption.IsPrimary)
+            .Where(ambiente => ultimaFase is null || ambiente.get_Parameter(BuiltInParameter.ROOM_PHASE)?.AsElementId() is not { } fase
+                               || fase == ElementId.InvalidElementId || fase == ultimaFase)
             .Select(ambiente => new Ambiente(
                 ChaveDe(vinculo, ambiente),
                 Texto(ambiente, BuiltInParameter.ROOM_NAME) ?? ambiente.Name,
                 Texto(ambiente, BuiltInParameter.ROOM_NUMBER),
                 ambiente.Level?.Name,
                 Math.Round((decimal)UnitUtils.ConvertFromInternalUnits(ambiente.Area, UnitTypeId.SquareMeters), 4, MidpointRounding.AwayFromZero),
-                Math.Round((decimal)UnitUtils.ConvertFromInternalUnits(ambiente.Perimeter, UnitTypeId.Meters), 3, MidpointRounding.AwayFromZero)));
+                Math.Round((decimal)UnitUtils.ConvertFromInternalUnits(ambiente.Perimeter, UnitTypeId.Meters), 3, MidpointRounding.AwayFromZero),
+                unidade));
+    }
 
     private static string ChaveDe(long vinculo, Element ambiente) => $"{vinculo}:{ambiente.Id.Value}";
 
     private static string? Texto(Element elemento, BuiltInParameter parametro) =>
         elemento.get_Parameter(parametro)?.AsString() is { } texto && !string.IsNullOrWhiteSpace(texto) ? texto.Trim() : null;
 
-    private sealed record Ambiente(string Chave, string Nome, string? Numero, string? Pavimento, decimal AreaM2, decimal PerimetroM);
+    private sealed record Ambiente(string Chave, string Nome, string? Numero, string? Pavimento, decimal AreaM2, decimal PerimetroM, string Unidade);
 }
