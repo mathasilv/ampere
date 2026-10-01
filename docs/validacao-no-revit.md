@@ -26,7 +26,7 @@ não puderam ser conferidas fora do Revit. Se algum desses testes falhar, envie 
 Use um projeto de teste com arquitetura vinculada ou com ambientes (Rooms/Spaces), quadro com sistema de distribuição
 220/127 V (ou 380/220 V) e algumas tomadas, luminárias e um chuveiro.
 
-1. **Injetar parâmetros.** O resumo deve mostrar os 34 parâmetros. Rodar de novo não deve criar nada.
+1. **Injetar parâmetros.** O resumo deve mostrar os 35 parâmetros. Rodar de novo não deve criar nada.
 2. **Classificar cargas.** Classifique tomadas (TUG), luminárias (Iluminação) e o chuveiro (TUE, 2F 220 V).
 3. **Locais pelos ambientes.** O diálogo deve listar os ambientes com os pontos. Escolha um local para cada ambiente
    (banheiro = "Local com banheira ou chuveiro").

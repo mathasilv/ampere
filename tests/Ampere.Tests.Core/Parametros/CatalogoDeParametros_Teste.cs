@@ -14,7 +14,7 @@ public class CatalogoDeParametros_Teste
         var catalogo = CatalogoDeParametros.Padrao;
 
         await Assert.That(catalogo.GrupoRevit).IsEqualTo("Ampere");
-        await Assert.That(catalogo.Parametros.Count).IsEqualTo(34);
+        await Assert.That(catalogo.Parametros.Count).IsEqualTo(35);
     }
 
     [Test]
@@ -23,9 +23,11 @@ public class CatalogoDeParametros_Teste
         var local = CatalogoDeParametros.Padrao.Parametros.Single(parametro => parametro.Nome == "AMP_Local");
         var memoria = CatalogoDeParametros.Padrao.Parametros.Single(parametro => parametro.Nome == "AMP_MemoriaCalculoId");
         var tipoDeCarga = CatalogoDeParametros.Padrao.Parametros.Single(parametro => parametro.Nome == "AMP_TipoCarga");
+        var aparelho = CatalogoDeParametros.Padrao.Parametros.Single(parametro => parametro.Nome == "AMP_Aparelho");
 
         // O local acompanha os elementos que a classificação aceita (os que recebem AMP_TipoCarga), menos o circuito.
         await Assert.That(local.Categorias).IsEquivalentTo(tipoDeCarga.Categorias.Where(categoria => categoria != CategoriaEletrica.CircuitosEletricos));
+        await Assert.That(aparelho.Categorias).IsEquivalentTo(local.Categorias);
         await Assert.That(memoria.Categorias).IsEquivalentTo([CategoriaEletrica.EquipamentosEletricos, CategoriaEletrica.CircuitosEletricos]);
     }
 

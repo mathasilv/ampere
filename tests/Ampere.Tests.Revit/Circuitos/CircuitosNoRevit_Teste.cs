@@ -71,6 +71,23 @@ public sealed class CircuitosNoRevit_Teste : TesteComProjetoEletrico
     }
 
     [Test]
+    public async Task Aparelho_gravado_em_TUE_e_apagado_ao_mudar_de_tipo()
+    {
+        var tomadas = Cenario.ColocarTomadas(2);
+
+        ClassificacaoEmLote.Executar(tomadas, new ClassificacaoDeCarga(TipoDeCarga.TUE, Aparelho: Aparelho.Torneira), Porta);
+        var comoTue = tomadas.Select(id => Texto(Cenario.Documento.GetElement(new ElementId(id)), "AMP_Aparelho") ?? "(vazio)").ToList();
+        ClassificacaoEmLote.Executar(tomadas, new ClassificacaoDeCarga(TipoDeCarga.TUE), Porta);
+        var semAlterar = Texto(Cenario.Documento.GetElement(new ElementId(tomadas[0])), "AMP_Aparelho");
+        ClassificacaoEmLote.Executar(tomadas, new ClassificacaoDeCarga(TipoDeCarga.TUG), Porta);
+        var comoTug = Texto(Cenario.Documento.GetElement(new ElementId(tomadas[0])), "AMP_Aparelho");
+
+        await Assert.That(string.Join("|", comoTue)).IsEqualTo("Torneira|Torneira");
+        await Assert.That(semAlterar).IsEqualTo("Torneira");
+        await Assert.That(comoTug ?? string.Empty).IsEqualTo(string.Empty);
+    }
+
+    [Test]
     public async Task Circuito_selecionado_junto_com_os_pontos_e_classificado_sem_o_local()
     {
         var luminarias = Cenario.ColocarLuminarias(2);

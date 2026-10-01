@@ -19,6 +19,30 @@ public class ClassificacaoDeCarga_Teste
     }
 
     [Test]
+    public async Task Aparelho_so_em_ponto_TUE()
+    {
+        await Assert.That(new ClassificacaoDeCarga(TipoDeCarga.TUE, Aparelho: Aparelho.Chuveiro).Validar()).IsEmpty();
+        await Assert.That(string.Join("\n", new ClassificacaoDeCarga(TipoDeCarga.TUG, Aparelho: Aparelho.Chuveiro).Validar()))
+            .IsEqualTo("aparelho (Chuveiro) só em ponto TUE");
+        await Assert.That(string.Join("\n", new ClassificacaoDeCarga(TipoDeCarga.TUE, Aparelho: (Aparelho)99).Validar())).IsEqualTo("aparelho inválido (99)");
+    }
+
+    [Test]
+    public async Task Codigos_de_aparelho_vao_e_voltam_e_aceitam_o_nome_do_enum()
+    {
+        foreach (var aparelho in Enum.GetValues<Aparelho>())
+        {
+            await Assert.That(CodigosDeAparelho.TryLer(CodigosDeAparelho.Codigo(aparelho), out var lido)).IsTrue();
+            await Assert.That(lido).IsEqualTo(aparelho);
+        }
+
+        await Assert.That(CodigosDeAparelho.TryLer(" forno ou FOGÃO ", out var forno) && forno == Aparelho.FornoOuFogao).IsTrue();
+        await Assert.That(CodigosDeAparelho.TryLer("LavaLoucas", out var loucas) && loucas == Aparelho.LavaLoucas).IsTrue();
+        await Assert.That(CodigosDeAparelho.TryLer("Geladeira", out _)).IsFalse();
+        await Assert.That(CodigosDeAparelho.TryLer(null, out _)).IsFalse();
+    }
+
+    [Test]
     public async Task Reserva_nao_classifica_ponto_de_carga()
     {
         await Assert.That(string.Join("\n", new ClassificacaoDeCarga(TipoDeCarga.Reserva).Validar()))

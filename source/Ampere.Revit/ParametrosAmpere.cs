@@ -17,6 +17,7 @@ internal static class ParametrosAmpere
     public static readonly DefinicaoDeParametro FatorDemanda = Definicao("AMP_FatorDemanda");
     public static readonly DefinicaoDeParametro MemoriaCalculoId = Definicao("AMP_MemoriaCalculoId");
     public static readonly DefinicaoDeParametro Local = Definicao("AMP_Local");
+    public static readonly DefinicaoDeParametro Aparelho = Definicao("AMP_Aparelho");
     public static readonly DefinicaoDeParametro ComprimentoRotaM = Definicao("AMP_ComprimentoRotaM");
     public static readonly DefinicaoDeParametro MetodoInstalacao = Definicao("AMP_MetodoInstalacao");
     public static readonly DefinicaoDeParametro MaterialIsolacao = Definicao("AMP_MaterialIsolacao");

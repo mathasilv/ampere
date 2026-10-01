@@ -65,6 +65,12 @@ public sealed class DocumentoEletricoRevit(Document documento) : IDocumentoEletr
             // O local é do ponto: num circuito selecionado junto (AMP_Local não vai em circuitos), fica de fora.
             if (classificacao.Local is { } local && ParametrosAmpere.Ler(elemento, ParametrosAmpere.Local) is not null)
                 ParametrosAmpere.GravarTexto(elemento, ParametrosAmpere.Local, local);
+            // Aparelho só em TUE; nos outros tipos, o anterior é apagado (o Core já recusou aparelho fora de TUE).
+            if (ParametrosAmpere.Ler(elemento, ParametrosAmpere.Aparelho) is not null)
+            {
+                if (classificacao.Tipo != TipoDeCarga.TUE) ParametrosAmpere.GravarTextoOuApagar(elemento, ParametrosAmpere.Aparelho, null);
+                else if (classificacao.Aparelho is { } aparelho) ParametrosAmpere.GravarTexto(elemento, ParametrosAmpere.Aparelho, CodigosDeAparelho.Codigo(aparelho));
+            }
         }
     }
 
@@ -129,9 +135,9 @@ public sealed class DocumentoEletricoRevit(Document documento) : IDocumentoEletr
     }
 
     /// <summary>Os parâmetros Ampere usados pela classificação e pelos circuitos já estão no documento?</summary>
-    /// <remarks>AMP_Local entrou no catálogo 0.2: projeto injetado antes precisa de nova injeção.</remarks>
+    /// <remarks>AMP_Local entrou no catálogo 0.2 e AMP_Aparelho no 0.4: projeto injetado antes precisa de nova injeção.</remarks>
     public bool ParametrosInjetados() =>
-        new[] { ParametrosAmpere.TipoCarga, ParametrosAmpere.PotenciaInstaladaVA, ParametrosAmpere.NumeroCircuito, ParametrosAmpere.Quadro, ParametrosAmpere.Local }
+        new[] { ParametrosAmpere.TipoCarga, ParametrosAmpere.PotenciaInstaladaVA, ParametrosAmpere.NumeroCircuito, ParametrosAmpere.Quadro, ParametrosAmpere.Local, ParametrosAmpere.Aparelho }
             .All(definicao => ParametrosAmpere.Injetado(documento, definicao));
 
     /// <summary>Quadros do documento (equipamento elétrico com conector de força), para o projetista escolher.</summary>

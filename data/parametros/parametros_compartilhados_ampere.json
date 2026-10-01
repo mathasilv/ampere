@@ -1,14 +1,15 @@
 {
   "$meta": {
     "fonte": "Especificação do MVP Ampere v0.1, §5 (cópia versionada de 10_Parametros_Compartilhados_Ampere.json)",
-    "versao": "0.3",
+    "versao": "0.4",
     "data": "2026-10-01",
     "regra": "GUIDs congelados: nunca alterar nem reutilizar. Parâmetro novo = GUID novo registrado aqui.",
     "categorias": "Matriz de vínculo aprovada pelo usuário em 2026-09-28 (F1.1): carga nos pontos, dimensionamento nos circuitos.",
     "alteracoes": [
       "0.2 (2026-10-01, decisão do usuário): AMP_Local, GUID novo fora da tabela §5 da especificação — local do ponto no vocabulário da tabela de IDR do perfil, para o comando 'Dimensionar'.",
       "0.2 (2026-10-01, decisão do usuário): AMP_MemoriaCalculoId também em EquipamentosEletricos — o quadro guarda o hash da memória do quadro de cargas; o circuito, o da memória do seu dimensionamento.",
-      "0.3 (2026-10-01, decisão delegada ao desenvolvedor pelo usuário — 'carta branca'): decisões do projetista no circuito, só de entrada (o dimensionamento nunca as escreve) — seção mínima, disjuntor, decisão e sensibilidade do IDR, justificativa, temperatura ambiente e circuitos agrupados por circuito. Numérico 0 = sem decisão (o Revit não esvazia parâmetro numérico)."
+      "0.3 (2026-10-01, decisão delegada ao desenvolvedor pelo usuário — 'carta branca'): decisões do projetista no circuito, só de entrada (o dimensionamento nunca as escreve) — seção mínima, disjuntor, decisão e sensibilidade do IDR, justificativa, temperatura ambiente e circuitos agrupados por circuito. Numérico 0 = sem decisão (o Revit não esvazia parâmetro numérico).",
+      "0.4 (2026-10-01, decisão do usuário): AMP_Aparelho, GUID novo — aparelho do ponto TUE (chuveiro, torneira, forno ou fogão etc.) para a demanda pela norma da distribuidora, que separa os aparelhos por tipo."
     ]
   },
   "produto": "Ampere",
@@ -251,6 +252,13 @@
       "tipo": "NUMBER",
       "descricao": "Circuitos agrupados com este, incluindo ele, no lugar do valor do projeto; 0 = o do projeto",
       "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "d15e0ab9-2ff6-4328-baca-6cedc0810292",
+      "nome": "AMP_Aparelho",
+      "tipo": "TEXT",
+      "descricao": "Aparelho do ponto TUE para a demanda da distribuidora (Chuveiro/Torneira/Lava-louças/Aquecedor de passagem/Aquecedor de acumulação/Forno ou fogão/Secadora de roupa/Micro-ondas/Máquina de solda/Outro)",
+      "categorias": ["Luminarias", "DispositivosEletricos", "EquipamentosMecanicos"]
     }
   ]
 }

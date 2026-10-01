@@ -13,6 +13,7 @@ public sealed class ClassificacaoViewModel(int quantidadeSelecionada, PerfilNorm
 {
     private OpcaoDeTipo? _tipo;
     private string _local = string.Empty;
+    private string _aparelho = string.Empty;
     private string _potenciaVA = string.Empty;
     private string _potenciaW = string.Empty;
     private string _fatorDePotencia = string.Empty;
@@ -31,6 +32,9 @@ public sealed class ClassificacaoViewModel(int quantidadeSelecionada, PerfilNorm
 
     /// <summary>Locais do perfil; o primeiro, vazio, não altera o local atual.</summary>
     public IReadOnlyList<string> OpcoesDeLocal { get; } = [string.Empty, .. perfil.Vocabulario.Locais];
+
+    /// <summary>Aparelhos de AMP_Aparelho (só TUE); o primeiro, vazio, não altera o aparelho atual.</summary>
+    public IReadOnlyList<string> OpcoesDeAparelho { get; } = [string.Empty, .. CodigosDeAparelho.Todos];
 
     public OpcaoDeTipo? Tipo
     {
@@ -75,6 +79,12 @@ public sealed class ClassificacaoViewModel(int quantidadeSelecionada, PerfilNorm
         set => SetProperty(ref _local, value);
     }
 
+    public string Aparelho
+    {
+        get => _aparelho;
+        set => SetProperty(ref _aparelho, value);
+    }
+
     public string Problemas
     {
         get => _problemas;
@@ -88,7 +98,7 @@ public sealed class ClassificacaoViewModel(int quantidadeSelecionada, PerfilNorm
     public bool Confirmar()
     {
         var entrada = EntradaDeClassificacao.Interpretar(
-            Tipo?.Tipo, PotenciaVA, FatorDePotencia, TensaoV, Fases, CultureInfo.CurrentCulture, Local, perfil.Vocabulario.Locais, PotenciaW);
+            Tipo?.Tipo, PotenciaVA, FatorDePotencia, TensaoV, Fases, CultureInfo.CurrentCulture, Local, perfil.Vocabulario.Locais, PotenciaW, Aparelho);
         Classificacao = entrada.Classificacao;
         Problemas = string.Join(Environment.NewLine, entrada.Problemas);
         return Classificacao is not null;

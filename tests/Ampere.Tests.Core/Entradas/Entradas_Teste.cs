@@ -75,6 +75,18 @@ public class EntradaDeClassificacao_Teste
     }
 
     [Test]
+    public async Task Aparelho_pelo_codigo_e_desconhecido_recusado()
+    {
+        var chuveiro = EntradaDeClassificacao.Interpretar(TipoDeCarga.TUE, "5400", "", "220", "2F", PtBr, aparelho: "Chuveiro");
+        var desconhecido = EntradaDeClassificacao.Interpretar(TipoDeCarga.TUE, "5400", "", "220", "2F", PtBr, aparelho: "Geladeira");
+        var emTug = EntradaDeClassificacao.Interpretar(TipoDeCarga.TUG, "", "", "", "", PtBr, aparelho: "Chuveiro");
+
+        await Assert.That(chuveiro.Classificacao!.Aparelho).IsEqualTo(Aparelho.Chuveiro);
+        await Assert.That(desconhecido.Problemas.Single()).StartsWith("aparelho 'Geladeira' desconhecido (use Chuveiro, Torneira,");
+        await Assert.That(emTug.Problemas.Single()).IsEqualTo("aparelho (Chuveiro) só em ponto TUE");
+    }
+
+    [Test]
     public async Task Campos_vazios_nao_alteram_o_elemento()
     {
         var entrada = EntradaDeClassificacao.Interpretar(TipoDeCarga.TUG, "", " ", null, "", PtBr);

@@ -16,9 +16,10 @@ public static class EntradaDeClassificacao
     /// <param name="local">Local escolhido (vazio = não alterar).</param>
     /// <param name="locaisDoPerfil">Locais da tabela de proteção diferencial do perfil: o local precisa ser um deles.</param>
     /// <param name="potenciaW">Potência ativa, em W (alternativa à potência em VA; exige o fator de potência).</param>
+    /// <param name="aparelho">Aparelho do ponto TUE (código de AMP_Aparelho; vazio = não alterar).</param>
     public static ClassificacaoDigitada Interpretar(
         TipoDeCarga? tipo, string? potenciaVA, string? fatorDePotencia, string? tensaoV, string? fases, CultureInfo cultura,
-        string? local = null, IReadOnlyCollection<string>? locaisDoPerfil = null, string? potenciaW = null)
+        string? local = null, IReadOnlyCollection<string>? locaisDoPerfil = null, string? potenciaW = null, string? aparelho = null)
     {
         var problemas = new List<string>();
         if (tipo is null) problemas.Add("escolha o tipo de carga");
@@ -37,9 +38,17 @@ public static class EntradaDeClassificacao
         var localEscolhido = string.IsNullOrWhiteSpace(local) ? null : local.Trim();
         if (localEscolhido is not null && locaisDoPerfil?.Contains(localEscolhido, StringComparer.Ordinal) != true)
             problemas.Add($"local '{localEscolhido}' fora da tabela de proteção diferencial do perfil");
+        Aparelho? aparelhoEscolhido = null;
+        if (!string.IsNullOrWhiteSpace(aparelho))
+        {
+            if (CodigosDeAparelho.TryLer(aparelho, out var lido)) aparelhoEscolhido = lido;
+            else problemas.Add($"aparelho '{aparelho.Trim()}' desconhecido (use {string.Join(", ", CodigosDeAparelho.Todos)})");
+        }
+
         if (problemas.Count > 0) return new ClassificacaoDigitada(null, problemas);
 
-        var classificacao = new ClassificacaoDeCarga(tipo!.Value, potencia, fator, tensao, string.IsNullOrWhiteSpace(fases) ? null : fases.Trim(), localEscolhido);
+        var classificacao = new ClassificacaoDeCarga(tipo!.Value, potencia, fator, tensao, string.IsNullOrWhiteSpace(fases) ? null : fases.Trim(), localEscolhido,
+            aparelhoEscolhido);
         var deDominio = classificacao.Validar();
         return deDominio.Count > 0 ? new ClassificacaoDigitada(null, deDominio) : new ClassificacaoDigitada(classificacao, []);
     }

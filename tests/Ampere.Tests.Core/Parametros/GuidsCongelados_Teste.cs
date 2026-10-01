@@ -54,7 +54,9 @@ public class GuidsCongelados_Teste
         ("AMP_IDR_SensibilidadeProjetistaMa", "7c5feedf-f8a2-40ad-9d3c-f9e746201329", "NUMBER"),
         ("AMP_JustificativaProjetista", "6c7c632b-6b43-47bc-9d9c-33de44ab2f49", "TEXT"),
         ("AMP_TemperaturaAmbienteC", "2cf50c7c-3675-4888-88bb-689e4ff9a5f7", "NUMBER"),
-        ("AMP_CircuitosAgrupados", "5f163c89-5cf0-4bb0-9797-e28e5013ac8a", "NUMBER")
+        ("AMP_CircuitosAgrupados", "5f163c89-5cf0-4bb0-9797-e28e5013ac8a", "NUMBER"),
+        // Catálogo 0.4 (01/10/2026, decisão do usuário): aparelho do ponto TUE para a demanda da distribuidora.
+        ("AMP_Aparelho", "d15e0ab9-2ff6-4328-baca-6cedc0810292", "TEXT")
     ];
 
     private static readonly Dictionary<string, TipoDeDadoDoParametro> TipoNaEspecificacao = new()
