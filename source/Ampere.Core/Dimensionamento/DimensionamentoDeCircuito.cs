@@ -123,7 +123,8 @@ public static class DimensionamentoDeCircuito
                     Passo(perfil.ReferenciaDaRegra(RegraNormativa.QuedaDeTensao), "Queda de tensão", "ΔV% = k · ρ · L · IB / (S · V) · 100",
                         [new ValorDoPasso("k", fator, string.Empty), new ValorDoPasso("ρ", resistividade, "Ω·mm²/m"), new ValorDoPasso("L", entrada.ComprimentoM, "m"),
                          new ValorDoPasso("IB", ib, "A"), new ValorDoPasso("S", secao, "mm²"), new ValorDoPasso("V", entrada.TensaoV, "V")],
-                        queda, "%", "fórmula resistiva (sem reatância), só o circuito terminal");
+                        queda, "%", "fórmula resistiva (sem reatância), só o circuito terminal"
+                                    + (entrada.OrigemDoComprimento is { Length: > 0 } origem ? $"; L: {origem}" : string.Empty));
 
                     _secao = secao;
                     _capacidade = capacidade;
@@ -263,13 +264,13 @@ public static class DimensionamentoDeCircuito
                 + " com o diâmetro da fase (conservador para a ocupação)");
 
             var diametro = Consultar(catalogos.Condutores.DiametroExternoMm(entrada.TipoDeCondutor, secao), "Diâmetro externo do condutor",
-                $"d = catálogo ({entrada.TipoDeCondutor}; {Numero(secao)} mm²)", [], "mm");
+                $"d = catálogo ({Tipo(entrada.TipoDeCondutor)}; {Numero(secao)} mm²)", [], "mm");
             var dadoDaTaxa = perfil.OcupacaoMaximaDeEletrodutoPct(condutores);
             var faixa = perfil.FaixaDeOcupacao(condutores);
             var linhaDaTabela = faixa is { } usada && usada != condutores ? $"{condutores} condutores: faixa de {usada} ou mais" : $"{condutores} condutores";
             var taxa = Consultar(dadoDaTaxa, "Taxa máxima de ocupação", $"taxa = tabela ({linhaDaTabela})", [], "%");
             var dadoDosTamanhos = catalogos.Eletrodutos.Tamanhos(entrada.TipoDeEletroduto);
-            var tamanhos = Exigir(dadoDosTamanhos, "Tamanhos de eletroduto", $"Di ∈ catálogo ({entrada.TipoDeEletroduto})", "mm");
+            var tamanhos = Exigir(dadoDosTamanhos, "Tamanhos de eletroduto", $"Di ∈ catálogo ({Tipo(entrada.TipoDeEletroduto)})", "mm");
 
             decimal Ocupacao(TamanhoDeEletroduto tamanho) =>
                 condutores * diametro * diametro * 100m / (tamanho.DiametroInternoMm * tamanho.DiametroInternoMm);
@@ -371,6 +372,8 @@ public static class DimensionamentoDeCircuito
                 new MemoriaDeCalculo(entrada.Circuito, perfil.Nome, _passos), problemas, _avisos);
 
         private static string Numero(decimal valor) => NumeroEmTexto.FormatarParaLeitura(valor);
+
+        private static string Tipo(string? tipo) => string.IsNullOrWhiteSpace(tipo) ? "tipo não informado" : tipo;
 
         private static string Pontos(int quantidade) => Contagem(quantidade, "ponto", "pontos");
 

@@ -34,6 +34,17 @@ public class CatalogoDeCondutores_Teste
     }
 
     [Test]
+    [Arguments(null)]
+    [Arguments(" ")]
+    public async Task Tipo_de_condutor_nao_informado_e_ausencia_explicada(string? tipo)
+    {
+        var diametro = Ficticio.DiametroExternoMm(tipo, 2.5m);
+
+        await Assert.That(diametro.Ausencia).IsEqualTo("tipo de condutor não informado (no circuito ou nas condições do projeto)");
+        await Assert.That(diametro.Referencia).IsEqualTo("FICTÍCIO: catálogo de condutores");
+    }
+
+    [Test]
     public async Task Catalogo_TODO_com_valores_e_rejeitado()
     {
         var json = CatalogosFicticios.Condutores.Replace("\"ref\": \"FICTÍCIO: catálogo de condutores\"", "\"ref\": \"TODO_CATALOGO\"");
@@ -80,6 +91,14 @@ public class CatalogoDeEletrodutos_Teste
     public async Task Tipo_fora_do_catalogo_e_ausencia_explicada()
     {
         await Assert.That(Ficticio.Tamanhos("Aço galvanizado").Ausencia).Contains("tipo de eletroduto 'Aço galvanizado' fora do catálogo");
+    }
+
+    [Test]
+    [Arguments(null)]
+    [Arguments("")]
+    public async Task Tipo_de_eletroduto_nao_informado_e_ausencia_explicada(string? tipo)
+    {
+        await Assert.That(Ficticio.Tamanhos(tipo).Ausencia).IsEqualTo("tipo de eletroduto não informado (nas condições do projeto)");
     }
 
     [Test]

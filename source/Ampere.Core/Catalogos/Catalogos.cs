@@ -60,9 +60,12 @@ public sealed class CatalogoDeCondutores
         return new CatalogoDeCondutores(ficticio, referencia, pendente, diametros);
     }
 
-    public DadoNormativo<decimal> DiametroExternoMm(string tipo, decimal secaoMm2)
+    /// <param name="tipo">Tipo de condutor; vazio = não informado (explicado na ausência).</param>
+    public DadoNormativo<decimal> DiametroExternoMm(string? tipo, decimal secaoMm2)
     {
         if (_pendente) return DadoNormativo<decimal>.Ausente(RegrasDeCatalogo.TodoCatalogo, "catálogo de condutores sem dados (TODO_CATALOGO)");
+        if (string.IsNullOrWhiteSpace(tipo))
+            return DadoNormativo<decimal>.Ausente(_referencia, "tipo de condutor não informado (no circuito ou nas condições do projeto)");
         if (!_diametros.TryGetValue(tipo, out var porSecao))
             return DadoNormativo<decimal>.Ausente(_referencia, $"tipo de condutor '{tipo}' fora do catálogo");
 
@@ -134,10 +137,13 @@ public sealed class CatalogoDeEletrodutos
     }
 
     /// <summary>Tamanhos do tipo, em ordem crescente de diâmetro interno.</summary>
-    public DadoNormativo<IReadOnlyList<TamanhoDeEletroduto>> Tamanhos(string tipo)
+    /// <param name="tipo">Tipo de eletroduto; vazio = não informado (explicado na ausência).</param>
+    public DadoNormativo<IReadOnlyList<TamanhoDeEletroduto>> Tamanhos(string? tipo)
     {
         if (_pendente)
             return DadoNormativo<IReadOnlyList<TamanhoDeEletroduto>>.Ausente(RegrasDeCatalogo.TodoCatalogo, "catálogo de eletrodutos sem dados (TODO_CATALOGO)");
+        if (string.IsNullOrWhiteSpace(tipo))
+            return DadoNormativo<IReadOnlyList<TamanhoDeEletroduto>>.Ausente(_referencia, "tipo de eletroduto não informado (nas condições do projeto)");
 
         return _tamanhos.TryGetValue(tipo, out var tamanhos)
             ? DadoNormativo<IReadOnlyList<TamanhoDeEletroduto>>.Com(tamanhos, _referencia)

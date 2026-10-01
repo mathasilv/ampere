@@ -75,16 +75,86 @@ public class DimensionamentoDoProjeto_Teste
     }
 
     [Test]
-    public async Task Sem_tipo_de_eletroduto_no_projeto_nem_tipo_de_condutor_sao_problemas_de_dados()
+    public async Task Sem_tipos_de_condutor_e_eletroduto_o_circuito_e_dimensionado_ate_o_eletroduto()
     {
         var circuito = Circuito(1, "TUG-01", "TUG", Ponto(11, 1270m));
         var semTipos = Condicoes with { TipoDeCondutorPadrao = null, TipoDeEletroduto = null };
 
         var resultado = DimensionamentoDoProjeto.Executar([1], semTipos, Ficticio, Catalogos, new DocumentoDeDimensionamentoFalso([circuito]))[0];
 
-        var problemas = string.Join("\n", resultado.ProblemasDeDados);
-        await Assert.That(problemas).Contains("sem AMP_TipoCondutor nem padrão do projeto");
-        await Assert.That(problemas).Contains("tipo de eletroduto do projeto não informado");
+        await Assert.That(resultado.ProblemasDeDados).IsEmpty();
+        await Assert.That(resultado.Dimensionamento!.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
+        await Assert.That(resultado.Dimensionamento.DisjuntorA).IsEqualTo(10m);
+        await Assert.That(string.Join("\n", resultado.Dimensionamento.Problemas)).Contains("tipo de condutor não informado");
+    }
+
+    [Test]
+    public async Task Tipo_de_condutor_do_circuito_prevalece_sobre_o_padrao_do_projeto()
+    {
+        var circuito = Circuito(1, "TUG-01", "TUG", Ponto(11, 1270m)) with { TipoDeCondutor = "Cabo do circuito" };
+
+        var resultado = DimensionamentoDoProjeto.Executar([1], Condicoes, Ficticio, Catalogos, new DocumentoDeDimensionamentoFalso([circuito]))[0];
+
+        await Assert.That(string.Join("\n", resultado.Dimensionamento!.Problemas)).Contains("tipo de condutor 'Cabo do circuito' fora do catálogo");
+    }
+
+    [Test]
+    public async Task Comprimento_informado_prevalece_sobre_o_do_Revit_e_a_memoria_registra_a_origem()
+    {
+        var circuito = Circuito(1, "TUG-01", "TUG", Ponto(11, 1270m)) with { ComprimentoNoRevit = new ComprimentoDoRevit(37.5m, "caminho de teste") };
+
+        var resultado = DimensionamentoDoProjeto.Executar([1], Condicoes, Ficticio, Catalogos, new DocumentoDeDimensionamentoFalso([circuito]))[0];
+
+        var queda = resultado.Dimensionamento!.Memoria!.Passos.Single(passo => passo.Descricao == "Queda de tensão");
+        await Assert.That(queda.Valores.Single(valor => valor.Nome == "L").Valor).IsEqualTo(10m);
+        await Assert.That(queda.Observacao).EndsWith("; L: AMP_ComprimentoRotaM, informado pelo projetista");
+    }
+
+    [Test]
+    public async Task Sem_comprimento_informado_vale_o_do_Revit_arredondado_ao_milimetro()
+    {
+        var circuito = Circuito(1, "TUG-01", "TUG", Ponto(11, 1270m)) with
+        {
+            ComprimentoM = null,
+            ComprimentoNoRevit = new ComprimentoDoRevit(12.34567890123m, "do quadro ao ponto mais distante")
+        };
+
+        var resultado = DimensionamentoDoProjeto.Executar([1], Condicoes, Ficticio, Catalogos, new DocumentoDeDimensionamentoFalso([circuito]))[0];
+
+        var queda = resultado.Dimensionamento!.Memoria!.Passos.Single(passo => passo.Descricao == "Queda de tensão");
+        await Assert.That(queda.Valores.Single(valor => valor.Nome == "L").Valor).IsEqualTo(12.346m);
+        await Assert.That(queda.Observacao).EndsWith("; L: calculado pelo Revit (do quadro ao ponto mais distante), arredondado ao milímetro");
+    }
+
+    [Test]
+    public async Task Residuo_de_conversao_no_comprimento_nao_muda_o_hash()
+    {
+        var exato = Circuito(1, "TUG-01", "TUG", Ponto(11, 1270m)) with { ComprimentoM = 12.192m };
+        var comResiduo = exato with { ComprimentoM = 12.1920000000001m };
+
+        var resultados = DimensionamentoDoProjeto.Executar([1, 2], Condicoes, Ficticio, Catalogos,
+            new DocumentoDeDimensionamentoFalso([exato, comResiduo with { Id = 2 }]));
+
+        await Assert.That(resultados[1].Dimensionamento!.Memoria!.Hash()).IsEqualTo(resultados[0].Dimensionamento!.Memoria!.Hash());
+    }
+
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task Sem_comprimento_informado_nem_calculado_pelo_Revit_e_problema_de_dados(bool revitCalculouZero)
+    {
+        var circuito = Circuito(1, "TUG-01", "TUG", Ponto(11, 1270m)) with
+        {
+            ComprimentoM = null,
+            ComprimentoNoRevit = revitCalculouZero ? new ComprimentoDoRevit(0m, "do quadro ao ponto mais distante") : null
+        };
+
+        var resultado = DimensionamentoDoProjeto.Executar([1], Condicoes, Ficticio, Catalogos, new DocumentoDeDimensionamentoFalso([circuito]))[0];
+
+        await Assert.That(resultado.Dimensionamento).IsNull();
+        await Assert.That(string.Join("\n", resultado.ProblemasDeDados)).Contains(revitCalculouZero
+            ? "o Revit não calculou o comprimento do circuito (zero)"
+            : "sem AMP_ComprimentoRotaM e sem comprimento do circuito no Revit");
     }
 
     [Test]

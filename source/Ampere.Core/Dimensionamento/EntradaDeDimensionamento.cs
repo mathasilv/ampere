@@ -17,10 +17,11 @@ namespace Ampere.Core.Dimensionamento;
 /// <param name="Material">Material do condutor, ex.: Cobre.</param>
 /// <param name="TemperaturaAmbienteC">Temperatura ambiente, em °C.</param>
 /// <param name="CircuitosAgrupados">Circuitos agrupados com este (incluindo ele).</param>
-/// <param name="TipoDeCondutor">Tipo de condutor no catálogo (AMP_TipoCondutor): dá o diâmetro externo.</param>
-/// <param name="TipoDeEletroduto">Tipo de eletroduto no catálogo: dá os tamanhos e diâmetros internos.</param>
+/// <param name="TipoDeCondutor">Tipo de condutor no catálogo (AMP_TipoCondutor): dá o diâmetro externo. Nulo para o cálculo no eletroduto.</param>
+/// <param name="TipoDeEletroduto">Tipo de eletroduto no catálogo: dá os tamanhos e diâmetros internos. Nulo para o cálculo no eletroduto.</param>
 /// <param name="LocaisDosPontos">Local de cada ponto do circuito, no vocabulário da tabela de IDR do perfil (nulo = sem local).</param>
 /// <param name="IdrDoProjetista">Decisão do projetista sobre o IDR; prevalece sobre a tabela por local.</param>
+/// <param name="OrigemDoComprimento">De onde veio o comprimento (ex.: informado pelo projetista), registrado na memória.</param>
 public sealed record EntradaDeDimensionamento(
     string Circuito,
     TipoDeCarga Tipo,
@@ -33,10 +34,11 @@ public sealed record EntradaDeDimensionamento(
     string Material,
     decimal TemperaturaAmbienteC,
     int CircuitosAgrupados,
-    string TipoDeCondutor,
-    string TipoDeEletroduto,
+    string? TipoDeCondutor,
+    string? TipoDeEletroduto,
     IReadOnlyList<string?> LocaisDosPontos,
-    DecisaoDeIdr? IdrDoProjetista = null)
+    DecisaoDeIdr? IdrDoProjetista = null,
+    string? OrigemDoComprimento = null)
 {
     /// <summary>Problemas que impedem dimensionar; vazio se a entrada estiver válida.</summary>
     public IReadOnlyList<string> Validar()
@@ -53,8 +55,6 @@ public sealed record EntradaDeDimensionamento(
         if (string.IsNullOrWhiteSpace(Isolacao)) problemas.Add("isolação não informada");
         if (string.IsNullOrWhiteSpace(Material)) problemas.Add("material do condutor não informado");
         if (CircuitosAgrupados < 1) problemas.Add("circuitos agrupados deve ser pelo menos 1");
-        if (string.IsNullOrWhiteSpace(TipoDeCondutor)) problemas.Add("tipo de condutor não informado");
-        if (string.IsNullOrWhiteSpace(TipoDeEletroduto)) problemas.Add("tipo de eletroduto não informado");
         if (LocaisDosPontos.Count == 0) problemas.Add("circuito sem pontos (locais dos pontos vazio)");
         if (IdrDoProjetista is { Exigir: true, SensibilidadeMa: not > 0 }) problemas.Add("IDR exigido pelo projetista sem sensibilidade positiva");
         if (IdrDoProjetista is { Exigir: false, SensibilidadeMa: not null }) problemas.Add("IDR dispensado pelo projetista não leva sensibilidade");

@@ -268,6 +268,40 @@ public class DimensionamentoDeCircuito_Teste
     }
 
     [Test]
+    public async Task Origem_do_comprimento_vai_para_a_observacao_da_queda_de_tensao()
+    {
+        var resultado = Dimensionar(Entrada() with { OrigemDoComprimento = "calculado pelo Revit (do quadro ao ponto mais distante)" });
+
+        await Assert.That(PassoDe(resultado, "Queda de tensão").Observacao).IsEqualTo(
+            "fórmula resistiva (sem reatância), só o circuito terminal; L: calculado pelo Revit (do quadro ao ponto mais distante)");
+        await Assert.That(resultado.Memoria!.Hash()).IsNotEqualTo(Dimensionar(Entrada()).Memoria!.Hash());
+    }
+
+    [Test]
+    public async Task Sem_tipo_de_condutor_calcula_ate_o_IDR_e_para_no_diametro()
+    {
+        var resultado = Dimensionar(Entrada(locais: ["LOCAL-MOLHADO"]) with { TipoDeCondutor = null });
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
+        await Assert.That(resultado.DisjuntorA).IsEqualTo(10m);
+        await Assert.That(resultado.IdrNominalA).IsEqualTo(25m);
+        await Assert.That(resultado.Eletroduto).IsNull();
+        await Assert.That(resultado.Problemas).IsEquivalentTo(["tipo de condutor não informado (no circuito ou nas condições do projeto)"]);
+        await Assert.That(resultado.Memoria!.Passos[^1].Expressao).IsEqualTo("d = catálogo (tipo não informado; 2,5 mm²)");
+    }
+
+    [Test]
+    public async Task Sem_tipo_de_eletroduto_para_nos_tamanhos_com_o_motivo()
+    {
+        var resultado = Dimensionar(Entrada() with { TipoDeEletroduto = " " });
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
+        await Assert.That(resultado.Problemas).IsEquivalentTo(["tipo de eletroduto não informado (nas condições do projeto)"]);
+        await Assert.That(resultado.Memoria!.Passos[^1].Descricao).IsEqualTo("Tamanhos de eletroduto");
+        await Assert.That(resultado.Memoria.Passos[^1].Expressao).IsEqualTo("Di ∈ catálogo (tipo não informado)");
+    }
+
+    [Test]
     public async Task Queda_de_tensao_eleva_a_secao_e_explica()
     {
         var resultado = Dimensionar(Entrada(comprimentoM: 60m));
