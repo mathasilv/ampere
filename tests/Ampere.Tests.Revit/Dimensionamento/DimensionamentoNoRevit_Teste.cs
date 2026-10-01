@@ -186,6 +186,62 @@ public sealed class DimensionamentoNoRevit_Teste : TesteComProjetoEletrico
     }
 
     [Test]
+    public async Task Le_as_decisoes_do_projetista_e_nunca_as_grava()
+    {
+        MontarIluminacaoETomadas();
+        var ids = Dimensionamento.ListarCircuitos();
+        var circuito = Elemento(ids[1]);
+        Transacionar(() =>
+        {
+            Parametro(circuito, "AMP_SecaoMinimaProjetistaMm2").Set(4d);
+            Parametro(circuito, "AMP_DisjuntorProjetistaA").Set(20d);
+            Parametro(circuito, "AMP_IDR_DecisaoProjetista").Set("Dispensar");
+            Parametro(circuito, "AMP_JustificativaProjetista").Set("decisão de teste");
+            Parametro(circuito, "AMP_TemperaturaAmbienteC").Set(35d);
+            Parametro(circuito, "AMP_CircuitosAgrupados").Set(2d);
+        });
+
+        var lidas = Dimensionamento.LerCircuitos(ids)[1].Decisoes;
+        var resultados = Dimensionar(ids);
+
+        await Assert.That(lidas).IsEqualTo(new DecisoesDoProjetista(4m, 20m, "Dispensar", null, "decisão de teste", 35m, 2m));
+        await Assert.That(Dimensionamento.LerCircuitos(ids)[0].Decisoes).IsEqualTo(new DecisoesDoProjetista());
+        var calculo = resultados[1].Dimensionamento!;
+        await Assert.That(calculo.SecaoMm2 ?? -1m).IsGreaterThanOrEqualTo(4m);
+        await Assert.That(calculo.DisjuntorA).IsEqualTo(20m);
+        await Assert.That(calculo.IdrAvaliado).IsTrue();
+        await Assert.That(calculo.IdrSensibilidadeMa).IsNull();
+        await Assert.That(string.Join("\n", calculo.Avisos)).Contains("IDR dispensado pelo projetista");
+        var observacoes = string.Join("\n", resultados[1].Memoria!.Passos.Select(passo => passo.Observacao).OfType<string>());
+        await Assert.That(observacoes).Contains("θ: AMP_TemperaturaAmbienteC do circuito (o projeto usa 30 °C; justificativa: decisão de teste)");
+        await Assert.That(observacoes).Contains("circuitos: AMP_CircuitosAgrupados do circuito (o projeto usa 1; justificativa: decisão de teste)");
+        await Assert.That(Parametro(circuito, "AMP_DisjuntorNominalA").AsDouble()).IsEqualTo(20d);
+        await Assert.That(Parametro(circuito, "AMP_IDR_SensibilidadeMa").HasValue).IsFalse();
+
+        // As decisões continuam como o projetista deixou: o dimensionamento nunca as escreve.
+        await Assert.That(Parametro(circuito, "AMP_SecaoMinimaProjetistaMm2").AsDouble()).IsEqualTo(4d);
+        await Assert.That(Parametro(circuito, "AMP_DisjuntorProjetistaA").AsDouble()).IsEqualTo(20d);
+        await Assert.That(Texto(circuito, "AMP_IDR_DecisaoProjetista")).IsEqualTo("Dispensar");
+        await Assert.That(Parametro(circuito, "AMP_IDR_SensibilidadeProjetistaMa").HasValue).IsFalse();
+        await Assert.That(Parametro(circuito, "AMP_TemperaturaAmbienteC").AsDouble()).IsEqualTo(35d);
+        await Assert.That(Parametro(circuito, "AMP_CircuitosAgrupados").AsDouble()).IsEqualTo(2d);
+    }
+
+    [Test]
+    public async Task Selecao_de_circuito_ponto_ou_quadro_da_os_circuitos_do_Ampere()
+    {
+        var (luminarias, tomadas) = MontarIluminacaoETomadas();
+        var avulsa = Cenario.ColocarTomadas(1);
+        Transacionar(() => ElectricalSystem.Create(Cenario.Documento, [new ElementId(avulsa[0])], ElectricalSystemType.PowerCircuit));
+        var ids = Dimensionamento.ListarCircuitos();
+
+        await Assert.That(string.Join("|", Dimensionamento.CircuitosDaSelecao([tomadas[0]]))).IsEqualTo($"{ids[1]}");
+        await Assert.That(string.Join("|", Dimensionamento.CircuitosDaSelecao([Cenario.Quadro.Id.Value]))).IsEqualTo($"{ids[0]}|{ids[1]}");
+        await Assert.That(string.Join("|", Dimensionamento.CircuitosDaSelecao([ids[1], tomadas[2], luminarias[0]]))).IsEqualTo($"{ids[0]}|{ids[1]}");
+        await Assert.That(Dimensionamento.CircuitosDaSelecao([Cenario.Parede.Id.Value, avulsa[0]])).IsEmpty();
+    }
+
+    [Test]
     public async Task Dimensiona_400_pontos_em_menos_de_5_segundos()
     {
         var tomadas = Cenario.ColocarTomadas(400);

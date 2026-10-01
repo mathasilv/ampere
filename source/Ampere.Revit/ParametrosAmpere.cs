@@ -34,6 +34,15 @@ internal static class ParametrosAmpere
     public static readonly DefinicaoDeParametro OcupacaoEletrodutoPct = Definicao("AMP_OcupacaoEletrodutoPct");
     public static readonly DefinicaoDeParametro PerfilNorma = Definicao("AMP_PerfilNorma");
 
+    // Decisões do projetista no circuito: só de entrada, o dimensionamento nunca as escreve.
+    public static readonly DefinicaoDeParametro SecaoMinimaProjetistaMm2 = Definicao("AMP_SecaoMinimaProjetistaMm2");
+    public static readonly DefinicaoDeParametro DisjuntorProjetistaA = Definicao("AMP_DisjuntorProjetistaA");
+    public static readonly DefinicaoDeParametro IdrDecisaoProjetista = Definicao("AMP_IDR_DecisaoProjetista");
+    public static readonly DefinicaoDeParametro IdrSensibilidadeProjetistaMa = Definicao("AMP_IDR_SensibilidadeProjetistaMa");
+    public static readonly DefinicaoDeParametro JustificativaProjetista = Definicao("AMP_JustificativaProjetista");
+    public static readonly DefinicaoDeParametro TemperaturaAmbienteC = Definicao("AMP_TemperaturaAmbienteC");
+    public static readonly DefinicaoDeParametro CircuitosAgrupados = Definicao("AMP_CircuitosAgrupados");
+
     /// <summary>O parâmetro existe no documento (a injeção já foi feita)?</summary>
     public static bool Injetado(Document documento, DefinicaoDeParametro definicao) =>
         SharedParameterElement.Lookup(documento, definicao.Guid) is not null;

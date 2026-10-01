@@ -21,12 +21,15 @@ public sealed class DimensionamentoViewModel : ObservableObject
     private string _tipoDeEletroduto = string.Empty;
     private string _problemas = string.Empty;
 
+    /// <param name="daSelecao">Os circuitos vêm da seleção, não do projeto todo.</param>
     /// <param name="anteriores">Condições da rodada anterior nesta sessão do Revit, para não digitar tudo de novo.</param>
     public DimensionamentoViewModel(
-        int quantidadeDeCircuitos, VocabularioDoPerfil vocabulario, IReadOnlyList<string> tiposDeCondutor, IReadOnlyList<string> tiposDeEletroduto,
+        int quantidadeDeCircuitos, bool daSelecao, VocabularioDoPerfil vocabulario, IReadOnlyList<string> tiposDeCondutor, IReadOnlyList<string> tiposDeEletroduto,
         CondicoesDoProjeto? anteriores)
     {
-        Titulo = $"{quantidadeDeCircuitos} circuito(s) do Ampere no projeto";
+        Titulo = daSelecao
+            ? $"{quantidadeDeCircuitos} circuito(s) do Ampere na seleção (o restante do projeto não muda)"
+            : $"{quantidadeDeCircuitos} circuito(s) do Ampere no projeto";
         Materiais = vocabulario.Materiais;
         MetodosDeInstalacao = [string.Empty, .. vocabulario.MetodosDeInstalacao];
         Isolacoes = [string.Empty, .. vocabulario.Isolacoes];
@@ -51,7 +54,9 @@ public sealed class DimensionamentoViewModel : ObservableObject
     public string Titulo { get; }
 
     public string Dica { get; } =
-        $"Padrões em branco: cada circuito usa os seus AMP_MetodoInstalacao, AMP_MaterialIsolacao e AMP_TipoCondutor. Comprimento: AMP_ComprimentoRotaM ou, vazio, o do circuito no Revit. Decimais com '{CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator}'.";
+        $"Padrões em branco: cada circuito usa os seus AMP_MetodoInstalacao, AMP_MaterialIsolacao e AMP_TipoCondutor. Comprimento: AMP_ComprimentoRotaM ou, vazio, o do circuito no Revit. "
+        + "Temperatura e agrupamento: os do circuito (AMP_TemperaturaAmbienteC, AMP_CircuitosAgrupados) prevalecem; decisões do projetista (seção mínima, disjuntor, IDR) também ficam no circuito — 0 = sem decisão. "
+        + $"Decimais com '{CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator}'.";
 
     public string AvisoDeCatalogo { get; }
 

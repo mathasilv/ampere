@@ -14,8 +14,10 @@ namespace Ampere.Revit.Dimensionamento;
 ///         <item>Comprimento: AMP_ComprimentoRotaM (LENGTH, unidades internas em pés) quando o projetista o preencheu, e
 ///         sempre o "Comprimento" nativo do circuito (<c>RBS_ELEC_CIRCUIT_LENGTH_PARAM</c>, o mesmo de
 ///         <c>ElectricalSystem.Length</c> sem a exceção de comprimento zero) com o modo do caminho — o Core escolhe.</item>
-///         <item>Gravação: só os parâmetros de resultado, nunca as entradas (método, isolação, tipo de condutor e
-///         comprimento): o padrão do projeto gravado no circuito viraria "decisão do projetista" na rodada seguinte.
+///         <item>Decisões do projetista: os parâmetros AMP_* de entrada do circuito (seção mínima, disjuntor, IDR,
+///         justificativa, temperatura e agrupamento), lidos como estão — 0 = sem decisão é regra do Core.</item>
+///         <item>Gravação: só os parâmetros de resultado, nunca as entradas (método, isolação, tipo de condutor,
+///         comprimento e decisões): o padrão do projeto gravado no circuito viraria "decisão do projetista" na rodada seguinte.
 ///         Valor não calculado apaga o anterior (<see cref="ParametrosAmpere.GravarNumeroOuApagar" />).</item>
 ///         <item>Proteção (seção, IZ, disjuntor, queda, IDR e eletroduto) só é gravada quando a exigência de IDR foi
 ///         avaliada: sem isso, IDR vazio ao lado de um disjuntor seria lido como "sem IDR". Fica a corrente de projeto, os
@@ -32,10 +34,33 @@ public sealed class DocumentoDeDimensionamentoRevit(Document documento) : IDocum
 
     /// <summary>Circuitos de força criados pelo Ampere (com AMP_NumeroCircuito), por quadro e número.</summary>
     public IReadOnlyList<long> ListarCircuitos() =>
-        new FilteredElementCollector(documento)
+        Ordenar(new FilteredElementCollector(documento)
             .OfCategory(BuiltInCategory.OST_ElectricalCircuit)
             .WhereElementIsNotElementType()
-            .OfType<ElectricalSystem>()
+            .OfType<ElectricalSystem>());
+
+    /// <summary>
+    ///     Circuitos do Ampere da seleção, por quadro e número: o circuito selecionado (navegador de sistemas, tabela), os
+    ///     circuitos que um quadro selecionado alimenta e o circuito de um ponto selecionado. O resto da seleção é ignorado.
+    /// </summary>
+    public IReadOnlyList<long> CircuitosDaSelecao(IReadOnlyCollection<long> selecionados) =>
+        Ordenar(selecionados
+            .SelectMany(id => SistemasDe(documento.GetElement(new ElementId(id))))
+            .DistinctBy(sistema => sistema.Id.Value));
+
+    // Quadro: os circuitos que ele alimenta (não o que o alimenta); ponto: os circuitos de que é membro.
+    private static IEnumerable<ElectricalSystem> SistemasDe(Element? elemento)
+    {
+        if (elemento is ElectricalSystem sistema) return [sistema];
+        if (elemento is not FamilyInstance { MEPModel: { } modelo }) return [];
+
+        var alimentados = modelo.GetAssignedElectricalSystems();
+        if (alimentados is { Count: > 0 }) return alimentados;
+        return modelo.GetElectricalSystems() ?? Enumerable.Empty<ElectricalSystem>();
+    }
+
+    private static List<long> Ordenar(IEnumerable<ElectricalSystem> sistemas) =>
+        sistemas
             .Where(sistema => sistema.SystemType == ElectricalSystemType.PowerCircuit)
             .Select(sistema => (Sistema: sistema, Numero: ParametrosAmpere.LerTexto(sistema, ParametrosAmpere.NumeroCircuito)))
             .Where(par => !string.IsNullOrWhiteSpace(par.Numero))
@@ -57,6 +82,7 @@ public sealed class DocumentoDeDimensionamentoRevit(Document documento) : IDocum
                     Texto(sistema, ParametrosAmpere.MaterialIsolacao),
                     sistema.Elements.Cast<Element>().Select(LerPonto).ToList(),
                     TipoDeCondutor: Texto(sistema, ParametrosAmpere.TipoCondutor),
+                    Decisoes: Decisoes(sistema),
                     ComprimentoNoRevit: ComprimentoNoRevit(sistema),
                     Quadro: Texto(sistema, ParametrosAmpere.Quadro));
             })
@@ -99,6 +125,27 @@ public sealed class DocumentoDeDimensionamentoRevit(Document documento) : IDocum
             Texto(ponto, ParametrosAmpere.Fases),
             Texto(ponto, ParametrosAmpere.Local),
             Texto(ponto, ParametrosAmpere.TipoCarga));
+
+    private static DecisoesDoProjetista Decisoes(ElectricalSystem sistema) =>
+        new(NumeroLido(sistema, ParametrosAmpere.SecaoMinimaProjetistaMm2),
+            NumeroLido(sistema, ParametrosAmpere.DisjuntorProjetistaA),
+            Texto(sistema, ParametrosAmpere.IdrDecisaoProjetista),
+            NumeroLido(sistema, ParametrosAmpere.IdrSensibilidadeProjetistaMa),
+            Texto(sistema, ParametrosAmpere.JustificativaProjetista),
+            NumeroLido(sistema, ParametrosAmpere.TemperaturaAmbienteC),
+            NumeroLido(sistema, ParametrosAmpere.CircuitosAgrupados));
+
+    // Parâmetros NUMBER (sem unidade): o valor interno é o digitado. Fora da faixa do decimal (só por digitação
+    // absurda) é recusado com o nome do parâmetro, em vez de um OverflowException sem contexto.
+    private static decimal? NumeroLido(Element elemento, DefinicaoDeParametro definicao)
+    {
+        if (ParametrosAmpere.Ler(elemento, definicao) is not { HasValue: true } parametro) return null;
+
+        var valor = parametro.AsDouble();
+        return double.IsFinite(valor) && Math.Abs(valor) < 1e15
+            ? (decimal)valor
+            : throw new InvalidOperationException($"{definicao.Nome} do circuito {elemento.Id.Value} fora da faixa ({valor}): corrija o valor.");
+    }
 
     private static decimal? ComprimentoInformadoM(ElectricalSystem sistema) =>
         ParametrosAmpere.Ler(sistema, ParametrosAmpere.ComprimentoRotaM) is { HasValue: true } comprimento

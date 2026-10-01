@@ -7,20 +7,23 @@ using Ampere.Relatorios;
 namespace Ampere.Dimensionamento;
 
 /// <summary>
-///     Grava em Documentos\Ampere\{projeto}\Circuitos a planilha de todos os circuitos (circuitos.csv, refeita a cada
-///     rodada) e a memória (JSON), o relatório (Markdown) e o PDF de cada circuito com memória, com o quadro, o número e o
-///     início do hash no nome. Falha de gravação não derruba o comando — o dimensionamento já está no modelo; volta como
+///     Grava em Documentos\Ampere\{projeto}\Circuitos a planilha dos circuitos da rodada e a memória (JSON), o relatório
+///     (Markdown) e o PDF de cada circuito com memória, com o quadro, o número e o início do hash no nome. A planilha do
+///     projeto todo (circuitos.csv) é refeita a cada rodada completa; a rodada só da seleção grava a sua à parte
+///     (circuitos-selecao.csv), para não trocar a planilha do projeto por um pedaço dela. Falha de gravação não derruba o comando — o dimensionamento já está no modelo; volta como
 ///     erro para o resumo. PDF indisponível (fontes do PDFsharp tomadas por outro add-in) não impede JSON e Markdown.
 /// </summary>
 internal static class RelatoriosDosCircuitos
 {
     public const string Subpasta = "Circuitos";
     public const string NomeDaPlanilha = "circuitos.csv";
+    public const string NomeDaPlanilhaDaSelecao = "circuitos-selecao.csv";
 
     /// <summary>A pasta (nula se nada foi gravado), quantas memórias saíram, a planilha (nula se não foi gravada) e os erros.</summary>
     public static (string? Pasta, int Gerados, string? Planilha, IReadOnlyList<string> Erros) Gravar(
-        IReadOnlyList<ResultadoDoCircuito> resultados, string nomeDoProjeto)
+        IReadOnlyList<ResultadoDoCircuito> resultados, string nomeDoProjeto, bool daSelecao)
     {
+        var nomeDaPlanilha = daSelecao ? NomeDaPlanilhaDaSelecao : NomeDaPlanilha;
         if (resultados.Count == 0) return (null, 0, null, []);
 
         var pasta = PastaDeRelatorios.Caminho(nomeDoProjeto, Subpasta);
@@ -34,7 +37,7 @@ internal static class RelatoriosDosCircuitos
         }
 
         var erros = new List<string>();
-        string? planilha = Path.Combine(pasta, NomeDaPlanilha);
+        string? planilha = Path.Combine(pasta, nomeDaPlanilha);
         try
         {
             // Com BOM: o Excel só reconhece os acentos de um CSV em UTF-8 se ele começar com a marca.
@@ -42,7 +45,7 @@ internal static class RelatoriosDosCircuitos
         }
         catch (Exception excecao) when (excecao is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
-            erros.Add($"planilha {NomeDaPlanilha} (aberta no Excel?): {excecao.Message}");
+            erros.Add($"planilha {nomeDaPlanilha} (aberta no Excel?): {excecao.Message}");
             planilha = null;
         }
 

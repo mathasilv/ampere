@@ -87,6 +87,18 @@ Resolvido (decisões do usuário):
 - ✅ Local pelo ambiente (01/10/2026): comando "Locais pelos ambientes" — o projetista escolhe um local da tabela de IDR
   por nome de ambiente (Room/Space, inclusive de vínculo). Decisão do desenvolvedor: o Ampere **não** deduz o local pelo
   nome do ambiente ("Banho" → banheiro); a correspondência é sempre do projetista.
+- ✅ Decisões do projetista no circuito (01/10/2026, catálogo 0.3, GUIDs novos por decisão delegada ao desenvolvedor —
+  "carta branca"): `AMP_SecaoMinimaProjetistaMm2`, `AMP_DisjuntorProjetistaA`, `AMP_IDR_DecisaoProjetista`
+  (Exigir/Dispensar), `AMP_IDR_SensibilidadeProjetistaMa`, `AMP_JustificativaProjetista`, `AMP_TemperaturaAmbienteC` e
+  `AMP_CircuitosAgrupados`. Só de entrada: o dimensionamento nunca os escreve. Numérico 0 = sem decisão.
+  O motor **verifica** cada decisão: a seção do projetista é piso (abaixo da mínima da norma, vale a da norma, com
+  aviso; fora das seções nominais, para); o disjuntor do projetista é fixo, precisa estar na série e ser ≥ I<sub>B</sub>,
+  e a seção sobe até I<sub>Z</sub> ≥ I<sub>n</sub>; o IDR dispensado contra a tabela gera aviso. A justificativa vai para
+  cada passo decidido na memória. Decisão incoerente (ex.: "Exigir" sem sensibilidade, texto desconhecido, agrupamento
+  fracionário) é problema de dados, nunca interpretada.
+- ✅ Seleção (01/10/2026): com elementos selecionados, o comando dimensiona só os circuitos do Ampere da seleção (o
+  circuito selecionado, os circuitos que um quadro selecionado alimenta e o circuito de um ponto selecionado). A
+  planilha dessa rodada vai para `circuitos-selecao.csv`, sem trocar a do projeto todo (`circuitos.csv`).
 
 Comportamento do modelo a validar pelo projetista:
 
@@ -108,11 +120,6 @@ Comportamento do modelo a validar pelo projetista:
 
 Pendente:
 
-- **Decisão do projetista sobre o IDR** (`DecisaoDeIdr`, já no Core) não tem fonte no modelo: o comando passa sempre
-  "sem decisão" e a tabela por local decide. Precisa de um campo que o motor nunca escreve (AMP_IDR_SensibilidadeMa é
-  resultado — ler de volta transformaria o cálculo em "decisão"): parâmetro novo (GUID novo, decisão do usuário) ou
-  campo no diálogo por circuito.
-- Seleção: o comando dimensiona todos os circuitos do Ampere no projeto; dimensionar só os selecionados fica para depois.
 - **Método D (enterrado) bloqueado**: as linhas da Tabela 40 do perfil são do ar e declaram `"metodos": [A1…C]`; para D
   o motor para no fator de temperatura até a Tabela 40-solo (e as Tabelas 44/45 de agrupamento enterrado) serem
   transcritas. D também sai da lista do diálogo.
