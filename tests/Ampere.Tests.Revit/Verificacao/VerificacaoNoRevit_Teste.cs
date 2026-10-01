@@ -57,8 +57,10 @@ public sealed class VerificacaoNoRevit_Teste : TesteComProjetoEletrico
         await Assert.That(Elementos(relatorio, VerificacaoDoProjeto.PontosForaDeCircuito)).IsEqualTo($"{foraDeCircuito[0]}");
         await Assert.That(Elementos(relatorio, VerificacaoDoProjeto.CircuitosForaDoAmpere)).IsEqualTo(
             $"{circuitos.Single(circuito => circuito.Numero is null).Id}");
-        await Assert.That(relatorio.MemoriasConferidas).IsFalse();
-        await Assert.That(relatorio.Pendencias.Any(pendencia => pendencia.Grupo == VerificacaoDoProjeto.CondicoesNaoGuardadas)).IsTrue();
+        // Nunca dimensionado: sem memória e sem condições, é "não dimensionado" (nada a conferir).
+        await Assert.That(relatorio.MemoriasConferidas).IsTrue();
+        await Assert.That(Elementos(relatorio, VerificacaoDoProjeto.CircuitosNaoDimensionados)).IsEqualTo(
+            $"{circuitos.Single(circuito => circuito.Numero is not null).Id}");
     }
 
     [Test]

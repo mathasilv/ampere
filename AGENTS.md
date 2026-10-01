@@ -46,9 +46,10 @@ quebre R2025/R2026: perguntar antes de aposentar essas configurações.
 - GUIDs `AMP_*`: **congelados** — fonte versionada `data/parametros/parametros_compartilhados_ampere.json`
   (cópia do `10_Parametros_Compartilhados_Ampere.json`), guardada por `GuidsCongelados_Teste`.
   Nunca alterar, nunca usar GUIDs de terceiros.
-- Extensible Storage: esquema `AmpereCondicoesDoProjeto` (`ee3927c5-6bcf-4343-8649-2dfa88c8b327`, em
-  `Ampere.Revit/Armazenamento/CondicoesNoDocumento.cs`) também **congelado** — os projetos guardam dados presos a ele.
-  Formato novo = `versao` nova no JSON (`CondicoesEmJson`) ou esquema novo com leitura do antigo.
+- Extensible Storage: esquema `AmpereCondicoesDoProjeto` (`CondicoesEmJson.GuidDoEsquema` no Core, usado por
+  `Ampere.Revit/Armazenamento/CondicoesNoDocumento.cs`) também **congelado** e guardado por teste — os projetos guardam
+  dados presos a ele (nos circuitos e num DataStorage). Formato novo = `versao` nova no JSON ou esquema novo com leitura
+  do antigo.
 
 ## Regras de domínio
 

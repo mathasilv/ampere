@@ -100,11 +100,13 @@ Resolvido (decisões do usuário):
   circuito selecionado, os circuitos que um quadro selecionado alimenta e o circuito de um ponto selecionado). A
   planilha dessa rodada vai para `circuitos-selecao.csv`, sem trocar a do projeto todo (`circuitos.csv`).
 
-- ✅ Condições do projeto no modelo (01/10/2026, decisão do desenvolvedor): temperatura, agrupamento, material e
-  padrões usados na rodada ficam no documento (Extensible Storage, JSON versionado), na mesma transação dos resultados;
-  o diálogo abre com elas. Quem abrir o projeto depois reproduz as mesmas memórias. Modelo compartilhado com o
-  armazenamento emprestado a outro usuário: o dimensionamento segue e o resumo avisa que as condições não foram
-  guardadas.
+- ✅ Condições no modelo (01/10/2026, decisão do desenvolvedor): temperatura, agrupamento, material e padrões usados
+  na rodada ficam em **cada circuito** dela (Extensible Storage, JSON versionado), na mesma transação dos resultados —
+  quem abrir o projeto depois reproduz a memória de cada um, e o "Verificar projeto" confere cada circuito com as
+  condições da rodada que o dimensionou. A rodada **completa** também as guarda como as do projeto (abrem o diálogo);
+  a rodada só da seleção não as troca. Modelo compartilhado: o armazenamento do projeto emprestado a outro usuário, ou
+  alterado no central desde a última sincronização, não é gravado (o Revit desfaria os resultados junto) e o resumo
+  avisa; texto igual ao guardado não é regravado.
 
 - ✅ Lista de materiais (01/10/2026): sai de cada rodada do "Dimensionar" (`materiais.csv`; da seleção,
   `materiais-selecao.csv`), com os circuitos de proteção decidida — os demais vão para o fim da planilha com o motivo.
@@ -117,7 +119,9 @@ Resolvido (decisões do usuário):
   local (quando o circuito não tem decisão do projetista sobre o IDR), circuitos criados fora do Ampere, com dados
   faltando, não dimensionados ou com a memória gravada diferente da que o modelo dá hoje (o cálculo é refeito com as
   condições guardadas pela última rodada), avisos e onde o cálculo para. Salva `verificacao.md` e seleciona no modelo
-  os elementos de uma pendência. Valores de resultado editados à mão (sem mudar a memória) ainda não são detectados.
+  os elementos de uma pendência. Cada memória é refeita com as condições da rodada que a gerou, pelo mesmo cálculo do
+  "Dimensionar". Ponto com Reserva conta como sem classificação. Valores de resultado editados à mão (sem mudar a
+  memória) ainda não são detectados.
 
 - ✅ Alimentação do quadro (01/10/2026): esquema e tensão do quadro de cargas vêm do sistema de distribuição atribuído
   ao painel no Revit (3 fases e 4 fios = 3F+N; 3 fios = 3F; monofásico 2 fios = F+N; monofásico 3 fios = 2F+N, que o

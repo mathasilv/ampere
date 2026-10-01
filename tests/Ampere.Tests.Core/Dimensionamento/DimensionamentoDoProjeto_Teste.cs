@@ -85,8 +85,33 @@ public class DimensionamentoDoProjeto_Teste
         DimensionamentoDoProjeto.Executar([1], Condicoes, Ficticio, Catalogos, documento);
 
         await Assert.That(documento.CondicoesGravadas).IsEqualTo(Condicoes);
+        await Assert.That(documento.CircuitosComCondicoes).IsEquivalentTo([1L]);
+        await Assert.That(documento.DoProjetoTodo == true).IsTrue();
         await Assert.That(documento.Chamadas).IsEquivalentTo(
             ["ler:1", "transacao:" + DimensionamentoDoProjeto.NomeDaTransacao, "gravar:1", "condicoes"], CollectionOrdering.Matching);
+    }
+
+    [Test]
+    public async Task Rodada_so_da_selecao_guarda_as_condicoes_nos_circuitos_e_nao_como_as_do_projeto()
+    {
+        var documento = new DocumentoDeDimensionamentoFalso([Circuito(1, "TUG-01", "TUG", Ponto(11, 1270m)), Circuito(2, "TUG-02", "TUG", Ponto(21, 1270m))]);
+
+        DimensionamentoDoProjeto.Executar([2], Condicoes, Ficticio, Catalogos, documento, doProjetoTodo: false);
+
+        await Assert.That(documento.CircuitosComCondicoes).IsEquivalentTo([2L]);
+        await Assert.That(documento.DoProjetoTodo == false).IsTrue();
+    }
+
+    [Test]
+    public async Task Calcular_e_o_mesmo_calculo_da_rodada()
+    {
+        var circuito = Circuito(1, "TUG-01", "TUG", Ponto(11, 1270m));
+
+        var daRodada = DimensionamentoDoProjeto.Executar([1], Condicoes, Ficticio, Catalogos, new DocumentoDeDimensionamentoFalso([circuito]))[0];
+        var avulso = DimensionamentoDoProjeto.Calcular(circuito, Condicoes, Ficticio, Catalogos);
+
+        await Assert.That(avulso.Memoria!.Hash()).IsEqualTo(daRodada.Memoria!.Hash());
+        await Assert.That(avulso.PotenciaVA).IsEqualTo(daRodada.PotenciaVA);
     }
 
     [Test]
@@ -326,10 +351,16 @@ public class DimensionamentoDoProjeto_Teste
 
         public CondicoesDoProjeto? CondicoesGravadas { get; private set; }
 
-        public void GravarCondicoes(CondicoesDoProjeto condicoes)
+        public IReadOnlyCollection<long> CircuitosComCondicoes { get; private set; } = [];
+
+        public bool? DoProjetoTodo { get; private set; }
+
+        public void GravarCondicoes(CondicoesDoProjeto condicoes, IReadOnlyCollection<long> circuitos, bool doProjetoTodo)
         {
             Chamadas.Add("condicoes");
             CondicoesGravadas = condicoes;
+            CircuitosComCondicoes = circuitos;
+            DoProjetoTodo = doProjetoTodo;
         }
     }
 }

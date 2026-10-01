@@ -36,7 +36,7 @@ public class VerificacaoDoProjeto_Teste
     {
         var documento = Documento(Circuito(1, "TUG-01", Ponto(11), Ponto(12, local: null)));
         documento.Pontos.Add(new PontoVerificado(20, null, null, null));
-        documento.Pontos.Add(new PontoVerificado(21, "TUG", "LOCAL-SECO", null));
+        documento.Pontos.Add(new PontoVerificado(21, "TUG", null, null));
         documento.Pontos.Add(new PontoVerificado(22, "Reserva", "LOCAL-SECO", null));
         documento.GravarMemoriasAtuais();
 
@@ -45,7 +45,7 @@ public class VerificacaoDoProjeto_Teste
         await Assert.That(Grupos(relatorio)).IsEqualTo(
             $"Erro|{VerificacaoDoProjeto.PontosForaDeCircuito}|21\n" +
             $"Erro|{VerificacaoDoProjeto.PontosSemLocal}|12\n" +
-            $"Aviso|{VerificacaoDoProjeto.PontosSemClassificacao}|20\n" +
+            $"Aviso|{VerificacaoDoProjeto.PontosSemClassificacao}|20;22\n" +
             $"Informacao|{VerificacaoDoProjeto.CalculoInterrompido}|1");
     }
 
@@ -78,16 +78,50 @@ public class VerificacaoDoProjeto_Teste
     }
 
     [Test]
-    public async Task Sem_condicoes_guardadas_os_circuitos_nao_sao_conferidos_e_o_relatorio_diz_por_que()
+    public async Task Memoria_sem_as_condicoes_da_rodada_nao_e_conferida_e_o_relatorio_diz_por_que()
     {
-        var documento = Documento(Circuito(1, "TUG-01", Ponto(11)));
+        var documento = Documento(Circuito(1, "TUG-01", Ponto(11)), Circuito(2, "TUG-02", Ponto(21)));
+        documento.GravarMemoriasAtuais();
+        documento.CondicoesDosCircuitos.Remove(1);
         documento.Condicoes = null;
+        documento.Gravar(2, null);
+        documento.CondicoesDosCircuitos.Remove(2);
 
         var relatorio = Verificar(documento);
 
         await Assert.That(relatorio.MemoriasConferidas).IsFalse();
-        await Assert.That(relatorio.Pendencias.Single().Grupo).IsEqualTo(VerificacaoDoProjeto.CondicoesNaoGuardadas);
-        await Assert.That(relatorio.Pendencias.Single().Gravidade).IsEqualTo(GravidadeDaPendencia.Informacao);
+        await Assert.That(Grupos(relatorio)).IsEqualTo(
+            $"Aviso|{VerificacaoDoProjeto.CircuitosNaoDimensionados}|2\n" +
+            $"Informacao|{VerificacaoDoProjeto.CondicoesNaoGuardadas}|1");
+    }
+
+    [Test]
+    public async Task Cada_circuito_e_conferido_com_as_condicoes_da_rodada_que_o_dimensionou()
+    {
+        // O projeto todo a 30 °C e depois só o TUG-02 a 40 °C: nenhuma memória está desatualizada.
+        var documento = Documento(Circuito(1, "TUG-01", Ponto(11)), Circuito(2, "TUG-02", Ponto(21)));
+        documento.GravarMemoriasAtuais();
+        documento.Condicoes = Condicoes with { TemperaturaAmbienteC = 40m };
+        documento.GravarMemoriasAtuais(2);
+        documento.Condicoes = Condicoes;
+
+        var relatorio = Verificar(documento);
+
+        await Assert.That(relatorio.Pendencias).IsEmpty();
+        await Assert.That(relatorio.MemoriasConferidas).IsTrue();
+    }
+
+    [Test]
+    public async Task Entrada_invalida_e_erro_com_o_motivo_e_nao_circuito_por_dimensionar()
+    {
+        var documento = Documento(Circuito(1, "TUG-01", Ponto(11)) with { ComprimentoM = -5m });
+        documento.GravarMemoriasAtuais();
+
+        var pendencia = Verificar(documento).Pendencias.Single();
+
+        await Assert.That(pendencia.Gravidade).IsEqualTo(GravidadeDaPendencia.Erro);
+        await Assert.That(pendencia.Grupo).IsEqualTo(VerificacaoDoProjeto.CircuitosComDadosFaltando);
+        await Assert.That(pendencia.Descricao).IsEqualTo("QD1 TUG-01: comprimento deve ser positivo");
     }
 
     [Test]
@@ -107,11 +141,11 @@ public class VerificacaoDoProjeto_Teste
     }
 
     [Test]
-    public async Task Mudanca_nas_condicoes_desatualiza_as_memorias()
+    public async Task Mudanca_nos_dados_do_circuito_desatualiza_a_memoria()
     {
         var documento = Documento(Circuito(1, "TUG-01", Ponto(11)));
         documento.GravarMemoriasAtuais();
-        documento.Condicoes = Condicoes with { TemperaturaAmbienteC = 40m };
+        documento.Trocar(Circuito(1, "TUG-01", Ponto(11)) with { ComprimentoM = 25m });
 
         var relatorio = Verificar(documento);
 
@@ -209,15 +243,39 @@ public class VerificacaoDoProjeto_Teste
 
         public CondicoesDoProjeto? LerCondicoes() => Condicoes;
 
-        /// <summary>Como depois de uma rodada do "Dimensionar" com as condições atuais.</summary>
-        public void GravarMemoriasAtuais()
+        public Dictionary<long, CondicoesDoProjeto> CondicoesDosCircuitos { get; } = [];
+
+        public IReadOnlyDictionary<long, CondicoesDoProjeto> LerCondicoesDosCircuitos(IReadOnlyCollection<long> ids) =>
+            CondicoesDosCircuitos.Where(par => ids.Contains(par.Key)).ToDictionary(par => par.Key, par => par.Value);
+
+        /// <summary>Como depois de uma rodada do "Dimensionar" (pelo próprio caso de uso) com as condições atuais.</summary>
+        public void GravarMemoriasAtuais(params long[] so)
         {
-            foreach (var circuito in _circuitos)
+            var ids = so.Length > 0 ? so : _circuitos.Select(circuito => circuito.Id).ToArray();
+            var documento = new DimensionamentoFalso(_circuitos);
+            foreach (var resultado in DimensionamentoDoProjeto.Executar(ids, Condicoes!, Ficticio, Catalogos, documento, doProjetoTodo: so.Length == 0))
             {
-                var montada = EntradaDoCircuito.Montar(circuito, Condicoes!);
-                Gravar(circuito.Id, montada.Entrada is null ? null : DimensionamentoDeCircuito.Dimensionar(montada.Entrada, Ficticio, Catalogos).Memoria?.Hash());
+                Gravar(resultado.Id, resultado.Memoria?.Hash());
+                CondicoesDosCircuitos[resultado.Id] = Condicoes!;
             }
         }
+
+        private sealed class DimensionamentoFalso(IReadOnlyList<DadosDoCircuito> circuitos) : IDocumentoDeDimensionamento
+        {
+            public void EmUmaTransacao(string nome, Action acao) => acao();
+
+            public IReadOnlyList<DadosDoCircuito> LerCircuitos(IReadOnlyCollection<long> ids) => circuitos.Where(circuito => ids.Contains(circuito.Id)).ToList();
+
+            public void GravarResultados(IReadOnlyList<ResultadoDoCircuito> resultados)
+            {
+            }
+
+            public void GravarCondicoes(CondicoesDoProjeto condicoes, IReadOnlyCollection<long> circuitos, bool doProjetoTodo)
+            {
+            }
+        }
+
+        public void Trocar(DadosDoCircuito circuito) => _circuitos[_circuitos.FindIndex(existente => existente.Id == circuito.Id)] = circuito;
 
         public void Gravar(long circuito, string? memoria)
         {

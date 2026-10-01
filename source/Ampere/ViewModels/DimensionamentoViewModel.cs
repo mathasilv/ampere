@@ -28,7 +28,7 @@ public sealed class DimensionamentoViewModel : ObservableObject
         CondicoesDoProjeto? anteriores)
     {
         Titulo = daSelecao
-            ? $"{quantidadeDeCircuitos} circuito(s) do Ampere na seleção (o restante do projeto não muda)"
+            ? $"{quantidadeDeCircuitos} circuito(s) do Ampere na seleção (o restante do projeto e as condições guardadas do projeto não mudam)"
             : $"{quantidadeDeCircuitos} circuito(s) do Ampere no projeto";
         Materiais = vocabulario.Materiais;
         MetodosDeInstalacao = [string.Empty, .. vocabulario.MetodosDeInstalacao];

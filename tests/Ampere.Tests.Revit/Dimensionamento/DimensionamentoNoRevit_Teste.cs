@@ -246,7 +246,7 @@ public sealed class DimensionamentoNoRevit_Teste : TesteComProjetoEletrico
     }
 
     [Test]
-    public async Task Condicoes_da_rodada_ficam_guardadas_no_modelo()
+    public async Task Condicoes_da_rodada_ficam_nos_circuitos_e_as_do_projeto_so_na_rodada_completa()
     {
         MontarIluminacaoETomadas();
         var ids = Dimensionamento.ListarCircuitos();
@@ -254,13 +254,22 @@ public sealed class DimensionamentoNoRevit_Teste : TesteComProjetoEletrico
         var primeiras = Condicoes with { TemperaturaAmbienteC = 35.5m, CircuitosAgrupados = 2, TipoDeEletroduto = "Eletroduto de teste" };
 
         await Assert.That(Dimensionamento.LerCondicoes()).IsNull();
+        await Assert.That(Dimensionamento.LerCondicoesDosCircuitos(ids)).IsEmpty();
         DimensionamentoDoProjeto.Executar(ids, primeiras, PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao, Dimensionamento);
         await Assert.That(Dimensionamento.LerCondicoes()).IsEqualTo(primeiras);
+        await Assert.That(Dimensionamento.LerCondicoesDosCircuitos(ids).Values.All(condicoes => condicoes == primeiras)).IsTrue();
         await Assert.That(Armazens()).IsEqualTo(armazensAntes + 1);
 
+        // Só da seleção: o circuito guarda as suas; as do projeto não mudam.
         var porta = Dimensionamento;
-        DimensionamentoDoProjeto.Executar(ids, Condicoes, PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao, porta);
+        DimensionamentoDoProjeto.Executar([ids[1]], Condicoes, PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao, porta, doProjetoTodo: false);
         await Assert.That(porta.CondicoesNaoGravadas).IsNull();
+        await Assert.That(Dimensionamento.LerCondicoes()).IsEqualTo(primeiras);
+        var porCircuito = Dimensionamento.LerCondicoesDosCircuitos(ids);
+        await Assert.That(porCircuito[ids[0]]).IsEqualTo(primeiras);
+        await Assert.That(porCircuito[ids[1]]).IsEqualTo(Condicoes);
+
+        Dimensionar(ids);
         await Assert.That(Dimensionamento.LerCondicoes()).IsEqualTo(Condicoes);
         await Assert.That(Armazens()).IsEqualTo(armazensAntes + 1);
     }

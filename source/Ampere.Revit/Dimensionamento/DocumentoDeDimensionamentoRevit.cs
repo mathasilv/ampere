@@ -20,8 +20,8 @@ namespace Ampere.Revit.Dimensionamento;
 ///         <item>Gravação: só os parâmetros de resultado, nunca as entradas (método, isolação, tipo de condutor,
 ///         comprimento e decisões): o padrão do projeto gravado no circuito viraria "decisão do projetista" na rodada seguinte.
 ///         Valor não calculado apaga o anterior (<see cref="ParametrosAmpere.GravarNumeroOuApagar" />).</item>
-///         <item>Condições do projeto: guardadas no documento (<see cref="CondicoesNoDocumento" />), na transação dos
-///         resultados.</item>
+///         <item>Condições: as da rodada em cada circuito dela e, na rodada completa, também as do projeto
+///         (<see cref="CondicoesNoDocumento" />), na transação dos resultados.</item>
 ///         <item>Proteção (seção, IZ, disjuntor, queda, IDR e eletroduto) só é gravada quando a exigência de IDR foi
 ///         avaliada: sem isso, IDR vazio ao lado de um disjuntor seria lido como "sem IDR". Fica a corrente de projeto, os
 ///         fatores e o hash da memória, que mostra onde o cálculo parou.</item>
@@ -31,14 +31,27 @@ public sealed class DocumentoDeDimensionamentoRevit(Document documento) : IDocum
 {
     public void EmUmaTransacao(string nome, Action acao) => TransacaoRevit.Executar(documento, nome, acao);
 
-    /// <summary>Por que as condições não foram guardadas na última rodada (nulo = guardadas, ou nada gravado ainda).</summary>
+    /// <summary>
+    ///     Por que as condições do projeto não foram guardadas na última rodada (nulo = guardadas, rodada só da seleção ou
+    ///     nada gravado ainda). As dos circuitos sempre vão com os resultados.
+    /// </summary>
     public string? CondicoesNaoGravadas { get; private set; }
 
-    /// <summary>Condições da última rodada guardadas no documento; nulas se não há (ou são de formato desconhecido).</summary>
+    /// <summary>Condições do projeto (da última rodada completa); nulas se não há (ou são de formato desconhecido).</summary>
     public CondicoesDoProjeto? LerCondicoes() => CondicoesEmJson.Ler(CondicoesNoDocumento.Ler(documento));
 
-    public void GravarCondicoes(CondicoesDoProjeto condicoes) =>
-        CondicoesNaoGravadas = CondicoesNoDocumento.Gravar(documento, CondicoesEmJson.Escrever(condicoes));
+    /// <summary>Condições da rodada que dimensionou cada circuito (só os que as têm).</summary>
+    public IReadOnlyDictionary<long, CondicoesDoProjeto> LerCondicoesDosCircuitos(IReadOnlyCollection<long> ids) =>
+        ids.Select(id => (Id: id, Condicoes: CondicoesEmJson.Ler(CondicoesNoDocumento.LerDo(Sistema(id)))))
+            .Where(par => par.Condicoes is not null)
+            .ToDictionary(par => par.Id, par => par.Condicoes!);
+
+    public void GravarCondicoes(CondicoesDoProjeto condicoes, IReadOnlyCollection<long> circuitos, bool doProjetoTodo)
+    {
+        var json = CondicoesEmJson.Escrever(condicoes);
+        foreach (var id in circuitos) CondicoesNoDocumento.GravarEm(Sistema(id), json);
+        CondicoesNaoGravadas = doProjetoTodo ? CondicoesNoDocumento.Gravar(documento, json) : null;
+    }
 
     /// <summary>Todos os parâmetros do catálogo já estão no documento (a injeção é tudo ou nada)?</summary>
     public bool ParametrosInjetados() =>

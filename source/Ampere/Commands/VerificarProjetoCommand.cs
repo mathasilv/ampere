@@ -45,7 +45,17 @@ public class VerificarProjetoCommand : ExternalCommand
             return;
         }
 
-        var relatorio = VerificacaoDoProjeto.Executar(porta, PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao);
+        RelatorioDeVerificacao relatorio;
+        try
+        {
+            relatorio = VerificacaoDoProjeto.Executar(porta, PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao);
+        }
+        catch (Exception excecao) when (excecao is InvalidOperationException or Autodesk.Revit.Exceptions.ApplicationException)
+        {
+            Cancelar($"A verificação não pôde ser concluída:{Environment.NewLine}{excecao.Message}");
+            return;
+        }
+
         var arquivo = Salvar(relatorio, Path.GetFileNameWithoutExtension(documento.PathName));
 
         var viewModel = new VerificacaoViewModel(relatorio, arquivo);

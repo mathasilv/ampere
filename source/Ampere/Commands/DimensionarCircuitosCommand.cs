@@ -77,7 +77,7 @@ public class DimensionarCircuitosCommand : ExternalCommand
         IReadOnlyList<ResultadoDoCircuito> resultados;
         try
         {
-            resultados = DimensionamentoDoProjeto.Executar(circuitos, condicoes, perfil, catalogos, porta);
+            resultados = DimensionamentoDoProjeto.Executar(circuitos, condicoes, perfil, catalogos, porta, doProjetoTodo: !daSelecao);
         }
         catch (Exception excecao) when (excecao is InvalidOperationException or Autodesk.Revit.Exceptions.ApplicationException)
         {
@@ -90,7 +90,7 @@ public class DimensionarCircuitosCommand : ExternalCommand
 
         var texto = ResumoDoDimensionamento.Texto(resultados, perfil, cronometro.Elapsed, gravacao);
         if (porta.CondicoesNaoGravadas is { } motivo)
-            texto += $"{Environment.NewLine}{Environment.NewLine}As condições do projeto não foram guardadas no modelo ({motivo}): na próxima vez, o diálogo não as traz preenchidas.";
+            texto += $"{Environment.NewLine}{Environment.NewLine}As condições do projeto não foram atualizadas no modelo ({motivo}): o diálogo continua abrindo com as anteriores. As de cada circuito foram guardadas com os resultados.";
         TaskDialog.Show(TituloDaJanela, texto);
     }
 

@@ -27,8 +27,11 @@ public interface IDocumentoDeVerificacao
     /// <summary>Os mesmos dados que o dimensionamento lê, para refazer o cálculo e comparar com a memória gravada.</summary>
     IReadOnlyList<DadosDoCircuito> LerCircuitos(IReadOnlyCollection<long> ids);
 
-    /// <summary>Condições guardadas pela última rodada do dimensionamento (nulas se nunca guardadas).</summary>
+    /// <summary>Condições do projeto, guardadas pela última rodada completa do dimensionamento (nulas se nunca guardadas).</summary>
     CondicoesDoProjeto? LerCondicoes();
+
+    /// <summary>Condições da rodada que dimensionou cada circuito (só os que as têm guardadas).</summary>
+    IReadOnlyDictionary<long, CondicoesDoProjeto> LerCondicoesDosCircuitos(IReadOnlyCollection<long> ids);
 }
 
 /// <summary>Quão grave é a pendência.</summary>
@@ -48,7 +51,7 @@ public enum GravidadeDaPendencia
 public sealed record Pendencia(GravidadeDaPendencia Gravidade, string Grupo, string Descricao, IReadOnlyList<long> Elementos);
 
 /// <summary>Resultado da verificação: pendências em ordem de gravidade e o que foi verificado.</summary>
-/// <param name="MemoriasConferidas">Se as memórias gravadas foram comparadas com o cálculo atual (exige condições guardadas).</param>
+/// <param name="MemoriasConferidas">Se todas as memórias gravadas foram comparadas com o cálculo atual (exige as condições da rodada).</param>
 public sealed record RelatorioDeVerificacao(IReadOnlyList<Pendencia> Pendencias, int Pontos, int Circuitos, bool MemoriasConferidas)
 {
     private const int ElementosListados = 20;
@@ -62,7 +65,7 @@ public sealed record RelatorioDeVerificacao(IReadOnlyList<Pendencia> Pendencias,
         texto.Append("# Verificação do projeto\n\n");
         texto.Append($"- **Pontos de carga verificados:** {Pontos}\n");
         texto.Append($"- **Circuitos de força verificados:** {Circuitos}\n");
-        texto.Append($"- **Memórias conferidas com o modelo:** {(MemoriasConferidas ? "sim" : "não (o modelo não tem as condições da última rodada do 'Dimensionar')")}\n");
+        texto.Append($"- **Memórias conferidas com o modelo:** {(MemoriasConferidas ? "sim" : "não todas (há memórias sem as condições da rodada que as gerou)")}\n");
         texto.Append($"- **Pendências:** {Contar(GravidadeDaPendencia.Erro)} erro(s), {Contar(GravidadeDaPendencia.Aviso)} aviso(s), {Contar(GravidadeDaPendencia.Informacao)} informação(ões)\n");
         if (Pendencias.Count == 0)
         {
@@ -110,9 +113,9 @@ public sealed record RelatorioDeVerificacao(IReadOnlyList<Pendencia> Pendencias,
 ///     memória gravada diferente da que o modelo daria hoje; e onde o cálculo para.
 /// </summary>
 /// <remarks>
-///     A memória é refeita com as condições guardadas no modelo pela última rodada do dimensionamento, o perfil e os
-///     catálogos — o mesmo caminho do comando "Dimensionar". Sem condições guardadas, a conferência dos circuitos fica
-///     de fora, e o relatório diz por quê.
+///     A memória de cada circuito é refeita com as condições da rodada que o dimensionou (guardadas no circuito; sem
+///     elas, as do projeto), o perfil e os catálogos — pelo mesmo <see cref="DimensionamentoDoProjeto.Calcular" /> do
+///     comando "Dimensionar". Circuito com memória e sem condições guardadas não é conferido, e o relatório diz por quê.
 /// </remarks>
 public static class VerificacaoDoProjeto
 {
@@ -124,7 +127,7 @@ public static class VerificacaoDoProjeto
     public const string CircuitosNaoDimensionados = "Circuitos não dimensionados";
     public const string MemoriasDesatualizadas = "Memórias desatualizadas";
     public const string AvisosDoDimensionamento = "Avisos do dimensionamento";
-    public const string CondicoesNaoGuardadas = "Condições do projeto não guardadas";
+    public const string CondicoesNaoGuardadas = "Memórias sem as condições da rodada";
     public const string CalculoInterrompido = "Onde o cálculo para";
 
     public static RelatorioDeVerificacao Executar(IDocumentoDeVerificacao documento, PerfilNormativo perfil, CatalogosDeProduto catalogos)
@@ -139,28 +142,16 @@ public static class VerificacaoDoProjeto
         PontosSemLocalDecidido(classificados, dados, pendencias);
         Adicionar(pendencias, GravidadeDaPendencia.Aviso, CircuitosForaDoAmpere,
             circuitos.Where(circuito => string.IsNullOrWhiteSpace(circuito.Numero) && classificados.Any(ponto => ponto.Circuito == circuito.Id)).ToList(),
-            quantos => $"{quantos} circuito(s) com pontos classificados e sem AMP_NumeroCircuito: o Ampere não os dimensiona nem os põe no quadro de cargas (refaça-os com 'Criar circuitos')");
+            quantos => $"{quantos} circuito(s) com pontos classificados e sem AMP_NumeroCircuito: o Ampere não os dimensiona nem os põe no quadro de cargas (apague o circuito no Revit e refaça-o com 'Criar circuitos', que não mexe em ponto já circuitado)");
 
-        var condicoes = documento.LerCondicoes();
-        if (condicoes is null)
-        {
-            if (doAmpere.Count > 0)
-            {
-                pendencias.Add(new Pendencia(GravidadeDaPendencia.Informacao, CondicoesNaoGuardadas,
-                    "o modelo não tem as condições da última rodada do 'Dimensionar': rode-o para que a verificação confira os circuitos e as memórias", []));
-            }
-        }
-        else
-        {
-            Circuitos(doAmpere, dados, condicoes, perfil, catalogos, pendencias);
-        }
+        var conferidas = Circuitos(doAmpere, dados, documento.LerCondicoes(), documento.LerCondicoesDosCircuitos(dados.Keys.ToList()), perfil, catalogos, pendencias);
 
         var ordenadas = pendencias
             .OrderBy(pendencia => pendencia.Gravidade)
             .ThenBy(pendencia => Array.IndexOf(OrdemDosGrupos, pendencia.Grupo))
             .ThenBy(pendencia => pendencia.Descricao, StringComparer.Ordinal)
             .ToList();
-        return new RelatorioDeVerificacao(ordenadas, pontos.Count, circuitos.Count, condicoes is not null);
+        return new RelatorioDeVerificacao(ordenadas, pontos.Count, circuitos.Count, conferidas);
     }
 
     private static readonly string[] OrdemDosGrupos =
@@ -169,21 +160,21 @@ public static class VerificacaoDoProjeto
         CircuitosNaoDimensionados, MemoriasDesatualizadas, AvisosDoDimensionamento, CondicoesNaoGuardadas, CalculoInterrompido
     ];
 
-    // Devolve os pontos classificados, que seguem para as verificações de circuito e de local.
+    // Devolve os pontos classificados, que seguem para as verificações de circuito e de local. Reserva não é tipo de
+    // ponto ("Classificar cargas" e "Criar circuitos" o recusam): conta como sem classificação.
     private static List<PontoVerificado> Pontos(IReadOnlyList<PontoVerificado> pontos, List<Pendencia> pendencias)
     {
-        var semTipo = pontos.Where(ponto => !CodigosDeTipoDeCarga.TryLer(ponto.TipoDeCarga, out _)).Select(ponto => ponto.Id).ToList();
+        static bool Classificado(PontoVerificado ponto) => CodigosDeTipoDeCarga.TryLer(ponto.TipoDeCarga, out var tipo) && tipo != TipoDeCarga.Reserva;
+
+        var semTipo = pontos.Where(ponto => !Classificado(ponto)).Select(ponto => ponto.Id).ToList();
         if (semTipo.Count > 0)
         {
             pendencias.Add(new Pendencia(GravidadeDaPendencia.Aviso, PontosSemClassificacao,
-                $"{semTipo.Count} ponto(s) de carga sem AMP_TipoCarga reconhecido: ficam fora dos circuitos e do quadro de cargas (rode 'Classificar cargas')", semTipo));
+                $"{semTipo.Count} ponto(s) de carga sem AMP_TipoCarga reconhecido (ou com Reserva, que não vale para ponto): ficam fora dos circuitos e do quadro de cargas (rode 'Classificar cargas')", semTipo));
         }
 
-        var classificados = pontos.Where(ponto => CodigosDeTipoDeCarga.TryLer(ponto.TipoDeCarga, out _)).ToList();
-        var foraDeCircuito = classificados
-            .Where(ponto => ponto.Circuito is null && CodigosDeTipoDeCarga.TryLer(ponto.TipoDeCarga, out var tipo) && tipo != TipoDeCarga.Reserva)
-            .Select(ponto => ponto.Id)
-            .ToList();
+        var classificados = pontos.Where(Classificado).ToList();
+        var foraDeCircuito = classificados.Where(ponto => ponto.Circuito is null).Select(ponto => ponto.Id).ToList();
         if (foraDeCircuito.Count > 0)
         {
             pendencias.Add(new Pendencia(GravidadeDaPendencia.Erro, PontosForaDeCircuito,
@@ -194,12 +185,13 @@ public static class VerificacaoDoProjeto
     }
 
     // Sem local, a tabela de IDR não decide; com decisão do projetista sobre o IDR no circuito, o local não faz falta.
+    // Só nos circuitos do Ampere: ponto fora de circuito (ou em circuito de fora) já tem a sua pendência.
     private static void PontosSemLocalDecidido(List<PontoVerificado> classificados, Dictionary<long, DadosDoCircuito> dados, List<Pendencia> pendencias)
     {
         var semLocal = classificados
             .Where(ponto => string.IsNullOrWhiteSpace(ponto.Local))
-            .Where(ponto => ponto.Circuito is not { } circuito || !dados.TryGetValue(circuito, out var doCircuito)
-                                                                || string.IsNullOrWhiteSpace(doCircuito.Decisoes?.Idr))
+            .Where(ponto => ponto.Circuito is { } circuito && dados.TryGetValue(circuito, out var doCircuito)
+                                                         && string.IsNullOrWhiteSpace(doCircuito.Decisoes?.Idr))
             .Select(ponto => ponto.Id)
             .ToList();
         if (semLocal.Count == 0) return;
@@ -208,33 +200,44 @@ public static class VerificacaoDoProjeto
             $"{semLocal.Count} ponto(s) sem AMP_Local e sem decisão do projetista sobre o IDR no circuito: o dimensionamento para no IDR (rode 'Locais pelos ambientes' ou 'Classificar cargas')", semLocal));
     }
 
-    private static void Circuitos(
-        List<CircuitoVerificado> doAmpere, Dictionary<long, DadosDoCircuito> dados, CondicoesDoProjeto condicoes, PerfilNormativo perfil,
-        CatalogosDeProduto catalogos, List<Pendencia> pendencias)
+    // Devolve se todas as memórias gravadas puderam ser conferidas (havia as condições da rodada de cada uma).
+    private static bool Circuitos(
+        List<CircuitoVerificado> doAmpere, Dictionary<long, DadosDoCircuito> dados, CondicoesDoProjeto? doProjeto,
+        IReadOnlyDictionary<long, CondicoesDoProjeto> porCircuito, PerfilNormativo perfil, CatalogosDeProduto catalogos, List<Pendencia> pendencias)
     {
         var naoDimensionados = new List<CircuitoVerificado>();
         var desatualizados = new List<CircuitoVerificado>();
+        var semCondicoes = new List<CircuitoVerificado>();
         var interrupcoes = new Dictionary<string, List<long>>(StringComparer.Ordinal);
         foreach (var circuito in doAmpere)
         {
             if (!dados.TryGetValue(circuito.Id, out var doCircuito)) continue;
 
-            var montada = EntradaDoCircuito.Montar(doCircuito, condicoes);
-            if (montada.Entrada is null)
+            var gravada = string.IsNullOrWhiteSpace(circuito.MemoriaGravada) ? null : circuito.MemoriaGravada.Trim();
+            if ((porCircuito.GetValueOrDefault(circuito.Id) ?? doProjeto) is not { } condicoes)
             {
-                pendencias.Add(new Pendencia(GravidadeDaPendencia.Erro, CircuitosComDadosFaltando,
-                    $"{Identificacao(circuito)}: {string.Join("; ", montada.Problemas)}", [circuito.Id]));
+                (gravada is null ? naoDimensionados : semCondicoes).Add(circuito);
                 continue;
             }
 
-            var resultado = DimensionamentoDeCircuito.Dimensionar(montada.Entrada, perfil, catalogos);
-            if (string.IsNullOrWhiteSpace(circuito.MemoriaGravada)) naoDimensionados.Add(circuito);
-            else if (resultado.Memoria is not { } memoria || memoria.Hash() != circuito.MemoriaGravada.Trim()) desatualizados.Add(circuito);
+            var resultado = DimensionamentoDoProjeto.Calcular(doCircuito, condicoes, perfil, catalogos);
+            var problemasDeEntrada = resultado.ProblemasDeDados.Count > 0
+                ? resultado.ProblemasDeDados
+                : resultado.Dimensionamento is { Situacao: SituacaoDoDimensionamento.EntradaInvalida } invalido ? invalido.Problemas : null;
+            if (problemasDeEntrada is not null)
+            {
+                pendencias.Add(new Pendencia(GravidadeDaPendencia.Erro, CircuitosComDadosFaltando,
+                    $"{Identificacao(circuito)}: {string.Join("; ", problemasDeEntrada)}", [circuito.Id]));
+                continue;
+            }
 
-            foreach (var aviso in resultado.Avisos)
+            if (gravada is null) naoDimensionados.Add(circuito);
+            else if (resultado.Memoria is not { } memoria || memoria.Hash() != gravada) desatualizados.Add(circuito);
+
+            foreach (var aviso in resultado.Dimensionamento!.Avisos)
                 pendencias.Add(new Pendencia(GravidadeDaPendencia.Aviso, AvisosDoDimensionamento, $"{Identificacao(circuito)}: {aviso}", [circuito.Id]));
 
-            foreach (var problema in resultado.Problemas)
+            foreach (var problema in resultado.Dimensionamento.Problemas)
             {
                 if (!interrupcoes.TryGetValue(problema, out var ids)) interrupcoes[problema] = ids = [];
                 ids.Add(circuito.Id);
@@ -244,9 +247,12 @@ public static class VerificacaoDoProjeto
         Adicionar(pendencias, GravidadeDaPendencia.Aviso, CircuitosNaoDimensionados, naoDimensionados,
             quantos => $"{quantos} circuito(s) sem memória gravada: rode 'Dimensionar circuitos'");
         Adicionar(pendencias, GravidadeDaPendencia.Aviso, MemoriasDesatualizadas, desatualizados,
-            quantos => $"{quantos} circuito(s) com a memória gravada diferente da que o modelo dá hoje (dados, decisões, condições, perfil ou catálogos mudaram): rode 'Dimensionar circuitos' de novo");
+            quantos => $"{quantos} circuito(s) com a memória gravada diferente da que o modelo dá hoje com as condições da rodada que os dimensionou (dados, decisões, perfil ou catálogos mudaram): rode 'Dimensionar circuitos' de novo");
+        Adicionar(pendencias, GravidadeDaPendencia.Informacao, CondicoesNaoGuardadas, semCondicoes,
+            quantos => $"{quantos} circuito(s) com memória, mas sem as condições da rodada que os dimensionou (rodada anterior a esta versão): não conferidos — rode 'Dimensionar circuitos' para conferi-los depois");
         foreach (var (problema, ids) in interrupcoes)
             pendencias.Add(new Pendencia(GravidadeDaPendencia.Informacao, CalculoInterrompido, $"{problema} ({ids.Count} circuito(s))", ids));
+        return semCondicoes.Count == 0;
     }
 
     private static void Adicionar(List<Pendencia> pendencias, GravidadeDaPendencia gravidade, string grupo, IReadOnlyList<CircuitoVerificado> circuitos,

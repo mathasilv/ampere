@@ -32,12 +32,12 @@ public class ListaDeMateriais_Teste
 
         await Assert.That(string.Join("\n", lista.Itens.Select(item => $"{item.Grupo}|{item.Item}|{item.Quantidade:0.###}|{item.Unidade}|{string.Join(", ", item.Circuitos)}")))
             .IsEqualTo(string.Join("\n",
-                "Condutores|FIO-TESTE 2,5 mm² — fase|30|m|QD1-TUG-01, QD1-TUG-02",
-                "Condutores|FIO-TESTE 2,5 mm² — neutro|30|m|QD1-TUG-01, QD1-TUG-02",
-                "Condutores|FIO-TESTE 2,5 mm² — proteção (PE)|30|m|QD1-TUG-01, QD1-TUG-02",
-                "Condutores|FIO-TESTE 4 mm² — fase|45|m|QD1-TUE-01",
-                "Condutores|FIO-TESTE 4 mm² — neutro|15|m|QD1-TUE-01",
-                "Condutores|FIO-TESTE 4 mm² — proteção (PE)|15|m|QD1-TUE-01",
+                "Condutores|FIO-TESTE (Cobre, PVC) 2,5 mm² — fase|30|m|QD1-TUG-01, QD1-TUG-02",
+                "Condutores|FIO-TESTE (Cobre, PVC) 2,5 mm² — neutro|30|m|QD1-TUG-01, QD1-TUG-02",
+                "Condutores|FIO-TESTE (Cobre, PVC) 2,5 mm² — proteção (PE)|30|m|QD1-TUG-01, QD1-TUG-02",
+                "Condutores|FIO-TESTE (Cobre, PVC) 4 mm² — fase|45|m|QD1-TUE-01",
+                "Condutores|FIO-TESTE (Cobre, PVC) 4 mm² — neutro|15|m|QD1-TUE-01",
+                "Condutores|FIO-TESTE (Cobre, PVC) 4 mm² — proteção (PE)|15|m|QD1-TUE-01",
                 "Disjuntores|Disjuntor 1P 10 A|2|un|QD1-TUG-01, QD1-TUG-02",
                 "Disjuntores|Disjuntor 3P 20 A|1|un|QD1-TUE-01",
                 "IDR|IDR 2P 25 A, IΔn 30 mA|1|un|QD1-TUG-02"));
@@ -50,7 +50,7 @@ public class ListaDeMateriais_Teste
         var lista = Montar(Circuito(1, "TUE-02", "TUE", 10m, "LOCAL-SECO", 2200m, 220m, "2F"));
 
         await Assert.That(string.Join("|", lista.Itens.Select(item => item.Item))).IsEqualTo(
-            "FIO-TESTE 2,5 mm² — fase|FIO-TESTE 2,5 mm² — proteção (PE)|Disjuntor 2P 10 A");
+            "FIO-TESTE (Cobre, PVC) 2,5 mm² — fase|FIO-TESTE (Cobre, PVC) 2,5 mm² — proteção (PE)|Disjuntor 2P 10 A");
         await Assert.That(lista.Itens[0].Quantidade).IsEqualTo(20m);
     }
 
@@ -69,6 +69,31 @@ public class ListaDeMateriais_Teste
     }
 
     [Test]
+    public async Task Entrada_invalida_fica_fora_com_o_motivo_dela()
+    {
+        var lista = Montar(Circuito(1, "TUG-01", "TUG", -5m, "LOCAL-SECO", 1270m));
+
+        await Assert.That(lista.ForaDaLista.Single().Motivo).IsEqualTo("entrada inválida: comprimento deve ser positivo");
+    }
+
+    [Test]
+    public async Task Isolacao_diferente_e_outro_item()
+    {
+        var comEpr = PerfilNormativo.Carregar(PerfilFicticio.Json
+            .Replace("{ \"isolacao\": \"PVC\", \"por_temperatura_c\": { \"30\": 1, \"40\": 0.8 } }",
+                "{ \"isolacao\": \"PVC\", \"por_temperatura_c\": { \"30\": 1, \"40\": 0.8 } }, { \"isolacao\": \"EPR\", \"por_temperatura_c\": { \"30\": 1 } }")
+            .Replace("{ \"metodo\": \"B1\", \"isolacao\": \"PVC\", \"material\": \"Cobre\", \"condutores_carregados\": 2,",
+                "{ \"metodo\": \"B1\", \"isolacao\": \"EPR\", \"material\": \"Cobre\", \"condutores_carregados\": 2, \"por_secao_mm2\": { \"2.5\": 20 } }, " +
+                "{ \"metodo\": \"B1\", \"isolacao\": \"PVC\", \"material\": \"Cobre\", \"condutores_carregados\": 2,"));
+        DadosDoCircuito[] circuitos = [Circuito(1, "TUG-01", "TUG", 10m, "LOCAL-SECO", 1270m), Circuito(2, "TUG-02", "TUG", 10m, "LOCAL-SECO", 1270m) with { Isolacao = "EPR" }];
+
+        var lista = ListaDeMateriais.Montar(DimensionamentoDoProjeto.Executar([1, 2], Condicoes, comEpr, Catalogos, new DocumentoFalso(circuitos)));
+
+        await Assert.That(string.Join("|", lista.Itens.Where(item => item.Grupo == ListaDeMateriais.Condutores && item.Item.EndsWith("fase")).Select(item => item.Item)))
+            .IsEqualTo("FIO-TESTE (Cobre, EPR) 2,5 mm² — fase|FIO-TESTE (Cobre, PVC) 2,5 mm² — fase");
+    }
+
+    [Test]
     public async Task Csv_com_cabecalho_itens_e_circuitos_fora_da_lista_no_fim()
     {
         var semLocal = Circuito(4, "TUG-03", "TUG", 10m, null, 1270m);
@@ -76,7 +101,7 @@ public class ListaDeMateriais_Teste
         var linhas = Montar([.. TresCircuitos, semLocal]).Csv().Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
 
         await Assert.That(linhas[0]).IsEqualTo("Grupo;Item;Quantidade;Unidade;Circuitos;Observação");
-        await Assert.That(linhas[1]).IsEqualTo("Condutores;FIO-TESTE 2,5 mm² — fase;30;m;QD1-TUG-01 | QD1-TUG-02;comprimento do circuito × fases, sem sobras nem emendas");
+        await Assert.That(linhas[1]).IsEqualTo("Condutores;FIO-TESTE (Cobre, PVC) 2,5 mm² — fase;30;m;QD1-TUG-01 | QD1-TUG-02;comprimento do circuito × fases, sem sobras nem emendas");
         await Assert.That(linhas[7]).IsEqualTo("Disjuntores;Disjuntor 1P 10 A;2;un;QD1-TUG-01 | QD1-TUG-02;curva e capacidade de interrupção a definir");
         await Assert.That(linhas[^1]).StartsWith("Fora da lista;QD1-TUG-03;;;;proteção não decidida: ");
         await Assert.That(linhas.Length).IsEqualTo(11);
@@ -109,7 +134,7 @@ public class ListaDeMateriais_Teste
         {
         }
 
-        public void GravarCondicoes(CondicoesDoProjeto condicoes)
+        public void GravarCondicoes(CondicoesDoProjeto condicoes, IReadOnlyCollection<long> circuitos, bool doProjetoTodo)
         {
         }
     }

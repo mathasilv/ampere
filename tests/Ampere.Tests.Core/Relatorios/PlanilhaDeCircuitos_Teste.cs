@@ -86,7 +86,7 @@ public class PlanilhaDeCircuitos_Teste
         {
         }
 
-        public void GravarCondicoes(CondicoesDoProjeto condicoes)
+        public void GravarCondicoes(CondicoesDoProjeto condicoes, IReadOnlyCollection<long> circuitos, bool doProjetoTodo)
         {
         }
     }

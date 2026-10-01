@@ -17,6 +17,12 @@ public static class CondicoesEmJson
     /// <summary>Versão do formato; mudança incompatível = versão nova, com leitura da anterior.</summary>
     public const int Versao = 1;
 
+    /// <summary>
+    ///     GUID do esquema de Extensible Storage em que o adapter guarda este JSON. Congelado (AGENTS.md): os projetos
+    ///     guardam dados presos a ele; esquema novo = GUID novo, com leitura do antigo.
+    /// </summary>
+    public const string GuidDoEsquema = "ee3927c5-6bcf-4343-8649-2dfa88c8b327";
+
     public static string Escrever(CondicoesDoProjeto condicoes)
     {
         using var fluxo = new MemoryStream();

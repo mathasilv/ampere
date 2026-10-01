@@ -40,7 +40,7 @@ public sealed record ListaDeMateriais(IReadOnlyList<ItemDeMaterial> Itens, IRead
 
     public static ListaDeMateriais Montar(IReadOnlyList<ResultadoDoCircuito> resultados)
     {
-        var condutores = new Dictionary<(string Tipo, decimal Secao, int Funcao), Acumulado>();
+        var condutores = new Dictionary<(string Tipo, string Isolamento, decimal Secao, int Funcao), Acumulado>();
         var disjuntores = new Dictionary<(int Polos, decimal Corrente), Acumulado>();
         var idrs = new Dictionary<(int Polos, decimal Corrente, decimal Sensibilidade), Acumulado>();
         var fora = new List<CircuitoForaDaLista>();
@@ -65,10 +65,11 @@ public sealed record ListaDeMateriais(IReadOnlyList<ItemDeMaterial> Itens, IRead
             var (fases, neutro, polosDoIdr) = composicao;
 
             var tipo = string.IsNullOrWhiteSpace(entrada.TipoDeCondutor) ? "tipo não informado" : entrada.TipoDeCondutor.Trim();
+            var isolamento = $"{entrada.Material.Trim()}, {entrada.Isolacao.Trim()}";
             var secao = calculo.SecaoMm2!.Value;
-            Somar(condutores, (tipo, secao, 0), entrada.ComprimentoM * fases, circuito);
-            if (neutro) Somar(condutores, (tipo, secao, 1), entrada.ComprimentoM, circuito);
-            Somar(condutores, (tipo, secao, 2), entrada.ComprimentoM, circuito);
+            Somar(condutores, (tipo, isolamento, secao, 0), entrada.ComprimentoM * fases, circuito);
+            if (neutro) Somar(condutores, (tipo, isolamento, secao, 1), entrada.ComprimentoM, circuito);
+            Somar(condutores, (tipo, isolamento, secao, 2), entrada.ComprimentoM, circuito);
             Somar(disjuntores, (fases, calculo.DisjuntorA!.Value), 1m, circuito);
             if (calculo.IdrNominalA is { } nominal && calculo.IdrSensibilidadeMa is { } sensibilidade)
                 Somar(idrs, (polosDoIdr, nominal, sensibilidade), 1m, circuito);
@@ -76,8 +77,9 @@ public sealed record ListaDeMateriais(IReadOnlyList<ItemDeMaterial> Itens, IRead
 
         var itens = new List<ItemDeMaterial>();
         itens.AddRange(condutores
-            .OrderBy(par => par.Key.Tipo, StringComparer.Ordinal).ThenBy(par => par.Key.Secao).ThenBy(par => par.Key.Funcao)
-            .Select(par => new ItemDeMaterial(Condutores, $"{par.Key.Tipo} {Numero(par.Key.Secao)} mm² — {Funcoes[par.Key.Funcao]}",
+            .OrderBy(par => par.Key.Tipo, StringComparer.Ordinal).ThenBy(par => par.Key.Isolamento, StringComparer.Ordinal)
+            .ThenBy(par => par.Key.Secao).ThenBy(par => par.Key.Funcao)
+            .Select(par => new ItemDeMaterial(Condutores, $"{par.Key.Tipo} ({par.Key.Isolamento}) {Numero(par.Key.Secao)} mm² — {Funcoes[par.Key.Funcao]}",
                 par.Value.Quantidade, "m", par.Value.Circuitos,
                 par.Key.Funcao == 0
                     ? "comprimento do circuito × fases, sem sobras nem emendas"
@@ -108,8 +110,9 @@ public sealed record ListaDeMateriais(IReadOnlyList<ItemDeMaterial> Itens, IRead
     private static string? Motivo(ResultadoDoCircuito resultado)
     {
         if (resultado.ProblemasDeDados.Count > 0) return $"dados faltando: {string.Join(" | ", resultado.ProblemasDeDados)}";
+        if (resultado.Dimensionamento is { Situacao: SituacaoDoDimensionamento.EntradaInvalida } invalido)
+            return $"entrada inválida: {string.Join(" | ", invalido.Problemas)}";
         if (resultado.Dimensionamento is not { } calculo || resultado.Entrada is null || resultado.Memoria is null) return "não calculado";
-        if (calculo.Situacao == SituacaoDoDimensionamento.EntradaInvalida) return $"entrada inválida: {string.Join(" | ", calculo.Problemas)}";
         if (!calculo.IdrAvaliado || calculo.SecaoMm2 is null || calculo.DisjuntorA is null)
             return $"proteção não decidida: {string.Join(" | ", calculo.Problemas)}";
         return null;
