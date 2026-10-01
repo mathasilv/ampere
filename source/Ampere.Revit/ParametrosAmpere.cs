@@ -38,6 +38,27 @@ internal static class ParametrosAmpere
         if (!Exigir(elemento, definicao).Set(valorInterno)) throw Recusado(elemento, definicao);
     }
 
+    /// <summary>
+    ///     Grava o valor (já em unidades internas) ou, se nulo, apaga o anterior. O Revit não devolve um parâmetro
+    ///     compartilhado numérico ao estado "sem valor" (<c>ClearValue</c> só vale com HideWhenNoValue, que a injeção não
+    ///     usa): o valor anterior vira 0 — nunca um resultado de outra rodada com cara de atual. Parâmetro que nunca teve
+    ///     valor continua vazio.
+    /// </summary>
+    public static void GravarNumeroOuApagar(Element elemento, DefinicaoDeParametro definicao, double? valorInterno)
+    {
+        var parametro = Exigir(elemento, definicao);
+        if (valorInterno is null && !parametro.HasValue) return;
+        if (!parametro.Set(valorInterno ?? 0d)) throw Recusado(elemento, definicao);
+    }
+
+    /// <summary>Grava o texto ou, se nulo, apaga o anterior (texto vazio).</summary>
+    public static void GravarTextoOuApagar(Element elemento, DefinicaoDeParametro definicao, string? valor)
+    {
+        var parametro = Exigir(elemento, definicao);
+        if (valor is null && string.IsNullOrEmpty(parametro.AsString())) return;
+        if (!parametro.Set(valor ?? string.Empty)) throw Recusado(elemento, definicao);
+    }
+
     private static Parameter Exigir(Element elemento, DefinicaoDeParametro definicao) =>
         Ler(elemento, definicao) ?? throw new InvalidOperationException(
             $"{definicao.Nome} não existe em {elemento.Id} ({elemento.Category?.Name}). Rode 'Injetar parâmetros'.");

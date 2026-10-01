@@ -15,8 +15,8 @@ namespace Ampere.Commands;
 
 /// <summary>
 ///     Monta o quadro de cargas de todos os quadros com circuitos do projeto: demanda por tipo de carga, corrente de
-///     demanda e memória de cálculo. Grava potência, fator aplicado e o hash da memória nos circuitos (um único
-///     desfazer) e salva os relatórios em Documentos\Ampere\{projeto}.
+///     demanda e memória de cálculo. Grava potência e fator aplicado nos circuitos e o hash da memória no quadro (um
+///     único desfazer) e salva os relatórios em Documentos\Ampere\{projeto}.
 /// </summary>
 [UsedImplicitly]
 [Transaction(TransactionMode.Manual)]

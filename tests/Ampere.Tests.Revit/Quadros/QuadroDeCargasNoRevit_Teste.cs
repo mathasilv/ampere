@@ -80,7 +80,7 @@ public sealed class QuadroDeCargasNoRevit_Teste : TesteComProjetoEletrico
     }
 
     [Test]
-    public async Task Grava_potencia_fator_e_hash_da_memoria_nos_circuitos()
+    public async Task Grava_potencia_e_fator_nos_circuitos_e_o_hash_da_memoria_no_quadro()
     {
         MontarQuadroComDoisCircuitos();
         var porta = new DocumentoDeQuadrosRevit(Cenario.Documento);
@@ -90,21 +90,37 @@ public sealed class QuadroDeCargasNoRevit_Teste : TesteComProjetoEletrico
         var atualizados = QuadroDeCargasDoProjeto.Gravar(resultados, porta);
 
         await Assert.That(atualizados).IsEqualTo(2);
-        var hash = resultados[0].Quadro.Memoria!.Hash();
         var problemas = new List<string>();
         foreach (var sistema in Cenario.Quadro.MEPModel.GetAssignedElectricalSystems())
         {
             var numero = Texto(sistema, "AMP_NumeroCircuito");
             var potencia = UnitUtils.ConvertFromInternalUnits(Parametro(sistema, "AMP_PotenciaInstaladaVA").AsDouble(), UnitTypeId.VoltAmperes);
             var fator = Parametro(sistema, "AMP_FatorDemanda").AsDouble();
-            var memoria = Texto(sistema, "AMP_MemoriaCalculoId");
             var esperados = numero == "IL-01" ? (186m, 1m) : numero == "TUG-01" ? (720m, 0.5m) : throw new InvalidOperationException($"circuito inesperado {numero}");
             if (Math.Abs(potencia - (double)esperados.Item1) > 1e-6) problemas.Add($"{numero}: potência {potencia} VA");
             if (Math.Abs(fator - (double)esperados.Item2) > 1e-9) problemas.Add($"{numero}: fator {fator}");
-            if (memoria != hash) problemas.Add($"{numero}: hash '{memoria}'");
+            // O AMP_MemoriaCalculoId do circuito é da memória do dimensionamento: o quadro não o toca.
+            if (Texto(sistema, "AMP_MemoriaCalculoId") is { Length: > 0 } memoria) problemas.Add($"{numero}: hash do circuito '{memoria}'");
         }
 
         await Assert.That(problemas).IsEmpty();
+        await Assert.That(Texto(Cenario.Quadro, "AMP_MemoriaCalculoId")).IsEqualTo(resultados[0].Quadro.Memoria!.Hash());
+    }
+
+    [Test]
+    public async Task Montagem_sem_fator_apaga_o_fator_e_o_hash_da_montagem_anterior()
+    {
+        MontarQuadroComDoisCircuitos();
+        var porta = new DocumentoDeQuadrosRevit(Cenario.Documento);
+        QuadroDeCargasDoProjeto.Gravar(QuadroDeCargasDoProjeto.Executar(porta, PerfilNormativo.NBR5410_2004,
+            new Dictionary<TipoDeCarga, decimal> { [TipoDeCarga.Iluminacao] = 1m, [TipoDeCarga.TUG] = 0.5m }), porta);
+
+        // Sem fatores, o perfil oficial está com a tabela TODO_NORMA: quadro incompleto, sem memória.
+        QuadroDeCargasDoProjeto.Gravar(QuadroDeCargasDoProjeto.Executar(porta, PerfilNormativo.NBR5410_2004), porta);
+
+        var fatores = Cenario.Quadro.MEPModel.GetAssignedElectricalSystems().Select(sistema => Parametro(sistema, "AMP_FatorDemanda").AsDouble()).ToList();
+        await Assert.That(fatores.All(fator => fator == 0d)).IsTrue();
+        await Assert.That(Texto(Cenario.Quadro, "AMP_MemoriaCalculoId") ?? string.Empty).IsEqualTo(string.Empty);
     }
 
     [Test]
@@ -127,7 +143,7 @@ public sealed class QuadroDeCargasNoRevit_Teste : TesteComProjetoEletrico
         await Assert.That(tabela.Definition.GetFieldCount()).IsEqualTo(6);
         await Assert.That(string.Join(",", Enumerable.Range(0, tabela.Definition.GetFieldCount())
             .Select(indice => tabela.Definition.GetField(indice).ColumnHeading))).IsEqualTo(
-            "Nº,Tipo de carga,Potência instalada (VA),Fator de demanda,Memória de cálculo,Quadro");
+            "Nº,Tipo de carga,Potência instalada (VA),Fator de demanda,Memória do circuito,Quadro");
         await Assert.That(tabela.Definition.GetSortGroupFields().Count).IsEqualTo(1);
         await Assert.That(tabela.Definition.GetFilters().Count).IsEqualTo(1);
     }

@@ -35,9 +35,15 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
 
             ParametrosAmpere.GravarNumero(sistema, ParametrosAmpere.PotenciaInstaladaVA,
                 UnitUtils.ConvertToInternalUnits((double)linha.PotenciaVA, UnitTypeId.VoltAmperes));
-            if (linha.Fator is { } fator) ParametrosAmpere.GravarNumero(sistema, ParametrosAmpere.FatorDemanda, (double)fator);
-            if (linha.HashDaMemoria is { } hash) ParametrosAmpere.GravarTexto(sistema, ParametrosAmpere.MemoriaCalculoId, hash);
+            ParametrosAmpere.GravarNumeroOuApagar(sistema, ParametrosAmpere.FatorDemanda, (double?)linha.Fator);
         }
+    }
+
+    public void GravarMemoriaDoQuadro(long quadroId, string? hashDaMemoria)
+    {
+        var painel = documento.GetElement(new ElementId(quadroId)) as FamilyInstance
+                     ?? throw new InvalidOperationException($"O quadro {quadroId} não existe no documento.");
+        ParametrosAmpere.GravarTextoOuApagar(painel, ParametrosAmpere.MemoriaCalculoId, hashDaMemoria);
     }
 
     public string CriarTabelaDoQuadro(string nomeDoQuadro)
@@ -56,7 +62,7 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
         Campo(definicao, ParametrosAmpere.TipoCarga, "Tipo de carga");
         Campo(definicao, ParametrosAmpere.PotenciaInstaladaVA, "Potência instalada (VA)");
         Campo(definicao, ParametrosAmpere.FatorDemanda, "Fator de demanda");
-        Campo(definicao, ParametrosAmpere.MemoriaCalculoId, "Memória de cálculo");
+        Campo(definicao, ParametrosAmpere.MemoriaCalculoId, "Memória do circuito");
 
         var doQuadro = Campo(definicao, ParametrosAmpere.Quadro, "Quadro");
         doQuadro.IsHidden = true;

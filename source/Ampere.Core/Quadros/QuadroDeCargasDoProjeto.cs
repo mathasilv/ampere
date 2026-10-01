@@ -17,8 +17,8 @@ public sealed record QuadroLido(long Id, string Nome, IReadOnlyList<CircuitoLido
 /// <summary>Resultado do quadro de cargas de um quadro do documento.</summary>
 public sealed record ResultadoDoQuadro(long Id, string Nome, ResultadoDoQuadroDeCargas Quadro);
 
-/// <summary>Uma linha a gravar no circuito do quadro (potência, fator aplicado e o hash da memória do quadro).</summary>
-public sealed record LinhaParaGravar(long QuadroId, string NumeroDoCircuito, decimal PotenciaVA, decimal? Fator, string? HashDaMemoria);
+/// <summary>Uma linha a gravar no circuito do quadro: potência instalada e fator aplicado (nulo = sem fator, apaga o anterior).</summary>
+public sealed record LinhaParaGravar(long QuadroId, string NumeroDoCircuito, decimal PotenciaVA, decimal? Fator);
 
 /// <summary>
 ///     Porta para os quadros e circuitos de um documento no caso de uso do quadro de cargas (implementada pelo
@@ -29,8 +29,14 @@ public interface IDocumentoDeQuadros : IDocumentoTransacional
     /// <summary>Quadros com circuitos atribuídos; quadro sem circuito fica de fora.</summary>
     IReadOnlyList<QuadroLido> LerQuadrosComCircuitos();
 
-    /// <summary>Grava potência, fator e hash da memória nos circuitos; qualquer falha aborta a transação inteira.</summary>
+    /// <summary>Grava potência e fator nos circuitos; qualquer falha aborta a transação inteira.</summary>
     void GravarLinhas(IReadOnlyList<LinhaParaGravar> linhas);
+
+    /// <summary>
+    ///     Grava no próprio quadro o hash da memória do quadro de cargas (AMP_MemoriaCalculoId do quadro; o do circuito é
+    ///     da memória do dimensionamento). Nulo apaga o anterior.
+    /// </summary>
+    void GravarMemoriaDoQuadro(long quadroId, string? hashDaMemoria);
 
     /// <summary>Cria (substituindo se já existir) a tabela do quadro de cargas; devolve o nome da view criada.</summary>
     string CriarTabelaDoQuadro(string nomeDoQuadro);
@@ -110,17 +116,24 @@ public static class QuadroDeCargasDoProjeto
     }
 
     /// <summary>
-    ///     Grava os resultados nos circuitos numa única transação — um único desfazer: potência instalada do circuito,
-    ///     fator aplicado e o hash da memória do quadro (é ela que justifica o fator). Linha sem fator grava a potência
-    ///     e limpa o que havia; qualquer recusa do Revit aborta tudo.
+    ///     Grava os resultados numa única transação — um único desfazer: em cada circuito, a potência instalada e o fator
+    ///     aplicado; em cada quadro, o hash da memória do quadro (é ela que justifica os fatores). Linha sem fator grava a
+    ///     potência e apaga o fator anterior; quadro incompleto apaga o hash anterior. Qualquer recusa do Revit aborta
+    ///     tudo. Devolve quantos circuitos foram atualizados.
     /// </summary>
     public static int Gravar(IReadOnlyList<ResultadoDoQuadro> resultados, IDocumentoDeQuadros documento)
     {
         var linhas = resultados
             .SelectMany(resultado => resultado.Quadro.Linhas.Select(linha => new LinhaParaGravar(
-                resultado.Id, linha.Numero, linha.PotenciaInstaladaVA, linha.Fator, resultado.Quadro.Memoria?.Hash())))
+                resultado.Id, linha.Numero, linha.PotenciaInstaladaVA, linha.Fator)))
             .ToList();
-        if (linhas.Count > 0) documento.EmUmaTransacao(NomeDaTransacao, () => documento.GravarLinhas(linhas));
+        if (resultados.Count == 0) return 0;
+
+        documento.EmUmaTransacao(NomeDaTransacao, () =>
+        {
+            if (linhas.Count > 0) documento.GravarLinhas(linhas);
+            foreach (var resultado in resultados) documento.GravarMemoriaDoQuadro(resultado.Id, resultado.Quadro.Memoria?.Hash());
+        });
         return linhas.Count;
     }
 
