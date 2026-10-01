@@ -40,7 +40,8 @@ internal sealed record ConteudoDoRelatorio(
     /// <summary>Relatório do quadro de cargas: os circuitos e os totais antes dos passos da memória.</summary>
     /// <exception cref="InvalidOperationException">Quadro incompleto (sem memória) não gera relatório.</exception>
     /// <param name="fases">Cargas por fase (indicador, fora da memória): seção própria antes das pendências.</param>
-    public static ConteudoDoRelatorio DeQuadro(ResultadoDoQuadroDeCargas quadro, BalancoDasFases? fases = null)
+    /// <param name="sugestao">Distribuição de fases sugerida (indicador, fora da memória): seção depois das cargas por fase.</param>
+    public static ConteudoDoRelatorio DeQuadro(ResultadoDoQuadroDeCargas quadro, BalancoDasFases? fases = null, SugestaoDeFases? sugestao = null)
     {
         if (quadro.Memoria is not { } memoria)
             throw new InvalidOperationException($"O quadro {quadro.Nome} está incompleto (sem fator para algum tipo): relatório só de quadro montado.");
@@ -48,6 +49,7 @@ internal sealed record ConteudoDoRelatorio(
         var campos = quadro.Linhas.Select(LinhaDoQuadro).Append(new Campo("Total do quadro", TotalDoQuadro(quadro))).ToList();
         var abertura = new List<SecaoDePasso> { new("Circuitos do quadro", campos) };
         if (fases is not null) abertura.Add(new SecaoDePasso("Cargas por fase", CamposDasFases(fases)));
+        if (sugestao is not null) abertura.Add(new SecaoDePasso("Distribuição de fases sugerida", CamposDaSugestao(sugestao)));
         if (quadro.Problemas.Count > 0)
             abertura.Add(new SecaoDePasso("Pendências", quadro.Problemas.Select(problema => new Campo("Aviso", problema)).ToList()));
         return Montar(memoria, null, $"Memória de cálculo — quadro {quadro.Nome}", abertura);
@@ -102,6 +104,27 @@ internal sealed record ConteudoDoRelatorio(
             $"fase mais carregada: {balanco.FaseMaisCarregada}. Indicador para distribuir os circuitos: a NBR 5410 não fixa limite"));
         if (balanco.CircuitosSemFase.Count > 0)
             campos.Add(new Campo("Sem fase identificada (fora da conta)", string.Join(", ", balanco.CircuitosSemFase)));
+        return campos;
+    }
+
+    private static List<Campo> CamposDaSugestao(SugestaoDeFases sugestao)
+    {
+        string Correntes(IReadOnlyList<decimal> correntes) =>
+            string.Join(" · ", sugestao.Fases.Select((fase, indice) => $"{fase} {Quantidade(correntes[indice], "A")}"));
+
+        var semFase = sugestao.Mudancas.Any(mudanca => mudanca.Atuais is null);
+        var campos = new List<Campo>
+        {
+            new("Hoje", Correntes(sugestao.CorrentesAntesA) + (semFase ? " (sem os circuitos sem fase identificada)" : string.Empty)),
+            new("Sugerida", Correntes(sugestao.CorrentesDepoisA))
+        };
+        campos.AddRange(sugestao.Mudancas.Select(mudanca =>
+            new Campo(mudanca.Numero, $"{(mudanca.Atuais is { } atuais ? string.Join(",", atuais) : "sem fase")} → {string.Join(",", mudanca.Sugeridas)}")));
+        if (sugestao.Mudancas.Count == 0) campos.Add(new Campo("Mudanças", "nenhuma: a distribuição de hoje já é a melhor que o Ampere acha"));
+        campos.Add(new Campo("Critério",
+            $"corrente de cada fase (soma das correntes de linha dos circuitos nela, pela {(sugestao.PelaDemanda ? "demanda" : "potência instalada")}): " +
+            "a maior primeiro, depois a diferença entre as fases; só mudanças que valem o trabalho (0,1 A na maior, ou 1% na soma dos quadrados). " +
+            "Indicador: o Ampere não muda as fases no modelo; mova os circuitos no quadro do Revit e monte o quadro de novo"));
         return campos;
     }
 

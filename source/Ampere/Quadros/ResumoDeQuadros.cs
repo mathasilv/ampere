@@ -46,6 +46,15 @@ internal static class ResumoDeQuadros
                     texto.AppendLine($"   Fases ({(fases.PelaDemanda ? "demanda" : "instalada")}): {cargas} · desequilíbrio {NumeroEmTexto.FormatarParaLeitura(fases.DesequilibrioPct)}%");
                     if (fases.CircuitosSemFase.Count > 0) texto.AppendLine($"   Sem fase identificada: {string.Join(", ", fases.CircuitosSemFase)}");
                 }
+
+                if (resultado.Sugestao is { Mudancas.Count: > 0 } sugestao)
+                {
+                    var mudancas = string.Join("; ", sugestao.Mudancas.Take(MaximoDeLinhas).Select(mudanca =>
+                        $"{mudanca.Numero} {(mudanca.Atuais is { } atuais ? string.Join(",", atuais) : "sem fase")} → {string.Join(",", mudanca.Sugeridas)}"));
+                    if (sugestao.Mudancas.Count > MaximoDeLinhas) mudancas += "; …";
+                    texto.AppendLine($"   Fases sugeridas: {mudancas} (maior corrente {NumeroEmTexto.FormatarParaLeitura(sugestao.CorrentesAntesA.Max())} → " +
+                                     $"{NumeroEmTexto.FormatarParaLeitura(sugestao.CorrentesDepoisA.Max())} A; veja o relatório do quadro)");
+                }
             }
         }
 

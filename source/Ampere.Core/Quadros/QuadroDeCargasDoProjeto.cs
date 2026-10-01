@@ -44,6 +44,7 @@ public sealed record AlimentacaoDoQuadro(string Esquema, decimal TensaoV, string
 /// <param name="ProblemasDasFases">
 ///     Os problemas do quadro que vêm só da identificação das fases (o alimentador os trata à parte); nulo = nenhum.
 /// </param>
+/// <param name="Sugestao">Distribuição de fases sugerida (indicador, fora da memória); nula sem o que distribuir.</param>
 public sealed record ResultadoDoQuadro(
     long Id,
     string Nome,
@@ -51,7 +52,8 @@ public sealed record ResultadoDoQuadro(
     IReadOnlyList<long> CircuitosDasLinhas,
     IReadOnlyList<CircuitoLido> ForaDoQuadro,
     BalancoDasFases? Fases = null,
-    IReadOnlyList<string>? ProblemasDasFases = null);
+    IReadOnlyList<string>? ProblemasDasFases = null,
+    SugestaoDeFases? Sugestao = null);
 
 /// <summary>
 ///     Uma linha a gravar num circuito: potência instalada, fator aplicado e o quadro em que ele está agora (AMP_Quadro, que
@@ -165,9 +167,9 @@ public static class QuadroDeCargasDoProjeto
                 : $"{alimentacao.Origem}; corrente média, com as cargas supostas equilibradas entre as fases";
             var pelaAlimentacao = QuadroDeCargas.Montar(quadro.Nome, alimentacao.Esquema, alimentacao.TensaoV, circuitos, perfil, fatoresInformados, origem);
             var antes = problemas.Count;
-            var balanco = Fases(quadro, pelaAlimentacao, idsDasLinhas, alimentacao.Fases, alimentacao.FaseNeutro, problemas);
+            var (balanco, sugestao) = Fases(quadro, pelaAlimentacao, idsDasLinhas, alimentacao.Fases, alimentacao.FaseNeutro, problemas);
             if (problemas.Count > 0) pelaAlimentacao = pelaAlimentacao with { Problemas = [.. pelaAlimentacao.Problemas, .. problemas] };
-            return new ResultadoDoQuadro(quadro.Id, quadro.Nome, pelaAlimentacao, idsDasLinhas, foraDoQuadro, balanco, DasFases(problemas, antes));
+            return new ResultadoDoQuadro(quadro.Id, quadro.Nome, pelaAlimentacao, idsDasLinhas, foraDoQuadro, balanco, DasFases(problemas, antes), sugestao);
         }
 
         // Sem sistema de distribuição no quadro, o par (esquema, tensão) precisa ser único entre os circuitos que o informam.
@@ -198,9 +200,9 @@ public static class QuadroDeCargasDoProjeto
         // Montar devolve uma linha por circuito, na ordem recebida: é assim que os ids acompanham as linhas.
         var montado = QuadroDeCargas.Montar(quadro.Nome, esquema, tensao, circuitos, perfil, fatoresInformados);
         var antesDasFases = problemas.Count;
-        var semAlimentacao = Fases(quadro, montado, idsDasLinhas, null, montado.TensaoV > 0m ? CargasPorFase.FaseNeutro(montado.Esquema, montado.TensaoV) : null, problemas);
+        var (semAlimentacao, sugerida) = Fases(quadro, montado, idsDasLinhas, null, montado.TensaoV > 0m ? CargasPorFase.FaseNeutro(montado.Esquema, montado.TensaoV) : null, problemas);
         if (problemas.Count > 0) montado = montado with { Problemas = [.. montado.Problemas, .. problemas] };
-        return new ResultadoDoQuadro(quadro.Id, quadro.Nome, montado, idsDasLinhas, foraDoQuadro, semAlimentacao, DasFases(problemas, antesDasFases));
+        return new ResultadoDoQuadro(quadro.Id, quadro.Nome, montado, idsDasLinhas, foraDoQuadro, semAlimentacao, DasFases(problemas, antesDasFases), sugerida);
     }
 
     private static IReadOnlyList<string>? DasFases(List<string> problemas, int antes) => problemas.Count > antes ? problemas.Skip(antes).ToList() : null;
@@ -210,7 +212,7 @@ public static class QuadroDeCargasDoProjeto
 
     // Linhas do quadro com as fases que cada circuito ocupa, a configuração e a tensão dele (pelo id, na ordem das linhas).
     // Quadro de várias fases sem nenhum circuito com fase identificada vira problema: as cargas por fase não saem.
-    private static BalancoDasFases? Fases(
+    private static (BalancoDasFases? Balanco, SugestaoDeFases? Sugestao) Fases(
         QuadroLido quadro, ResultadoDoQuadroDeCargas montado, IReadOnlyList<long> idsDasLinhas, IReadOnlyList<string>? fasesDoQuadro, decimal? faseNeutroV,
         List<string> problemas)
     {
@@ -227,7 +229,7 @@ public static class QuadroDeCargasDoProjeto
             problemas.Add("fases dos circuitos no quadro não identificadas no Revit: cargas por fase não calculadas");
         else if (balanco is { CircuitosSemFase.Count: > 0 })
             problemas.Add($"circuitos sem fase identificada no Revit, fora das cargas por fase: {string.Join(", ", balanco.CircuitosSemFase)}");
-        return balanco;
+        return (balanco, balanco is null ? null : DistribuicaoDeFases.Sugerir(fasesDoQuadro, faseNeutroV, circuitos));
     }
 
     /// <summary>Circuito com esquema ou tensão que a alimentação do quadro não fornece vira problema (não para a montagem).</summary>

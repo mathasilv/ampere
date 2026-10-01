@@ -1,4 +1,4 @@
-== página 1 de 1
+== página 1 de 2
 56,7 [Titulo 56,7] Memória de cálculo — quadro QD-04
 80,2 [Rotulo 56,7] Perfil normativo: [Texto 150,4] FICTICIO-TESTE
 91,2 [Rotulo 56,7] Identificador (AMP_MemoriaCalculoId):
@@ -20,32 +20,43 @@
 305,6 [Rotulo 68,7] Fase C: [Texto 110,8] instalada 1000 VA · demanda 500 VA · corrente 3,937 A
 316,6 [Rotulo 68,7] Desequilíbrio: [Texto 146,5] 66,2162% = (maior − menor) / maior, pela demanda; fase mais carregada: A.
 327,7 [Texto 68,7] Indicador para distribuir os circuitos: a NBR 5410 não fixa limite
-338,8 [Secao 56,7] Passos
-360,7 [TituloDoPasso 56,7] 1. Demanda do tipo Iluminação
-374,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: fatores de demanda
-386 [Rotulo 68,7] Expressão: [Codigo 132,7] D = ΣPI × fd
-397,1 [Rotulo 68,7] Valores: [Texto 115,8] PI_Iluminacao = 1000 VA; fd = 0,8
-408,1 [Rotulo 68,7] Resultado: [Texto 129,2] 800 VA
-427,2 [TituloDoPasso 56,7] 2. Demanda do tipo TUG
-441,4 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: fatores de demanda
-452,5 [Rotulo 68,7] Expressão: [Codigo 132,7] D = ΣPI × fd
-463,5 [Rotulo 68,7] Valores: [Texto 115,8] PI_TUG = 1000 VA; fd = 0,5
-474,6 [Rotulo 68,7] Resultado: [Texto 129,2] 500 VA
-493,6 [TituloDoPasso 56,7] 3. Demanda do tipo TUE
-507,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: fatores de demanda
-518,9 [Rotulo 68,7] Expressão: [Codigo 132,7] D = ΣPI × fd
-530 [Rotulo 68,7] Valores: [Texto 115,8] PI_TUE = 2000 VA; fd = 1
-541 [Rotulo 68,7] Resultado: [Texto 129,2] 2000 VA
-560,1 [TituloDoPasso 56,7] 4. Demanda total do quadro
-574,3 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra de demanda do quadro
-585,4 [Rotulo 68,7] Expressão: [Codigo 132,7] D_total = Σ D_tipo
-596,4 [Rotulo 68,7] Valores: [Texto 115,8] D_Iluminacao = 800 VA; D_TUG = 500 VA; D_TUE = 2000 VA
-607,5 [Rotulo 68,7] Resultado: [Texto 129,2] 3300 VA
-626,5 [TituloDoPasso 56,7] 5. Corrente de demanda do quadro
-640,8 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra da corrente de projeto
-651,8 [Rotulo 68,7] Expressão: [Codigo 132,7] I = D_total / (√3 × V)
-662,9 [Rotulo 68,7] Valores: [Texto 115,8] D_total = 3300 VA; V = 220 V
-673,9 [Rotulo 68,7] Resultado: [Texto 129,2] 8,6603 A
-685 [Rotulo 68,7] Observação: [Texto 138,3] alimentação 3F+N 220 V: sistema de distribuição '220/127 Y' do quadro; corrente
-696,1 [Texto 68,7] média, com as cargas supostas equilibradas entre as fases
-776 [Rodape 192,4] Memória de cálculo — quadro QD-04 · página 1 de 1
+346,8 [TituloDoPasso 56,7] Distribuição de fases sugerida
+361 [Rotulo 68,7] Hoje: [Texto 99,7] A 12,8704 A · B 11,6106 A · C 3,937 A
+372 [Rotulo 68,7] Sugerida: [Texto 123,5] A 9,0909 A · B 9,0909 A · C 10,2362 A
+383,1 [Rotulo 68,7] IL-01: [Texto 102,3] A → C
+394,1 [Rotulo 68,7] IL-02: [Texto 102,3] B → C
+405,2 [Rotulo 68,7] Critério: [Texto 115,9] corrente de cada fase (soma das correntes de linha dos circuitos nela, pela demanda): a
+416,3 [Texto 68,7] maior primeiro, depois a diferença entre as fases; só mudanças que valem o trabalho (0,1 A na
+427,3 [Texto 68,7] maior, ou 1% na soma dos quadrados). Indicador: o Ampere não muda as fases no modelo; mova
+438,4 [Texto 68,7] os circuitos no quadro do Revit e monte o quadro de novo
+449,4 [Secao 56,7] Passos
+471,4 [TituloDoPasso 56,7] 1. Demanda do tipo Iluminação
+485,6 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: fatores de demanda
+496,7 [Rotulo 68,7] Expressão: [Codigo 132,7] D = ΣPI × fd
+507,8 [Rotulo 68,7] Valores: [Texto 115,8] PI_Iluminacao = 1000 VA; fd = 0,8
+518,8 [Rotulo 68,7] Resultado: [Texto 129,2] 800 VA
+537,9 [TituloDoPasso 56,7] 2. Demanda do tipo TUG
+552,1 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: fatores de demanda
+563,1 [Rotulo 68,7] Expressão: [Codigo 132,7] D = ΣPI × fd
+574,2 [Rotulo 68,7] Valores: [Texto 115,8] PI_TUG = 1000 VA; fd = 0,5
+585,3 [Rotulo 68,7] Resultado: [Texto 129,2] 500 VA
+604,3 [TituloDoPasso 56,7] 3. Demanda do tipo TUE
+618,5 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: fatores de demanda
+629,6 [Rotulo 68,7] Expressão: [Codigo 132,7] D = ΣPI × fd
+640,7 [Rotulo 68,7] Valores: [Texto 115,8] PI_TUE = 2000 VA; fd = 1
+651,7 [Rotulo 68,7] Resultado: [Texto 129,2] 2000 VA
+670,8 [TituloDoPasso 56,7] 4. Demanda total do quadro
+685 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra de demanda do quadro
+696,1 [Rotulo 68,7] Expressão: [Codigo 132,7] D_total = Σ D_tipo
+707,1 [Rotulo 68,7] Valores: [Texto 115,8] D_Iluminacao = 800 VA; D_TUG = 500 VA; D_TUE = 2000 VA
+718,2 [Rotulo 68,7] Resultado: [Texto 129,2] 3300 VA
+776 [Rodape 192,4] Memória de cálculo — quadro QD-04 · página 1 de 2
+== página 2 de 2
+56,7 [TituloDoPasso 56,7] 5. Corrente de demanda do quadro
+70,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra da corrente de projeto
+82 [Rotulo 68,7] Expressão: [Codigo 132,7] I = D_total / (√3 × V)
+93 [Rotulo 68,7] Valores: [Texto 115,8] D_total = 3300 VA; V = 220 V
+104,1 [Rotulo 68,7] Resultado: [Texto 129,2] 8,6603 A
+115,2 [Rotulo 68,7] Observação: [Texto 138,3] alimentação 3F+N 220 V: sistema de distribuição '220/127 Y' do quadro; corrente
+126,2 [Texto 68,7] média, com as cargas supostas equilibradas entre as fases
+776 [Rodape 192,4] Memória de cálculo — quadro QD-04 · página 2 de 2

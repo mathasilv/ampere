@@ -23,6 +23,14 @@
 - **Fase C:** instalada 1000 VA · demanda 500 VA · corrente 3,937 A
 - **Desequilíbrio:** 66,2162% = (maior − menor) / maior, pela demanda; fase mais carregada: A. Indicador para distribuir os circuitos: a NBR 5410 não fixa limite
 
+## Distribuição de fases sugerida
+
+- **Hoje:** A 12,8704 A · B 11,6106 A · C 3,937 A
+- **Sugerida:** A 9,0909 A · B 9,0909 A · C 10,2362 A
+- **IL-01:** A → C
+- **IL-02:** B → C
+- **Critério:** corrente de cada fase (soma das correntes de linha dos circuitos nela, pela demanda): a maior primeiro, depois a diferença entre as fases; só mudanças que valem o trabalho (0,1 A na maior, ou 1% na soma dos quadrados). Indicador: o Ampere não muda as fases no modelo; mova os circuitos no quadro do Revit e monte o quadro de novo
+
 ## Passos
 
 ### 1. Demanda do tipo Iluminação

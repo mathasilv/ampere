@@ -120,7 +120,7 @@ public static class CargasPorFase
         && doCircuito.All(fase => fases.Contains(fase, StringComparer.Ordinal))
         && (Polos(circuito.Configuracao) is not { } polos || polos == doCircuito.Count);
 
-    private static int? Polos(string? configuracao) => configuracao?.Trim() switch
+    internal static int? Polos(string? configuracao) => configuracao?.Trim() switch
     {
         "F+N" => 1,
         "2F" or "2F+N" => 2,
@@ -139,7 +139,7 @@ public static class CargasPorFase
         return (correntes.Sum(par => par.Corrente!.Value), correntes.Where(par => LigadoAoNeutro(par.circuito.Configuracao)).Sum(par => par.Corrente!.Value));
     }
 
-    private static decimal? CorrenteDeLinha(CircuitoNasFases circuito, decimal potenciaVA, decimal? faseNeutroV) =>
+    internal static decimal? CorrenteDeLinha(CircuitoNasFases circuito, decimal potenciaVA, decimal? faseNeutroV) =>
         (circuito.Configuracao?.Trim(), circuito.TensaoV) switch
         {
             ("F+N" or "2F", > 0m and var tensao) => potenciaVA / tensao,

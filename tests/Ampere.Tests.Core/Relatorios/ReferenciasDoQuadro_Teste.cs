@@ -37,23 +37,24 @@ public class ReferenciasDoQuadro_Teste
     public async Task Memoria_e_relatorio_do_quadro_iguais_aos_de_referencia(string cenario)
     {
         var quadro = Montar(cenario);
-        var fases = cenario == "quadro-3fn-fases" ? Fases(quadro) : null;
+        var (fases, sugestao) = cenario == "quadro-3fn-fases" ? Fases(quadro) : (null, null);
 
         await Conferir($"{cenario}.json", quadro.Memoria!.JsonCanonico());
-        await Conferir($"{cenario}.md", RelatorioDeMemoria.MarkdownDoQuadro(quadro, fases));
-        await Conferir($"{cenario}.pdf.txt", PdfDoRelatorio.Roteiro(ConteudoDoRelatorio.DeQuadro(quadro, fases)));
+        await Conferir($"{cenario}.md", RelatorioDeMemoria.MarkdownDoQuadro(quadro, fases, sugestao));
+        await Conferir($"{cenario}.pdf.txt", PdfDoRelatorio.Roteiro(ConteudoDoRelatorio.DeQuadro(quadro, fases, sugestao)));
 
         if (Environment.GetEnvironmentVariable(VariavelDeAmostras) is { Length: > 0 } pasta)
-            await File.WriteAllBytesAsync(Path.Combine(pasta, $"{cenario}.pdf"), RelatorioDeMemoria.PdfDoQuadro(quadro, fases));
+            await File.WriteAllBytesAsync(Path.Combine(pasta, $"{cenario}.pdf"), RelatorioDeMemoria.PdfDoQuadro(quadro, fases, sugestao));
     }
 
     // IL-01 na fase A, IL-02 na B, TUG-01 na C (F+N 127 V) e o chuveiro (2F 220 V) em A e B.
-    private static BalancoDasFases Fases(ResultadoDoQuadroDeCargas quadro)
+    private static (BalancoDasFases?, SugestaoDeFases?) Fases(ResultadoDoQuadroDeCargas quadro)
     {
-        (string[] Fases, string Configuracao, decimal Tensao)[] circuitos = [(["A"], "F+N", 127m), (["B"], "F+N", 127m), (["C"], "F+N", 127m), (["A", "B"], "2F", 220m)];
-        return CargasPorFase.Calcular(["A", "B", "C"], CargasPorFase.FaseNeutro(quadro.Esquema, quadro.TensaoV),
-            quadro.Linhas.Select((linha, indice) => new CircuitoNasFases(indice, linha.Numero, linha.PotenciaInstaladaVA, linha.DemandaVA,
-                circuitos[indice].Fases, circuitos[indice].Configuracao, circuitos[indice].Tensao)).ToList())!;
+        (string[] Fases, string Configuracao, decimal Tensao)[] dados = [(["A"], "F+N", 127m), (["B"], "F+N", 127m), (["C"], "F+N", 127m), (["A", "B"], "2F", 220m)];
+        var faseNeutro = CargasPorFase.FaseNeutro(quadro.Esquema, quadro.TensaoV);
+        var circuitos = quadro.Linhas.Select((linha, indice) => new CircuitoNasFases(indice, linha.Numero, linha.PotenciaInstaladaVA, linha.DemandaVA,
+            dados[indice].Fases, dados[indice].Configuracao, dados[indice].Tensao)).ToList();
+        return (CargasPorFase.Calcular(["A", "B", "C"], faseNeutro, circuitos), DistribuicaoDeFases.Sugerir(["A", "B", "C"], faseNeutro, circuitos));
     }
 
     private static ResultadoDoQuadroDeCargas Montar(string cenario) => cenario switch

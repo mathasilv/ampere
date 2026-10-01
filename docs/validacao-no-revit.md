@@ -49,7 +49,8 @@ Use um projeto de teste com arquitetura vinculada ou com ambientes (Rooms/Spaces
    - O resumo deve mostrar "Fases (demanda): A … · B … · C … · desequilíbrio …%".
    - Se aparecer "fases dos circuitos no quadro não identificadas", o formato do `PhaseLabel` é outro. Anote o valor
      que aparece no parâmetro do circuito e envie.
-   - O relatório do quadro deve ter a seção "Cargas por fase".
+   - O relatório do quadro deve ter as seções "Cargas por fase" e "Distribuição de fases sugerida". Mova no quadro do
+     Revit um circuito que a sugestão indica e monte de novo: a corrente da fase deve mudar como a sugestão disse.
 8. **Dimensionar alimentadores.** Ligue o quadro a um quadro geral (crie um circuito com o QD como carga) e informe o
    `AMP_ComprimentoRotaM` do alimentador.
    - Escolha "baixa tensão pela distribuidora".
