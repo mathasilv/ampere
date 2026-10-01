@@ -5,6 +5,7 @@ using Ampere.Core;
 using Ampere.Core.Alimentadores;
 using Ampere.Core.Catalogos;
 using Ampere.Core.Normas;
+using Ampere.Core.Relatorios;
 using Ampere.Dimensionamento;
 using Ampere.Relatorios;
 using Ampere.Revit.Alimentadores;
@@ -18,8 +19,8 @@ namespace Ampere.Commands;
 /// <summary>
 ///     Dimensiona o circuito que alimenta cada quadro (IB pela demanda do quadro de cargas, queda de tensão que sobra do
 ///     limite total, disjuntor e eletroduto), com memória de cálculo. Pede a origem da instalação (o limite de queda
-///     total vem do perfil), grava os resultados nos alimentadores (um único desfazer) e salva as memórias em
-///     Documentos\Ampere\{projeto}\Alimentadores.
+///     total vem do perfil), grava os resultados nos alimentadores (um único desfazer) e salva as memórias, a planilha
+///     (alimentadores.csv) e a lista de materiais (materiais.csv) em Documentos\Ampere\{projeto}\Alimentadores.
 /// </summary>
 [UsedImplicitly]
 [Transaction(TransactionMode.Manual)]
@@ -28,6 +29,7 @@ public class DimensionarAlimentadoresCommand : ExternalCommand
     // O Revit 2027 já prefixa o nome do add-in ("Ampere - ").
     private const string TituloDaJanela = "Dimensionar alimentadores";
     private const string Subpasta = "Alimentadores";
+    private const string NomeDaPlanilha = "alimentadores.csv";
 
     public override void Execute()
     {
@@ -96,11 +98,12 @@ public class DimensionarAlimentadoresCommand : ExternalCommand
         return opcoes.Where(opcao => opcao.Resultado == escolha).Select(opcao => opcao.Origem).FirstOrDefault();
     }
 
+    // Memórias dos alimentadores calculados e, de todos (calculados ou não), a planilha e a lista de materiais: os mesmos
+    // formatos dos circuitos terminais, refeitos a cada rodada.
     private static (string? Pasta, int Gerados, IReadOnlyList<string> Erros) GravarRelatorios(IReadOnlyList<ResultadoDoAlimentador> resultados, string nomeDoProjeto)
     {
-        var comMemoria = resultados.Select(resultado => resultado.Circuito).OfType<Ampere.Core.Dimensionamento.ResultadoDoCircuito>()
-            .Where(circuito => circuito.Memoria is not null).ToList();
-        if (comMemoria.Count == 0) return (null, 0, []);
+        var circuitos = resultados.Select(resultado => resultado.Circuito).OfType<Ampere.Core.Dimensionamento.ResultadoDoCircuito>().ToList();
+        if (circuitos.Count == 0) return (null, 0, []);
 
         var pasta = PastaDeRelatorios.Caminho(nomeDoProjeto, Subpasta);
         try
@@ -113,8 +116,10 @@ public class DimensionarAlimentadoresCommand : ExternalCommand
         }
 
         var erros = new List<string>();
-        var gerados = RelatoriosDosCircuitos.GravarMemorias(comMemoria, pasta, erros);
-        return (gerados > 0 ? pasta : null, gerados, erros);
+        RelatoriosDosCircuitos.GravarCsv(pasta, NomeDaPlanilha, PlanilhaDeCircuitos.Csv(circuitos), erros);
+        RelatoriosDosCircuitos.GravarCsv(pasta, RelatoriosDosCircuitos.NomeDosMateriais, ListaDeMateriais.Montar(circuitos).Csv(), erros);
+        var gerados = RelatoriosDosCircuitos.GravarMemorias(circuitos, pasta, erros);
+        return (pasta, gerados, erros);
     }
 
     private void Cancelar(string mensagem)

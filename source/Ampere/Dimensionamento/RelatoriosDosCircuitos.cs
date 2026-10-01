@@ -81,7 +81,7 @@ internal static class RelatoriosDosCircuitos
     }
 
     // Com BOM: o Excel só reconhece os acentos de um CSV em UTF-8 se ele começar com a marca.
-    private static string? GravarCsv(string pasta, string nome, string conteudo, List<string> erros)
+    public static string? GravarCsv(string pasta, string nome, string conteudo, List<string> erros)
     {
         var caminho = Path.Combine(pasta, nome);
         try

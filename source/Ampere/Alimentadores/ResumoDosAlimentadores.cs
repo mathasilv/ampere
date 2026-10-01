@@ -36,7 +36,7 @@ internal static class ResumoDosAlimentadores
         if (pasta is { Length: > 0 })
         {
             texto.AppendLine();
-            texto.AppendLine($"Memórias gravadas (JSON, Markdown e PDF): {gerados}");
+            texto.AppendLine($"Memórias gravadas (JSON, Markdown e PDF): {gerados}; planilha alimentadores.csv e lista de materiais materiais.csv");
             texto.AppendLine(pasta);
         }
 

@@ -261,6 +261,22 @@ public class DimensionamentoDeAlimentadores_Teste
         await Assert.That(exigencia.Unidade).IsEqualTo("alimentador");
     }
 
+    [Test]
+    public async Task Alimentador_entra_na_lista_de_materiais_com_fases_neutro_e_protecao()
+    {
+        var cenario = new CenarioDeAlimentador();
+        var circuito = Executar(cenario).Single().Circuito!;
+
+        var lista = Ampere.Core.Relatorios.ListaDeMateriais.Montar([circuito]);
+
+        await Assert.That(lista.ForaDaLista).IsEmpty();
+        var condutores = lista.Itens.Where(item => item.Grupo == Ampere.Core.Relatorios.ListaDeMateriais.Condutores).ToList();
+        // 3F+N, 30 m: 90 m de fase, 30 m de neutro e 30 m de proteção, na seção do alimentador.
+        await Assert.That(string.Join("|", condutores.Select(item => $"{item.Quantidade}"))).IsEqualTo("90|30|30");
+        await Assert.That(condutores.All(item => item.Circuitos.Single() == "QGBT-Alimentador QD1")).IsTrue();
+        await Assert.That(lista.Itens.Single(item => item.Grupo == Ampere.Core.Relatorios.ListaDeMateriais.Disjuntores).Item).IsEqualTo("Disjuntor 3P 16 A");
+    }
+
     private static IReadOnlyList<ResultadoDoAlimentador> Executar(CenarioDeAlimentador cenario) => cenario.Executar();
 
     private static PassoDeCalculo Passo(MemoriaDeCalculo memoria, string descricao) => memoria.Passos.Single(passo => passo.Descricao == descricao);
