@@ -182,12 +182,22 @@ public sealed class QuadroDeCargasNoRevit_Teste : TesteComProjetoEletrico
         QuadroDeCargasDoProjeto.Gravar(resultados, porta);
 
         var nomes = QuadroDeCargasDoProjeto.CriarTabelas(resultados, porta);
-        var segunda = QuadroDeCargasDoProjeto.CriarTabelas(resultados, porta); // idempotente
+        var tabela = new FilteredElementCollector(Cenario.Documento).OfClass(typeof(ViewSchedule)).Cast<ViewSchedule>()
+            .Single(view => view.Name == nomes[0]);
+        ScheduleSheetInstance naPrancha;
+        using (var transacao = new Transaction(Cenario.Documento, "Prancha do teste"))
+        {
+            transacao.Start();
+            naPrancha = ScheduleSheetInstance.Create(Cenario.Documento, ViewSheet.Create(Cenario.Documento, ElementId.InvalidElementId).Id, tabela.Id, XYZ.Zero);
+            transacao.Commit();
+        }
+
+        var segunda = QuadroDeCargasDoProjeto.CriarTabelas(resultados, porta); // idempotente: a mesma view, ainda na prancha
 
         await Assert.That(string.Join("|", nomes)).IsEqualTo("QD1 — quadro de cargas (Ampere)");
         await Assert.That(segunda[0]).IsEqualTo(nomes[0]);
-        var tabela = new FilteredElementCollector(Cenario.Documento).OfClass(typeof(ViewSchedule)).Cast<ViewSchedule>()
-            .Single(view => view.Name == nomes[0]);
+        await Assert.That(tabela.IsValidObject).IsTrue();
+        await Assert.That(naPrancha.IsValidObject).IsTrue();
         await Assert.That(tabela.Definition.CategoryId).IsEqualTo(new ElementId(BuiltInCategory.OST_ElectricalCircuit));
         await Assert.That(tabela.Definition.GetFieldCount()).IsEqualTo(6);
         await Assert.That(string.Join(",", Enumerable.Range(0, tabela.Definition.GetFieldCount())

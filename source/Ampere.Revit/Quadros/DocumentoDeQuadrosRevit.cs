@@ -71,16 +71,24 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
             .Select(LerCircuito)
             .ToList();
 
+    /// <remarks>
+    ///     A tabela que já existe é reaproveitada, nunca apagada: apagar a view tiraria a tabela das pranchas em que o
+    ///     projetista a colocou. Com as colunas certas, fica como está (largura e formatação do projetista preservadas);
+    ///     com colunas de outra versão do Ampere, os campos são refeitos na mesma view.
+    /// </remarks>
     public string CriarTabelaDoQuadro(string nomeDoQuadro)
     {
         var nome = $"{nomeDoQuadro} — quadro de cargas (Ampere)";
-        foreach (var existente in new FilteredElementCollector(documento).OfClass(typeof(ViewSchedule)).Cast<ViewSchedule>()
-                     .Where(tabela => tabela.Name == nome).ToList())
-            documento.Delete(existente.Id);
+        var existente = new FilteredElementCollector(documento).OfClass(typeof(ViewSchedule)).Cast<ViewSchedule>()
+            .FirstOrDefault(tabela => tabela.Name == nome);
+        if (existente is not null && ColunasAtuais(existente.Definition)) return nome;
 
-        var tabela = ViewSchedule.CreateSchedule(documento, new ElementId(BuiltInCategory.OST_ElectricalCircuit));
-        tabela.Name = nome;
+        var tabela = existente ?? ViewSchedule.CreateSchedule(documento, new ElementId(BuiltInCategory.OST_ElectricalCircuit));
+        if (existente is null) tabela.Name = nome;
         var definicao = tabela.Definition;
+        definicao.ClearSortGroupFields();
+        definicao.ClearFilters();
+        definicao.ClearFields();
 
         var campo = Campo(definicao, ParametrosAmpere.NumeroCircuito, "Nº");
         definicao.AddSortGroupField(new ScheduleSortGroupField(campo.FieldId, ScheduleSortOrder.Ascending));
@@ -95,6 +103,13 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
 
         return nome;
     }
+
+    private static readonly string[] Colunas = ["Nº", "Tipo de carga", "Potência instalada (VA)", "Fator de demanda", "Memória do circuito", "Quadro"];
+
+    private static bool ColunasAtuais(ScheduleDefinition definicao) =>
+        definicao.GetFilterCount() == 1 &&
+        definicao.GetSortGroupFieldCount() == 1 &&
+        Enumerable.Range(0, definicao.GetFieldCount()).Select(indice => definicao.GetField(indice).ColumnHeading).SequenceEqual(Colunas);
 
     private ScheduleField Campo(ScheduleDefinition definicao, DefinicaoDeParametro definicaoDoParametro, string titulo)
     {
