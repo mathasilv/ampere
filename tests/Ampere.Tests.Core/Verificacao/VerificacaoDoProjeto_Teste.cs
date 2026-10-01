@@ -1,6 +1,8 @@
+using Ampere.Core.Cargas;
 using Ampere.Core.Catalogos;
 using Ampere.Core.Dimensionamento;
 using Ampere.Core.Normas;
+using Ampere.Core.Quadros;
 using Ampere.Core.Verificacao;
 using Ampere.Tests.Core.Catalogos;
 using Ampere.Tests.Core.Normas;
@@ -204,6 +206,47 @@ public class VerificacaoDoProjeto_Teste
         documento.GravarMemoriasAtuais();
 
         await Assert.That(Verificar(documento).Markdown()).EndsWith("\nSem pendências.\n");
+    }
+
+    [Test]
+    public async Task Quadro_de_cargas_conferido_pelos_fatores_guardados()
+    {
+        var documento = Documento(Circuito(1, "TUG-01", Ponto(11)));
+        documento.GravarMemoriasAtuais();
+        var fatores = new Dictionary<TipoDeCarga, decimal> { [TipoDeCarga.TUG] = 0.5m };
+        var lido = new QuadroLido(50, "QD1", [new CircuitoLido(1, "TUG-01", "TUG", 1270m, "F+N", 127m)]);
+        var emDia = new QuadrosFalsos(lido, QuadroDeCargasDoProjeto.Montar(lido, Ficticio, fatores).Quadro.Memoria!.Hash(), fatores);
+
+        await Assert.That(VerificacaoDoProjeto.Executar(documento, Ficticio, Catalogos, emDia).Pendencias).IsEmpty();
+        await Assert.That(Grupos(VerificacaoDoProjeto.Executar(documento, Ficticio, Catalogos, emDia with { Memoria = null })))
+            .IsEqualTo($"Aviso|{VerificacaoDoProjeto.QuadrosNaoMontados}|50");
+        await Assert.That(Grupos(VerificacaoDoProjeto.Executar(documento, Ficticio, Catalogos, emDia with { Memoria = "sha256:antiga" })))
+            .IsEqualTo($"Aviso|{VerificacaoDoProjeto.QuadrosDesatualizados}|50");
+        var semFatores = VerificacaoDoProjeto.Executar(documento, Ficticio, Catalogos, emDia with { Fatores = null });
+        await Assert.That(Grupos(semFatores)).IsEqualTo($"Informacao|{VerificacaoDoProjeto.CondicoesNaoGuardadas}|50");
+        await Assert.That(semFatores.MemoriasConferidas).IsFalse();
+    }
+
+    private sealed record QuadrosFalsos(QuadroLido Quadro, string? Memoria, IReadOnlyDictionary<TipoDeCarga, decimal>? Fatores) : IDocumentoDeQuadros
+    {
+        public void EmUmaTransacao(string nome, Action acao) => throw new NotSupportedException();
+
+        public IReadOnlyList<QuadroLido> LerQuadrosComCircuitos() => [Quadro];
+
+        public string? LerMemoriaDoQuadro(long quadroId) => Memoria;
+
+        public IReadOnlyDictionary<TipoDeCarga, decimal>? LerFatoresDoQuadro(long quadroId) => Fatores;
+
+        public void GravarLinhas(IReadOnlyList<LinhaParaGravar> linhas) => throw new NotSupportedException();
+
+        public bool GravarMemoriaDoQuadro(long quadroId, string? hashDaMemoria, IReadOnlyDictionary<TipoDeCarga, decimal>? fatoresInformados) =>
+            throw new NotSupportedException();
+
+        public IReadOnlyList<string> ApagarMemoriaDosOutrosQuadros(IReadOnlyCollection<long> montados) => throw new NotSupportedException();
+
+        public IReadOnlyList<CircuitoLido> LerCircuitosSemQuadro() => throw new NotSupportedException();
+
+        public string CriarTabelaDoQuadro(string nomeDoQuadro) => throw new NotSupportedException();
     }
 
     private static RelatorioDeVerificacao Verificar(DocumentoFalso documento) => VerificacaoDoProjeto.Executar(documento, Ficticio, Catalogos);

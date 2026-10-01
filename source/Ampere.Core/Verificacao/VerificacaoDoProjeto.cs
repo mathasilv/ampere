@@ -2,6 +2,7 @@ using Ampere.Core.Cargas;
 using Ampere.Core.Catalogos;
 using Ampere.Core.Dimensionamento;
 using Ampere.Core.Normas;
+using Ampere.Core.Quadros;
 
 namespace Ampere.Core.Verificacao;
 
@@ -110,7 +111,8 @@ public sealed record RelatorioDeVerificacao(IReadOnlyList<Pendencia> Pendencias,
 /// <summary>
 ///     Caso de uso "Verificar projeto": lista o que falta ou mudou, sem gravar nada — pontos sem classificação, fora de
 ///     circuito ou sem local; circuitos criados fora do Ampere; circuitos com dados faltando, não dimensionados ou com a
-///     memória gravada diferente da que o modelo daria hoje; e onde o cálculo para.
+///     memória gravada diferente da que o modelo daria hoje; quadros sem quadro de cargas ou com ele desatualizado; e onde
+///     o cálculo para.
 /// </summary>
 /// <remarks>
 ///     A memória de cada circuito é refeita com as condições da rodada que o dimensionou (guardadas no circuito; sem
@@ -129,8 +131,12 @@ public static class VerificacaoDoProjeto
     public const string AvisosDoDimensionamento = "Avisos do dimensionamento";
     public const string CondicoesNaoGuardadas = "Memórias sem as condições da rodada";
     public const string CalculoInterrompido = "Onde o cálculo para";
+    public const string QuadrosNaoMontados = "Quadros sem quadro de cargas";
+    public const string QuadrosDesatualizados = "Quadros de cargas desatualizados";
 
-    public static RelatorioDeVerificacao Executar(IDocumentoDeVerificacao documento, PerfilNormativo perfil, CatalogosDeProduto catalogos)
+    /// <param name="quadros">Os quadros, para conferir o quadro de cargas de cada um; nulo = não conferir.</param>
+    public static RelatorioDeVerificacao Executar(
+        IDocumentoDeVerificacao documento, PerfilNormativo perfil, CatalogosDeProduto catalogos, IDocumentoDeQuadros? quadros = null)
     {
         var pendencias = new List<Pendencia>();
         var pontos = documento.LerPontos();
@@ -145,6 +151,7 @@ public static class VerificacaoDoProjeto
             quantos => $"{quantos} circuito(s) com pontos classificados e sem AMP_NumeroCircuito: o Ampere não os dimensiona nem os põe no quadro de cargas (apague o circuito no Revit e refaça-o com 'Criar circuitos', que não mexe em ponto já circuitado)");
 
         var conferidas = Circuitos(doAmpere, dados, documento.LerCondicoes(), documento.LerCondicoesDosCircuitos(dados.Keys.ToList()), perfil, catalogos, pendencias);
+        if (quadros is not null) conferidas &= Quadros(quadros, perfil, pendencias);
 
         var ordenadas = pendencias
             .OrderBy(pendencia => pendencia.Gravidade)
@@ -157,8 +164,50 @@ public static class VerificacaoDoProjeto
     private static readonly string[] OrdemDosGrupos =
     [
         PontosSemClassificacao, PontosForaDeCircuito, PontosSemLocal, CircuitosForaDoAmpere, CircuitosComDadosFaltando,
-        CircuitosNaoDimensionados, MemoriasDesatualizadas, AvisosDoDimensionamento, CondicoesNaoGuardadas, CalculoInterrompido
+        CircuitosNaoDimensionados, MemoriasDesatualizadas, QuadrosNaoMontados, QuadrosDesatualizados, AvisosDoDimensionamento, CondicoesNaoGuardadas,
+        CalculoInterrompido
     ];
+
+    // Cada quadro de cargas é refeito com os fatores guardados na montagem e comparado com o hash gravado no quadro.
+    // Devolve se todos os quadros montados puderam ser conferidos.
+    private static bool Quadros(IDocumentoDeQuadros quadros, PerfilNormativo perfil, List<Pendencia> pendencias)
+    {
+        var naoMontados = new List<(long Id, string Nome)>();
+        var desatualizados = new List<(long Id, string Nome)>();
+        var semFatores = new List<(long Id, string Nome)>();
+        foreach (var quadro in quadros.LerQuadrosComCircuitos())
+        {
+            if (quadros.LerMemoriaDoQuadro(quadro.Id) is not { } gravada)
+            {
+                naoMontados.Add((quadro.Id, quadro.Nome));
+                continue;
+            }
+
+            if (quadros.LerFatoresDoQuadro(quadro.Id) is not { } fatores)
+            {
+                semFatores.Add((quadro.Id, quadro.Nome));
+                continue;
+            }
+
+            if (QuadroDeCargasDoProjeto.Montar(quadro, perfil, fatores).Quadro.Memoria?.Hash() != gravada.Trim()) desatualizados.Add((quadro.Id, quadro.Nome));
+        }
+
+        AdicionarQuadros(pendencias, GravidadeDaPendencia.Aviso, QuadrosNaoMontados, naoMontados,
+            quantos => $"{quantos} quadro(s) com circuitos e sem quadro de cargas montado: rode 'Montar quadro de cargas'");
+        AdicionarQuadros(pendencias, GravidadeDaPendencia.Aviso, QuadrosDesatualizados, desatualizados,
+            quantos => $"{quantos} quadro(s) com o quadro de cargas gravado diferente do que o modelo dá hoje (circuitos, potências ou alimentação mudaram): rode 'Montar quadro de cargas' de novo");
+        AdicionarQuadros(pendencias, GravidadeDaPendencia.Informacao, CondicoesNaoGuardadas, semFatores,
+            quantos => $"{quantos} quadro(s) montado(s) sem os fatores guardados (montagem anterior a esta versão): não conferidos — rode 'Montar quadro de cargas' para conferi-los depois");
+        return semFatores.Count == 0;
+    }
+
+    private static void AdicionarQuadros(List<Pendencia> pendencias, GravidadeDaPendencia gravidade, string grupo, List<(long Id, string Nome)> quadros, Func<int, string> descricao)
+    {
+        if (quadros.Count == 0) return;
+
+        var exemplos = string.Join(", ", quadros.Take(5).Select(quadro => quadro.Nome)) + (quadros.Count > 5 ? ", …" : string.Empty);
+        pendencias.Add(new Pendencia(gravidade, grupo, $"{descricao(quadros.Count)} — {exemplos}", quadros.Select(quadro => quadro.Id).ToList()));
+    }
 
     // Devolve os pontos classificados, que seguem para as verificações de circuito e de local. Reserva não é tipo de
     // ponto ("Classificar cargas" e "Criar circuitos" o recusam): conta como sem classificação.

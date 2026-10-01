@@ -5,6 +5,7 @@ using Ampere.Core.Catalogos;
 using Ampere.Core.Normas;
 using Ampere.Core.Verificacao;
 using Ampere.Relatorios;
+using Ampere.Revit.Quadros;
 using Ampere.Revit.Verificacao;
 using Ampere.ViewModels;
 using Ampere.Views;
@@ -16,9 +17,9 @@ namespace Ampere.Commands;
 
 /// <summary>
 ///     Lista o que falta ou mudou no projeto, sem gravar nada no modelo: pontos sem classificação, fora de circuito ou sem
-///     local; circuitos criados fora do Ampere, com dados faltando, não dimensionados ou com a memória desatualizada; e
-///     onde o cálculo para. Salva o relatório em Documentos\Ampere\{projeto}\verificacao.md e pode selecionar no modelo os
-///     elementos de uma pendência.
+///     local; circuitos criados fora do Ampere, com dados faltando, não dimensionados ou com a memória desatualizada;
+///     quadros sem quadro de cargas ou com ele desatualizado; e onde o cálculo para. Salva o relatório em
+///     Documentos\Ampere\{projeto}\verificacao.md e pode selecionar no modelo os elementos de uma pendência.
 /// </summary>
 [UsedImplicitly]
 [Transaction(TransactionMode.ReadOnly)]
@@ -48,7 +49,7 @@ public class VerificarProjetoCommand : ExternalCommand
         RelatorioDeVerificacao relatorio;
         try
         {
-            relatorio = VerificacaoDoProjeto.Executar(porta, PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao);
+            relatorio = VerificacaoDoProjeto.Executar(porta, PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao, new DocumentoDeQuadrosRevit(documento));
         }
         catch (Exception excecao) when (excecao is InvalidOperationException or Autodesk.Revit.Exceptions.ApplicationException)
         {
