@@ -1,5 +1,6 @@
 using System.Globalization;
 using Ampere.Core.Cargas;
+using Ampere.Core.Dimensionamento;
 using Ampere.Core.Entradas;
 
 namespace Ampere.Tests.Core.Entradas;
@@ -178,5 +179,63 @@ public class EntradaDeRegra_Teste
 
         await Assert.That(entrada.Regra).IsNull();
         await Assert.That(string.Join("\n", entrada.Problemas)).Contains("máximo de pontos por circuito deve ser pelo menos 1");
+    }
+}
+
+public class EntradaDeCondicoes_Teste
+{
+    private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
+
+    [Test]
+    public async Task Campos_validos_viram_condicoes_do_projeto()
+    {
+        var entrada = EntradaDeCondicoes.Interpretar("35", "3", "Cobre", "B1", "PVC", " Fio 750 V ", "PVC rígido", PtBr);
+
+        await Assert.That(entrada.Problemas).IsEmpty();
+        await Assert.That(entrada.Condicoes).IsEqualTo(new CondicoesDoProjeto(35m, 3, "Cobre", "B1", "PVC", "Fio 750 V", "PVC rígido"));
+    }
+
+    [Test]
+    public async Task Padroes_vazios_ficam_nulos()
+    {
+        var entrada = EntradaDeCondicoes.Interpretar("30", "1", "Cobre", "", " ", null, "", PtBr);
+
+        await Assert.That(entrada.Condicoes).IsEqualTo(new CondicoesDoProjeto(30m, 1, "Cobre"));
+    }
+
+    [Test]
+    public async Task Temperatura_agrupamento_e_material_sao_obrigatorios()
+    {
+        var entrada = EntradaDeCondicoes.Interpretar("", " ", "", "B1", "PVC", null, null, PtBr);
+
+        await Assert.That(entrada.Condicoes).IsNull();
+        await Assert.That(entrada.Problemas).IsEquivalentTo(
+        [
+            "informe a temperatura ambiente (°C)",
+            "informe os circuitos agrupados (1 = circuito sozinho)",
+            "escolha o material do condutor"
+        ]);
+    }
+
+    [Test]
+    [Arguments("0")]
+    [Arguments("2,5")]
+    [Arguments("-1")]
+    public async Task Circuitos_agrupados_precisa_ser_inteiro_de_1_em_diante(string agrupados)
+    {
+        var entrada = EntradaDeCondicoes.Interpretar("30", agrupados, "Cobre", null, null, null, null, PtBr);
+
+        await Assert.That(entrada.Condicoes).IsNull();
+        await Assert.That(string.Join("\n", entrada.Problemas)).Contains("circuitos agrupados deve ser um número inteiro de 1 em diante");
+    }
+
+    [Test]
+    public async Task Problema_de_digitacao_e_relatado_por_campo()
+    {
+        var entrada = EntradaDeCondicoes.Interpretar("30.5", "abc", "Cobre", null, null, null, null, PtBr);
+
+        var problemas = string.Join("\n", entrada.Problemas);
+        await Assert.That(problemas).Contains("temperatura ambiente: número sem separador de milhar");
+        await Assert.That(problemas).Contains("circuitos agrupados: número inválido: 'abc'");
     }
 }

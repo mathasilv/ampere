@@ -2,6 +2,7 @@ using System.Text;
 using System.IO;
 using Ampere.Core.Quadros;
 using Ampere.Core.Relatorios;
+using Ampere.Relatorios;
 
 namespace Ampere.Quadros;
 
@@ -14,10 +15,7 @@ internal static class RelatoriosDosQuadros
     /// <summary>Grava os relatórios em Documentos\Ampere\{projeto}. Retorna a pasta, quantos quadros saíram e os erros.</summary>
     public static (string? Pasta, int Gerados, IReadOnlyList<string> Erros) Gravar(IReadOnlyList<ResultadoDoQuadro> resultados, string nomeDoProjeto)
     {
-        var pasta = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-            "Ampere",
-            string.IsNullOrWhiteSpace(nomeDoProjeto) ? "projeto-sem-titulo" : NomeDeArquivo(nomeDoProjeto));
+        var pasta = PastaDeRelatorios.Caminho(nomeDoProjeto);
         var erros = new List<string>();
         var gerados = 0;
         try
@@ -26,7 +24,7 @@ internal static class RelatoriosDosQuadros
             foreach (var resultado in resultados.Where(resultado => resultado.Quadro.Memoria is not null))
             {
                 var memoria = resultado.Quadro.Memoria!;
-                var baseNome = $"{NomeDeArquivo(resultado.Nome)}-{memoria.Hash()["sha256:".Length..("sha256:".Length + 8)]}";
+                var baseNome = $"{PastaDeRelatorios.NomeDeArquivo(resultado.Nome)}-{PastaDeRelatorios.Prefixo(memoria.Hash())}";
                 try
                 {
                     File.WriteAllText(Path.Combine(pasta, baseNome + ".json"), memoria.JsonCanonico(), new UTF8Encoding(false));
@@ -46,12 +44,5 @@ internal static class RelatoriosDosQuadros
         }
 
         return (gerados > 0 ? pasta : null, gerados, erros);
-    }
-
-    private static string NomeDeArquivo(string nome)
-    {
-        var invalidos = Path.GetInvalidFileNameChars();
-        var texto = new string(nome.Select(caractere => invalidos.Contains(caractere) ? '_' : caractere).ToArray());
-        return texto.Trim();
     }
 }

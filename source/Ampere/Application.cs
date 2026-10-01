@@ -40,6 +40,13 @@ public class Application : ExternalApplication
         quadros.AddPushButton<MontarQuadroDeCargasCommand>("Montar quadro\nde cargas")
             .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
             .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
-            .SetToolTip("Monta demanda por tipo de carga e corrente de demanda dos quadros com circuitos (somente leitura).");
+            .SetToolTip("Monta demanda por tipo de carga e corrente de demanda dos quadros com circuitos; grava potência e fator nos circuitos e a memória no quadro (um único desfazer).");
+
+        var dimensionamento = Application.CreatePanel("Dimensionamento", "Ampere");
+
+        dimensionamento.AddPushButton<DimensionarCircuitosCommand>("Dimensionar\ncircuitos")
+            .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
+            .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
+            .SetToolTip("Dimensiona os circuitos do Ampere pela NBR 5410 (IB, seção, disjuntor, queda de tensão, IDR e eletroduto) com memória de cálculo; grava os resultados nos circuitos (um único desfazer).");
     }
 }

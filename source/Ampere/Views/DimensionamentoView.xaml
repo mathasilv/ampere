@@ -1,0 +1,79 @@
+<Window
+    x:Class="Ampere.Views.DimensionamentoView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:viewModels="clr-namespace:Ampere.ViewModels"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance viewModels:DimensionamentoViewModel}"
+    Title="Dimensionar circuitos"
+    SizeToContent="WidthAndHeight"
+    ResizeMode="NoResize"
+    WindowStartupLocation="CenterOwner"
+    ShowInTaskbar="False">
+    <StackPanel Margin="16" Width="460">
+        <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" Margin="0,0,0,12" />
+
+        <TextBlock Text="Condições do projeto" FontWeight="SemiBold" Margin="0,0,0,4" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="190" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="Temperatura ambiente (°C)" VerticalAlignment="Center" />
+            <TextBox Grid.Row="0" Grid.Column="1" Margin="0,4" Text="{Binding TemperaturaC, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Temperatura do ar em torno dos condutores (fator de correção de temperatura, Tabela 40)" />
+
+            <TextBlock Grid.Row="1" Text="Circuitos agrupados" VerticalAlignment="Center" />
+            <TextBox Grid.Row="1" Grid.Column="1" Margin="0,4" Text="{Binding CircuitosAgrupados, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Circuitos no mesmo feixe ou eletroduto, incluindo o próprio (fator de agrupamento, Tabela 42); 1 = sozinho" />
+
+            <TextBlock Grid.Row="2" Text="Material do condutor" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="2" Grid.Column="1" Margin="0,4" ItemsSource="{Binding Materiais}" SelectedItem="{Binding Material}" />
+        </Grid>
+
+        <TextBlock Text="Padrões para circuitos sem o parâmetro" FontWeight="SemiBold" Margin="0,12,0,4" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="190" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="Método de instalação" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="0" Grid.Column="1" Margin="0,4" ItemsSource="{Binding MetodosDeInstalacao}" SelectedItem="{Binding MetodoPadrao}" />
+
+            <TextBlock Grid.Row="1" Text="Isolação" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,4" ItemsSource="{Binding Isolacoes}" SelectedItem="{Binding IsolacaoPadrao}" />
+
+            <TextBlock Grid.Row="2" Text="Tipo de condutor" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="2" Grid.Column="1" Margin="0,4" IsEditable="True" ItemsSource="{Binding TiposDeCondutor}"
+                      Text="{Binding TipoDeCondutorPadrao, UpdateSourceTrigger=PropertyChanged}" />
+
+            <TextBlock Grid.Row="3" Text="Tipo de eletroduto (projeto)" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="3" Grid.Column="1" Margin="0,4" IsEditable="True" ItemsSource="{Binding TiposDeEletroduto}"
+                      Text="{Binding TipoDeEletroduto, UpdateSourceTrigger=PropertyChanged}" />
+        </Grid>
+
+        <TextBlock Margin="0,10,0,0" TextWrapping="Wrap" Foreground="DarkGoldenrod" Text="{Binding AvisoDeCatalogo}" />
+        <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Foreground="Gray" Text="{Binding Dica}" />
+        <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" Foreground="Firebrick" Text="{Binding Problemas}" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Dimensionar" IsDefault="True" Width="110" Margin="0,0,8,0" Click="Confirmar" />
+            <Button Content="Cancelar" IsCancel="True" Width="96" />
+        </StackPanel>
+    </StackPanel>
+</Window>

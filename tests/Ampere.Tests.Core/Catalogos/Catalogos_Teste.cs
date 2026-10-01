@@ -18,6 +18,15 @@ public class CatalogoDeCondutores_Teste
     }
 
     [Test]
+    public async Task Tipos_dos_catalogos_para_o_dialogo()
+    {
+        await Assert.That(Ficticio.Tipos).IsEquivalentTo([CatalogosFicticios.TipoDeCondutor]);
+        await Assert.That(CatalogoDeEletrodutos.Carregar(CatalogosFicticios.Eletrodutos).Tipos).IsEquivalentTo([CatalogosFicticios.TipoDeEletroduto]);
+        await Assert.That(CatalogoDeCondutores.Padrao.Tipos).IsEmpty();
+        await Assert.That(CatalogoDeEletrodutos.Padrao.Tipos).IsEmpty();
+    }
+
+    [Test]
     public async Task Consulta_devolve_diametro_com_a_referencia_do_catalogo()
     {
         var diametro = Ficticio.DiametroExternoMm(CatalogosFicticios.TipoDeCondutor, 2.5m);

@@ -22,16 +22,21 @@ public sealed class CatalogoDeCondutores
     private readonly bool _pendente;
     private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<decimal, decimal>> _diametros;
 
-    private CatalogoDeCondutores(bool ficticio, string referencia, bool pendente, IReadOnlyDictionary<string, IReadOnlyDictionary<decimal, decimal>> diametros)
+    private CatalogoDeCondutores(
+        bool ficticio, string referencia, bool pendente, IReadOnlyList<string> tipos, IReadOnlyDictionary<string, IReadOnlyDictionary<decimal, decimal>> diametros)
     {
         Ficticio = ficticio;
         _referencia = referencia;
         _pendente = pendente;
+        Tipos = tipos;
         _diametros = diametros;
     }
 
     /// <summary>Catálogo só para testes.</summary>
     public bool Ficticio { get; }
+
+    /// <summary>Tipos de condutor, na ordem do arquivo (vazio enquanto o catálogo não tem dados).</summary>
+    public IReadOnlyList<string> Tipos { get; }
 
     /// <summary>Catálogo oficial, embarcado no assembly.</summary>
     public static CatalogoDeCondutores Padrao => Oficial.Value;
@@ -57,7 +62,7 @@ public sealed class CatalogoDeCondutores
         }
 
         if (problemas.Count > 0) throw new CatalogoDeProdutoInvalidoException(problemas);
-        return new CatalogoDeCondutores(ficticio, referencia, pendente, diametros);
+        return new CatalogoDeCondutores(ficticio, referencia, pendente, (arquivo.Tipos ?? []).Select(tipo => tipo.Tipo!).ToList(), diametros);
     }
 
     /// <param name="tipo">Tipo de condutor; vazio = não informado (explicado na ausência).</param>
@@ -88,16 +93,21 @@ public sealed class CatalogoDeEletrodutos
     private readonly bool _pendente;
     private readonly IReadOnlyDictionary<string, IReadOnlyList<TamanhoDeEletroduto>> _tamanhos;
 
-    private CatalogoDeEletrodutos(bool ficticio, string referencia, bool pendente, IReadOnlyDictionary<string, IReadOnlyList<TamanhoDeEletroduto>> tamanhos)
+    private CatalogoDeEletrodutos(
+        bool ficticio, string referencia, bool pendente, IReadOnlyList<string> tipos, IReadOnlyDictionary<string, IReadOnlyList<TamanhoDeEletroduto>> tamanhos)
     {
         Ficticio = ficticio;
         _referencia = referencia;
         _pendente = pendente;
+        Tipos = tipos;
         _tamanhos = tamanhos;
     }
 
     /// <summary>Catálogo só para testes.</summary>
     public bool Ficticio { get; }
+
+    /// <summary>Tipos de eletroduto, na ordem do arquivo (vazio enquanto o catálogo não tem dados).</summary>
+    public IReadOnlyList<string> Tipos { get; }
 
     /// <summary>Catálogo oficial, embarcado no assembly.</summary>
     public static CatalogoDeEletrodutos Padrao => Oficial.Value;
@@ -133,7 +143,7 @@ public sealed class CatalogoDeEletrodutos
         }
 
         if (problemas.Count > 0) throw new CatalogoDeProdutoInvalidoException(problemas);
-        return new CatalogoDeEletrodutos(ficticio, referencia, pendente, tamanhos);
+        return new CatalogoDeEletrodutos(ficticio, referencia, pendente, (arquivo.Tipos ?? []).Select(tipo => tipo.Tipo!).ToList(), tamanhos);
     }
 
     /// <summary>Tamanhos do tipo, em ordem crescente de diâmetro interno.</summary>
