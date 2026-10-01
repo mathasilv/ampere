@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="210mm" height="48.5mm" viewBox="-5 -8.5 210 48.5">
+<title>QD2 — diagrama unifilar</title>
+<rect x="-1000" y="-1000" width="3000" height="3000" fill="#ffffff"/>
+<g stroke="#000000" fill="none" stroke-linecap="square">
+<line x1="20" y1="12" x2="20" y2="20" stroke-width="0.25"/>
+<line x1="20" y1="20" x2="20" y2="22" stroke-width="0.7"/>
+</g>
+<g font-family="DejaVu Sans, Arial, sans-serif" fill="#000000">
+<text x="0" y="0" font-size="3.5" text-anchor="start">QD2 — diagrama unifilar</text>
+<text x="0" y="6" font-size="2.5" text-anchor="start">0 circuitos</text>
+<text x="22" y="16" font-size="2" text-anchor="start">alimentação</text>
+<text x="24" y="24" font-size="2.5" text-anchor="start">quadro sem circuitos</text>
+<text x="0" y="30" font-size="2" text-anchor="start">Representação esquemática, sem simbologia normativa. Valores do 'Dimensionar circuitos'; a memória de cada</text>
+<text x="0" y="33.5" font-size="2" text-anchor="start">circuito está no hash AMP_MemoriaCalculoId. &quot;não dimensionado&quot;: rode o 'Dimensionar circuitos' ou veja o motivo no resumo.</text>
+</g>
+</svg>

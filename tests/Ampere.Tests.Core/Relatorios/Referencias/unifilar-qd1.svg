@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="210mm" height="93.5mm" viewBox="-5 -8.5 210 93.5">
+<title>QD1 — diagrama unifilar</title>
+<rect x="-1000" y="-1000" width="3000" height="3000" fill="#ffffff"/>
+<g stroke="#000000" fill="none" stroke-linecap="square">
+<line x1="20" y1="12" x2="20" y2="20" stroke-width="0.25"/>
+<line x1="20" y1="20" x2="20" y2="67" stroke-width="0.7"/>
+<line x1="20" y1="28" x2="30" y2="28" stroke-width="0.25"/>
+<line x1="30" y1="30" x2="38" y2="30" stroke-width="0.25"/>
+<line x1="38" y1="30" x2="38" y2="26" stroke-width="0.25"/>
+<line x1="38" y1="26" x2="30" y2="26" stroke-width="0.25"/>
+<line x1="30" y1="26" x2="30" y2="30" stroke-width="0.25"/>
+<line x1="38" y1="28" x2="90" y2="28" stroke-width="0.25"/>
+<line x1="20" y1="40" x2="30" y2="40" stroke-width="0.25"/>
+<line x1="30" y1="42" x2="38" y2="42" stroke-width="0.25"/>
+<line x1="38" y1="42" x2="38" y2="38" stroke-width="0.25"/>
+<line x1="38" y1="38" x2="30" y2="38" stroke-width="0.25"/>
+<line x1="30" y1="38" x2="30" y2="42" stroke-width="0.25"/>
+<line x1="38" y1="40" x2="44" y2="40" stroke-width="0.25"/>
+<line x1="44" y1="42" x2="52" y2="42" stroke-width="0.25"/>
+<line x1="52" y1="42" x2="52" y2="38" stroke-width="0.25"/>
+<line x1="52" y1="38" x2="44" y2="38" stroke-width="0.25"/>
+<line x1="44" y1="38" x2="44" y2="42" stroke-width="0.25"/>
+<line x1="52" y1="40" x2="90" y2="40" stroke-width="0.25"/>
+<line x1="20" y1="52" x2="30" y2="52" stroke-width="0.25"/>
+<line x1="30" y1="54" x2="38" y2="54" stroke-width="0.25"/>
+<line x1="38" y1="54" x2="38" y2="50" stroke-width="0.25"/>
+<line x1="38" y1="50" x2="30" y2="50" stroke-width="0.25"/>
+<line x1="30" y1="50" x2="30" y2="54" stroke-width="0.25"/>
+<line x1="38" y1="52" x2="44" y2="52" stroke-width="0.25"/>
+<line x1="44" y1="54" x2="52" y2="54" stroke-width="0.25"/>
+<line x1="52" y1="54" x2="52" y2="50" stroke-width="0.25"/>
+<line x1="52" y1="50" x2="44" y2="50" stroke-width="0.25"/>
+<line x1="44" y1="50" x2="44" y2="54" stroke-width="0.25"/>
+<line x1="52" y1="52" x2="90" y2="52" stroke-width="0.25"/>
+<line x1="20" y1="64" x2="30" y2="64" stroke-width="0.25"/>
+<line x1="30" y1="66" x2="38" y2="66" stroke-width="0.25"/>
+<line x1="38" y1="66" x2="38" y2="62" stroke-width="0.25"/>
+<line x1="38" y1="62" x2="30" y2="62" stroke-width="0.25"/>
+<line x1="30" y1="62" x2="30" y2="66" stroke-width="0.25"/>
+<line x1="38" y1="64" x2="90" y2="64" stroke-width="0.25"/>
+</g>
+<g font-family="DejaVu Sans, Arial, sans-serif" fill="#000000">
+<text x="0" y="0" font-size="3.5" text-anchor="start">QD1 — diagrama unifilar</text>
+<text x="0" y="6" font-size="2.5" text-anchor="start">4 circuitos · potência instalada incompleta (circuito sem potência)</text>
+<text x="22" y="16" font-size="2" text-anchor="start">alimentação</text>
+<text x="34" y="25" font-size="2" text-anchor="middle">10 A</text>
+<text x="74" y="27" font-size="2" text-anchor="middle">1,5 mm²</text>
+<text x="74" y="31" font-size="2" text-anchor="middle">ΔV 0,81%</text>
+<text x="92" y="28.8" font-size="2.5" text-anchor="start">IL-01 — Iluminação sala e quartos — Iluminação — F+N 127 V — 600 VA</text>
+<text x="34" y="37" font-size="2" text-anchor="middle">20 A</text>
+<text x="48" y="37" font-size="2" text-anchor="middle">IDR 25 A</text>
+<text x="48" y="44.5" font-size="2" text-anchor="middle">30 mA</text>
+<text x="74" y="39" font-size="2" text-anchor="middle">2,5 mm²</text>
+<text x="74" y="43" font-size="2" text-anchor="middle">ΔV 2,21%</text>
+<text x="92" y="40.8" font-size="2.5" text-anchor="start">TUG-01 — Tomadas cozinha — TUG — F+N 127 V — 1800 VA</text>
+<text x="34" y="49" font-size="2" text-anchor="middle">32 A</text>
+<text x="48" y="49" font-size="2" text-anchor="middle">IDR 40 A</text>
+<text x="48" y="56.5" font-size="2" text-anchor="middle">30 mA</text>
+<text x="74" y="51" font-size="2" text-anchor="middle">6 mm²</text>
+<text x="74" y="55" font-size="2" text-anchor="middle">ΔV 1,9%</text>
+<text x="92" y="52.8" font-size="2.5" text-anchor="start">TUE-01 — Chuveiro — TUE — 2F 220 V — 5978,26 VA</text>
+<text x="34" y="61" font-size="2" text-anchor="middle">—</text>
+<text x="74" y="63" font-size="2" text-anchor="middle">não dimensionado</text>
+<text x="92" y="64.8" font-size="2.5" text-anchor="start">TUE-02 — Ar &amp; &lt;split&gt; — TUE — 2F 220 V</text>
+<text x="0" y="75" font-size="2" text-anchor="start">Representação esquemática, sem simbologia normativa. Valores do 'Dimensionar circuitos'; a memória de cada</text>
+<text x="0" y="78.5" font-size="2" text-anchor="start">circuito está no hash AMP_MemoriaCalculoId. &quot;não dimensionado&quot;: rode o 'Dimensionar circuitos' ou veja o motivo no resumo.</text>
+</g>
+</svg>
