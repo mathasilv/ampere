@@ -54,9 +54,10 @@ public class DecisoesDoProjetista_Teste
         var oficial = PerfilNormativo.NBR5410_2004;
         var dados = new DadosDoCircuito(1, "TUG-01", "TUG", 10m, "D", "PVC", [new DadosDoPonto(11, 1270m, 127m, "F+N", "Demais locais internos", "TUG")]);
 
-        var doProjeto = EntradaDoCircuito.Montar(dados, Condicoes with { TemperaturaDoSoloC = 25m }, oficial).Entrada!;
+        var noSolo = Condicoes with { TemperaturaDoSoloC = 25m, CircuitosAgrupadosNoSolo = 1 };
+        var doProjeto = EntradaDoCircuito.Montar(dados, noSolo, oficial).Entrada!;
         var doCircuito = EntradaDoCircuito.Montar(dados with { Decisoes = new DecisoesDoProjetista(TemperaturaAmbienteC: 35m, Justificativa: "solo exposto") },
-            Condicoes with { TemperaturaDoSoloC = 25m }, oficial).Entrada!;
+            noSolo, oficial).Entrada!;
         var semSolo = EntradaDoCircuito.Montar(dados, Condicoes, oficial);
 
         await Assert.That(doProjeto.TemperaturaAmbienteC).IsEqualTo(25m);
@@ -66,10 +67,34 @@ public class DecisoesDoProjetista_Teste
             "AMP_TemperaturaAmbienteC do circuito, a do solo na linha enterrada (o projeto usa 25 °C no solo; justificativa: solo exposto)");
         await Assert.That(semSolo.Entrada).IsNull();
         await Assert.That(semSolo.Problemas).IsEquivalentTo(
-            ["linha enterrada sem temperatura do solo: informe-a nas condições do projeto ou em AMP_TemperaturaAmbienteC do circuito"]);
+        [
+            "linha enterrada sem temperatura do solo: informe-a nas condições do projeto ou em AMP_TemperaturaAmbienteC do circuito",
+            "linha enterrada sem agrupamento no solo: informe os circuitos agrupados no solo nas condições do projeto ou AMP_CircuitosAgrupados no circuito"
+        ]);
         // Fora do solo, a temperatura do solo do projeto não entra.
         await Assert.That(EntradaDoCircuito.Montar(dados with { MetodoDeInstalacao = "B1" }, Condicoes with { TemperaturaDoSoloC = 25m }, oficial).Entrada!.TemperaturaAmbienteC)
             .IsEqualTo(30m);
+    }
+
+    [Test]
+    [Property("Fonte", "NBR 5410:2004, Tabela 44")]
+    public async Task Linha_enterrada_usa_o_agrupamento_no_solo_do_projeto_ou_o_do_circuito()
+    {
+        var oficial = PerfilNormativo.NBR5410_2004;
+        var dados = new DadosDoCircuito(1, "TUG-01", "TUG", 10m, "D", "PVC", [new DadosDoPonto(11, 1270m, 127m, "F+N", "Demais locais internos", "TUG")]);
+        // O projeto agrupa 8 circuitos nos feixes internos: na linha enterrada, valem os 2 do solo.
+        var condicoes = Condicoes with { CircuitosAgrupados = 8, TemperaturaDoSoloC = 20m, CircuitosAgrupadosNoSolo = 2 };
+
+        var doProjeto = EntradaDoCircuito.Montar(dados, condicoes, oficial).Entrada!;
+        var doCircuito = EntradaDoCircuito.Montar(dados with { Decisoes = new DecisoesDoProjetista(CircuitosAgrupados: 3m) }, condicoes, oficial).Entrada!;
+        var interno = EntradaDoCircuito.Montar(dados with { MetodoDeInstalacao = "B1" }, condicoes, oficial).Entrada!;
+
+        await Assert.That(doProjeto.CircuitosAgrupados).IsEqualTo(2);
+        await Assert.That(doProjeto.OrigemDoAgrupamento).IsEqualTo("circuitos agrupados no solo das condições do projeto (linha enterrada)");
+        await Assert.That(doCircuito.CircuitosAgrupados).IsEqualTo(3);
+        await Assert.That(doCircuito.OrigemDoAgrupamento).IsEqualTo(
+            "AMP_CircuitosAgrupados do circuito, na linha enterrada (o projeto usa 2 no solo; sem justificativa informada)");
+        await Assert.That(interno.CircuitosAgrupados).IsEqualTo(8);
     }
 
     [Test]

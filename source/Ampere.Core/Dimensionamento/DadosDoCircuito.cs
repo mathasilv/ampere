@@ -82,6 +82,7 @@ public sealed record DecisoesDoProjetista(
 /// <param name="TipoDeCondutorPadrao">Usado quando o circuito não tem AMP_TipoCondutor; sem nenhum dos dois, o cálculo para no eletroduto.</param>
 /// <param name="TipoDeEletroduto">Tipo de eletroduto do catálogo usado no projeto; sem ele, o cálculo para no eletroduto.</param>
 /// <param name="TemperaturaDoSoloC">Temperatura do solo, em °C, para as linhas enterradas (método D); sem ela, o circuito enterrado precisa de AMP_TemperaturaAmbienteC.</param>
+/// <param name="CircuitosAgrupadosNoSolo">Circuitos agrupados das linhas enterradas (a tabela é outra); sem ele, o circuito enterrado precisa de AMP_CircuitosAgrupados.</param>
 public sealed record CondicoesDoProjeto(
     decimal TemperaturaAmbienteC,
     int CircuitosAgrupados,
@@ -90,7 +91,8 @@ public sealed record CondicoesDoProjeto(
     string? IsolacaoPadrao = null,
     string? TipoDeCondutorPadrao = null,
     string? TipoDeEletroduto = null,
-    decimal? TemperaturaDoSoloC = null);
+    decimal? TemperaturaDoSoloC = null,
+    int? CircuitosAgrupadosNoSolo = null);
 
 /// <summary>
 ///     Monta a entrada do dimensionamento a partir dos dados do circuito: potência = soma dos pontos; tensão e fases =
@@ -164,8 +166,9 @@ public static class EntradaDoCircuito
         string? OrigemDoAgrupamento);
 
     // Numérico 0 = sem decisão (o Revit não esvazia parâmetro numérico). Decisão incoerente é problema de dados, nunca
-    // interpretada: o projetista corrige o parâmetro e roda de novo. Linha enterrada: a temperatura é a do solo — a do
-    // circuito ou a do projeto; sem nenhuma das duas, problema (a do ar nunca vale como a do solo).
+    // interpretada: o projetista corrige o parâmetro e roda de novo. Linha enterrada: a temperatura é a do solo e o
+    // agrupamento é o das linhas enterradas — os do circuito ou os do projeto para o solo; sem nenhum dos dois, problema
+    // (os do ar nunca valem para o solo).
     internal static DecisoesMontadas Decisoes(DecisoesDoProjetista decisoes, CondicoesDoProjeto condicoes, bool enterrado, List<string> problemas)
     {
         var justificativa = string.IsNullOrWhiteSpace(decisoes.Justificativa) ? null : decisoes.Justificativa.Trim();
@@ -199,9 +202,21 @@ public static class EntradaDoCircuito
         {
             if (informados < 1m || informados > int.MaxValue || informados != decimal.Truncate(informados))
                 problemas.Add($"AMP_CircuitosAgrupados deve ser um número inteiro de circuitos, pelo menos 1 ('{NumeroEmTexto.Formatar(informados)}'; 0 = o do projeto)");
-            else
+            else if (!enterrado)
                 (agrupados, origemDoAgrupamento) = ((int)informados,
                     $"AMP_CircuitosAgrupados do circuito (o projeto usa {condicoes.CircuitosAgrupados}; {porque})");
+            else
+                (agrupados, origemDoAgrupamento) = ((int)informados,
+                    $"AMP_CircuitosAgrupados do circuito, na linha enterrada (" +
+                    (condicoes.CircuitosAgrupadosNoSolo is { } noSolo ? $"o projeto usa {noSolo} no solo" : "o projeto não tem agrupamento no solo") + $"; {porque})");
+        }
+        else if (enterrado && condicoes.CircuitosAgrupadosNoSolo is { } noSolo)
+        {
+            (agrupados, origemDoAgrupamento) = (noSolo, "circuitos agrupados no solo das condições do projeto (linha enterrada)");
+        }
+        else if (enterrado)
+        {
+            problemas.Add("linha enterrada sem agrupamento no solo: informe os circuitos agrupados no solo nas condições do projeto ou AMP_CircuitosAgrupados no circuito");
         }
 
         return new DecisoesMontadas(secao, disjuntor, idr, justificativa, temperatura, origemDaTemperatura, agrupados, origemDoAgrupamento);

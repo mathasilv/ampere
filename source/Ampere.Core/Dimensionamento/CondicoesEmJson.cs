@@ -33,6 +33,7 @@ public static class CondicoesEmJson
             escritor.WriteNumber("temperatura_ambiente_c", condicoes.TemperaturaAmbienteC);
             if (condicoes.TemperaturaDoSoloC is { } solo) escritor.WriteNumber("temperatura_do_solo_c", solo);
             escritor.WriteNumber("circuitos_agrupados", condicoes.CircuitosAgrupados);
+            if (condicoes.CircuitosAgrupadosNoSolo is { } noSolo) escritor.WriteNumber("circuitos_agrupados_no_solo", noSolo);
             escritor.WriteString("material", condicoes.Material);
             Opcional(escritor, "metodo_de_instalacao_padrao", condicoes.MetodoDeInstalacaoPadrao);
             Opcional(escritor, "isolacao_padrao", condicoes.IsolacaoPadrao);
@@ -68,6 +69,13 @@ public static class CondicoesEmJson
                 solo = lida;
             }
 
+            int? agrupadosNoSolo = null;
+            if (raiz.TryGetProperty("circuitos_agrupados_no_solo", out _))
+            {
+                if (!Numero(raiz, "circuitos_agrupados_no_solo", out var lidos) || lidos < 1 || lidos > int.MaxValue || lidos != decimal.Truncate(lidos)) return null;
+                agrupadosNoSolo = (int)lidos;
+            }
+
             return new CondicoesDoProjeto(
                 temperatura,
                 (int)agrupados,
@@ -76,7 +84,8 @@ public static class CondicoesEmJson
                 Texto(raiz, "isolacao_padrao"),
                 Texto(raiz, "tipo_de_condutor_padrao"),
                 Texto(raiz, "tipo_de_eletroduto"),
-                solo);
+                solo,
+                agrupadosNoSolo);
         }
         catch (JsonException)
         {

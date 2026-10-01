@@ -156,7 +156,7 @@ public class PerfilNormativo_Teste
         await Assert.That(errata.Referencia).Contains("630 mm² como impresso");
         await Assert.That(oficial.CapacidadeDeConducaoA("F", "PVC", "Cobre", 3, 25m).Referencia).StartsWith("NBR 5410:2004, Tabela 38, coluna (5)");
         await Assert.That(oficial.CapacidadeDeConducaoA("G", "EPR ou XLPE", "Cobre", 3, 25m).Referencia).StartsWith("NBR 5410:2004, Tabela 39, coluna (8)");
-        // A ref das Tabelas 36 e 37 não muda: as memórias já gravadas continuam com o mesmo hash.
+        // A ref das Tabelas 36 e 37 não muda com E, F e G (a de cada linha nova é própria).
         await Assert.That(oficial.CapacidadeDeConducaoA("B1", "PVC", "Cobre", 2, 2.5m).Referencia)
             .IsEqualTo("NBR 5410:2004, Tabelas 36 e 37 (A1 a D; transcrita do texto oficial por coordenadas, validada contra IEC 60364-5-52)");
         await Assert.That(oficial.CapacidadeDeConducaoA("G", "PVC", "Cobre", 2, 2.5m).Ausencia).IsEqualTo("sem linha para método G, PVC, Cobre, 2 condutores carregados");
@@ -205,7 +205,8 @@ public class PerfilNormativo_Teste
 
         var pendente = PerfilNormativo.Carregar(Com("\"metodos_com_eletroduto\": { \"ref\": \"TODO_NORMA\", \"valores\": [] }"));
         var enterrado = PerfilNormativo.Carregar(Com(
-            "\"fator_de_agrupamento_enterrado\": { \"ref\": \"FICTÍCIO: enterrado\", \"metodos\": [\"B1\"], \"valores\": { \"1\": 1, \"2\": 0.6 } }"));
+            "\"fator_de_agrupamento_enterrado\": { \"ref\": \"FICTÍCIO: enterrado\", \"metodos\": [\"B1\"], \"valores\": { \"1\": 1, \"2\": 0.6 } }")
+            .Replace("{ \"isolacao\": \"PVC\", \"por_temperatura_c\"", "{ \"isolacao\": \"PVC\", \"metodos\": [\"B1\"], \"por_temperatura_c\""));
 
         await Assert.That(pendente.ComEletroduto("C")).IsTrue();
         await Assert.That(enterrado.FatorDeAgrupamento("B1", 2).Valor).IsEqualTo(0.6m);
@@ -214,6 +215,22 @@ public class PerfilNormativo_Teste
             .Throws<PerfilNormativoInvalidoException>().WithMessageContaining("fator_de_agrupamento_enterrado: lista de métodos vazia");
         await Assert.That(() => PerfilNormativo.Carregar(Com("\"metodos_com_eletroduto\": { \"ref\": \"TODO_NORMA\", \"valores\": [\"B1\"] }")))
             .Throws<PerfilNormativoInvalidoException>().WithMessageContaining("metodos_com_eletroduto: tem valores mas a ref é TODO_NORMA");
+    }
+
+    [Test]
+    public async Task Tabelas_que_dependem_umas_das_outras_precisam_concordar()
+    {
+        const string Ancora = "\"protecao_diferencial_por_local\": {";
+        string Com(string tabela) => PerfilFicticio.Json.Replace(Ancora, tabela + ", " + Ancora);
+        const string Enterrado = "\"fator_de_agrupamento_enterrado\": { \"ref\": \"FICTÍCIO: enterrado\", \"metodos\": [\"B1\"], \"valores\": { \"1\": 1, \"2\": 0.6 } }";
+
+        // A linha de temperatura sem métodos vale para o enterrado: o ar seria usado no solo.
+        await Assert.That(() => PerfilNormativo.Carregar(Com(Enterrado))).Throws<PerfilNormativoInvalidoException>()
+            .WithMessageContaining("fator_de_temperatura: linha de PVC sem métodos vale também para o método enterrado B1");
+        await Assert.That(() => PerfilNormativo.Carregar(Com("\"metodos_com_eletroduto\": { \"ref\": \"FICTÍCIO: eletroduto\", \"valores\": [\"B1\", \"BI\"] }")))
+            .Throws<PerfilNormativoInvalidoException>().WithMessageContaining("metodos_com_eletroduto: método 'BI' fora da tabela de capacidade de condução");
+        await Assert.That(() => PerfilNormativo.Carregar(PerfilFicticio.Json.Replace("\"2\": 0.8, \"3\": 0.7 }", "\"2\": 1.2, \"3\": 0.7 }")))
+            .Throws<PerfilNormativoInvalidoException>().WithMessageContaining("fator_de_agrupamento: fator de 2 circuitos acima de 1 (1,2)");
     }
 
     [Test]

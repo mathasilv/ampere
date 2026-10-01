@@ -26,6 +26,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <TextBlock Grid.Row="0" Text="Temperatura ambiente (°C)" VerticalAlignment="Center" />
@@ -38,10 +39,14 @@
 
             <TextBlock Grid.Row="2" Text="Circuitos agrupados" VerticalAlignment="Center" />
             <TextBox Grid.Row="2" Grid.Column="1" Margin="0,4" Text="{Binding CircuitosAgrupados, UpdateSourceTrigger=PropertyChanged}"
-                     ToolTip="Circuitos no mesmo feixe ou eletroduto, incluindo o próprio (fator de agrupamento, Tabela 42; enterrados, Tabela 44); 1 = sozinho" />
+                     ToolTip="Circuitos no mesmo feixe ou eletroduto, incluindo o próprio (fator de agrupamento, Tabela 42); 1 = sozinho" />
 
-            <TextBlock Grid.Row="3" Text="Material do condutor" VerticalAlignment="Center" />
-            <ComboBox Grid.Row="3" Grid.Column="1" Margin="0,4" ItemsSource="{Binding Materiais}" SelectedItem="{Binding Material}" />
+            <TextBlock Grid.Row="3" Text="Circuitos agrupados no solo" VerticalAlignment="Center" />
+            <TextBox Grid.Row="3" Grid.Column="1" Margin="0,4" Text="{Binding CircuitosAgrupadosNoSolo, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Só para linhas enterradas (método D): circuitos enterrados lado a lado, incluindo o próprio (Tabela 44); 1 = sozinho. Vazio = cada circuito enterrado informa o seu em AMP_CircuitosAgrupados" />
+
+            <TextBlock Grid.Row="4" Text="Material do condutor" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="4" Grid.Column="1" Margin="0,4" ItemsSource="{Binding Materiais}" SelectedItem="{Binding Material}" />
         </Grid>
 
         <TextBlock Text="Padrões para circuitos sem o parâmetro" FontWeight="SemiBold" Margin="0,12,0,4" />

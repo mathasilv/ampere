@@ -250,7 +250,7 @@ public class EntradaDeCondicoes_Teste
     [Test]
     public async Task Campos_validos_viram_condicoes_do_projeto()
     {
-        var entrada = EntradaDeCondicoes.Interpretar("35", null, "3", "Cobre", "B1", "PVC", " Fio 750 V ", "PVC rígido", PtBr);
+        var entrada = EntradaDeCondicoes.Interpretar("35", null, "3", null, "Cobre", "B1", "PVC", " Fio 750 V ", "PVC rígido", PtBr);
 
         await Assert.That(entrada.Problemas).IsEmpty();
         await Assert.That(entrada.Condicoes).IsEqualTo(new CondicoesDoProjeto(35m, 3, "Cobre", "B1", "PVC", "Fio 750 V", "PVC rígido"));
@@ -259,18 +259,20 @@ public class EntradaDeCondicoes_Teste
     [Test]
     public async Task Temperatura_do_solo_e_opcional_e_validada()
     {
-        var com = EntradaDeCondicoes.Interpretar("30", "20", "1", "Cobre", null, null, null, null, PtBr);
-        var invalida = EntradaDeCondicoes.Interpretar("30", "abc", "1", "Cobre", null, null, null, null, PtBr);
+        var com = EntradaDeCondicoes.Interpretar("30", "20", "1", "2", "Cobre", null, null, null, null, PtBr);
+        var invalida = EntradaDeCondicoes.Interpretar("30", "abc", "1", "1,5", "Cobre", null, null, null, null, PtBr);
 
         await Assert.That(com.Condicoes!.TemperaturaDoSoloC).IsEqualTo(20m);
+        await Assert.That(com.Condicoes!.CircuitosAgrupadosNoSolo).IsEqualTo(2);
         await Assert.That(invalida.Condicoes).IsNull();
-        await Assert.That(invalida.Problemas).IsEquivalentTo(["temperatura do solo: número inválido: 'abc'"]);
+        await Assert.That(invalida.Problemas).IsEquivalentTo(
+            ["temperatura do solo: número inválido: 'abc'", "circuitos agrupados no solo deve ser um número inteiro de 1 em diante"]);
     }
 
     [Test]
     public async Task Padroes_vazios_ficam_nulos()
     {
-        var entrada = EntradaDeCondicoes.Interpretar("30", null, "1", "Cobre", "", " ", null, "", PtBr);
+        var entrada = EntradaDeCondicoes.Interpretar("30", null, "1", null, "Cobre", "", " ", null, "", PtBr);
 
         await Assert.That(entrada.Condicoes).IsEqualTo(new CondicoesDoProjeto(30m, 1, "Cobre"));
     }
@@ -278,7 +280,7 @@ public class EntradaDeCondicoes_Teste
     [Test]
     public async Task Temperatura_agrupamento_e_material_sao_obrigatorios()
     {
-        var entrada = EntradaDeCondicoes.Interpretar("", null, " ", "", "B1", "PVC", null, null, PtBr);
+        var entrada = EntradaDeCondicoes.Interpretar("", null, " ", null, "", "B1", "PVC", null, null, PtBr);
 
         await Assert.That(entrada.Condicoes).IsNull();
         await Assert.That(entrada.Problemas).IsEquivalentTo(
@@ -295,7 +297,7 @@ public class EntradaDeCondicoes_Teste
     [Arguments("-1")]
     public async Task Circuitos_agrupados_precisa_ser_inteiro_de_1_em_diante(string agrupados)
     {
-        var entrada = EntradaDeCondicoes.Interpretar("30", null, agrupados, "Cobre", null, null, null, null, PtBr);
+        var entrada = EntradaDeCondicoes.Interpretar("30", null, agrupados, null, "Cobre", null, null, null, null, PtBr);
 
         await Assert.That(entrada.Condicoes).IsNull();
         await Assert.That(string.Join("\n", entrada.Problemas)).Contains("circuitos agrupados deve ser um número inteiro de 1 em diante");
@@ -304,7 +306,7 @@ public class EntradaDeCondicoes_Teste
     [Test]
     public async Task Problema_de_digitacao_e_relatado_por_campo()
     {
-        var entrada = EntradaDeCondicoes.Interpretar("30.5", null, "abc", "Cobre", null, null, null, null, PtBr);
+        var entrada = EntradaDeCondicoes.Interpretar("30.5", null, "abc", null, "Cobre", null, null, null, null, PtBr);
 
         var problemas = string.Join("\n", entrada.Problemas);
         await Assert.That(problemas).Contains("temperatura ambiente: número sem separador de milhar");

@@ -103,6 +103,7 @@ public sealed class PerfilNormativo
         // Só o que o motor consegue levar adiante: método com fator de temperatura, material com resistividade.
         IReadOnlyList<LinhaDeCapacidade> capacidade = _capacidade.Pendente ? [] : _capacidade.Valores;
         IReadOnlyList<LinhaDeTemperatura> temperatura = _temperatura.Pendente ? [] : _temperatura.Valores;
+        Coerencia(leitor, capacidade, temperatura);
         Vocabulario = new VocabularioDoPerfil(
             Distintos(capacidade.Select(linha => linha.Metodo).Where(metodo => temperatura.Any(linha => linha.Vale(metodo)))),
             Distintos(capacidade.Select(linha => linha.Isolacao)),
@@ -113,6 +114,33 @@ public sealed class PerfilNormativo
                 : Distintos((tabelas.ProtecaoDiferencialPorLocal?.Valores ?? [])
                     .Select(linha => linha.Local?.Trim() ?? string.Empty)
                     .Where(_protecaoDiferencial.Valores.ContainsKey)));
+    }
+
+    // Tabelas que dependem umas das outras: um erro de digitação não pode trocar a tabela usada em silêncio.
+    private void Coerencia(Leitor leitor, IReadOnlyList<LinhaDeCapacidade> capacidade, IReadOnlyList<LinhaDeTemperatura> temperatura)
+    {
+        foreach (var (nome, tabela) in new[] { ("fator_de_agrupamento", _agrupamento), ("fator_de_agrupamento_enterrado", _agrupamentoEnterrado) })
+        {
+            if (tabela is not { Pendente: false }) continue;
+            foreach (var (circuitos, fator) in tabela.Valores.Where(par => par.Value > 1m).OrderBy(par => par.Key))
+                leitor.Problema($"{nome}: fator de {circuitos} circuitos acima de 1 ({NumeroEmTexto.Formatar(fator)})");
+        }
+
+        // A linha enterrada usa a temperatura do solo: a linha de temperatura que vale para ela precisa ser só das enterradas.
+        foreach (var linha in temperatura)
+        {
+            var enterrados = _metodosEnterrados.Where(linha.Vale).ToList();
+            if (enterrados.Count == 0) continue;
+            if (linha.Metodos is null)
+                leitor.Problema($"fator_de_temperatura: linha de {linha.Isolacao} sem métodos vale também para o método enterrado {string.Join(", ", enterrados)}");
+            else if (linha.Metodos.Any(metodo => !_metodosEnterrados.Contains(metodo, StringComparer.Ordinal)))
+                leitor.Problema($"fator_de_temperatura: linha de {linha.Isolacao} mistura método enterrado ({string.Join(", ", enterrados)}) com métodos ao ar");
+        }
+
+        var metodos = capacidade.Select(linha => linha.Metodo).ToHashSet(StringComparer.Ordinal);
+        foreach (var (nome, lista) in new[] { ("metodos_com_eletroduto", _metodosComEletroduto is { Pendente: false } tabela ? tabela.Valores : []), ("fator_de_agrupamento_enterrado", _metodosEnterrados) })
+        foreach (var metodo in lista.Where(metodo => metodos.Count > 0 && !metodos.Contains(metodo)))
+            leitor.Problema($"{nome}: método '{metodo}' fora da tabela de capacidade de condução");
     }
 
     /// <summary>
@@ -379,6 +407,8 @@ public sealed class PerfilNormativo
     private sealed class Leitor(List<string> problemas)
     {
         public List<(string Nome, string Referencia)> Referencias { get; } = [];
+
+        public void Problema(string problema) => problemas.Add(problema);
 
         public Tabela<TResultado> Ler<TJson, TResultado>(
             string nome, TabelaJson<TJson>? tabela, Func<TJson, bool> vazia, Func<TJson, string, TResultado> converter)
