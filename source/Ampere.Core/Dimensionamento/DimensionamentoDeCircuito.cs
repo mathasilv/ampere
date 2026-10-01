@@ -204,8 +204,7 @@ public static class DimensionamentoDeCircuito
             if (entrada.CorrenteDaQueda is not { } informada)
                 return (entrada.Fases is "3F" or "3F+N" ? Raiz3 : 2m, ib, "IB");
 
-            Passo(perfil.ReferenciaDaRegra(RegraNormativa.QuedaDeTensao), "Corrente para a queda de tensão", informada.Expressao, informada.Valores, informada.CorrenteA, "A",
-                informada.Observacao);
+            Passo(informada.Referencia, "Corrente para a queda de tensão", informada.Expressao, informada.Valores, informada.CorrenteA, "A", informada.Observacao);
             return (informada.Fator, informada.CorrenteA, "IΔV");
         }
 
@@ -288,7 +287,7 @@ public static class DimensionamentoDeCircuito
         // Sem decisão do projetista, o alimentador não leva IDR: a exigência por local é dos circuitos terminais.
         private decimal? SemIdrNoAlimentador(string referencia)
         {
-            Passo(referencia, "Exigência de IDR", "n = 0 (alimentador de quadro)", [], 0m, "pontos",
+            Passo(referencia, "Exigência de IDR", "sem IDR no alimentador (sem decisão do projetista)", [], 0m, "IDR",
                 "a tabela de IDR por local vale para os circuitos terminais; IDR no alimentador só por decisão do projetista (AMP_IDR_DecisaoProjetista)");
             return null;
         }
@@ -304,13 +303,14 @@ public static class DimensionamentoDeCircuito
             if (!decisao.Exigir)
             {
                 var exigidos = avaliacao.PontosQueExigem;
-                Passo(referencia, "Exigência de IDR", "n = 0 (IDR dispensado pelo projetista)", valores, 0m, "pontos",
+                Passo(referencia, "Exigência de IDR", entrada.Alimentador ? "IDR no alimentador dispensado pelo projetista" : "n = 0 (IDR dispensado pelo projetista)",
+                    valores, 0m, entrada.Alimentador ? "IDR" : "pontos",
                     exigidos > 0 ? $"{observacao}; ATENÇÃO: a tabela exige IDR em {Pontos(exigidos)}" : observacao);
                 if (exigidos > 0) _avisos.Add($"IDR dispensado pelo projetista, mas a tabela o exige em {Pontos(exigidos)}");
                 return null;
             }
 
-            if (entrada.Alimentador) Passo(referencia, "Exigência de IDR", "IDR no alimentador (exigido pelo projetista)", valores, 1m, "alimentador", observacao);
+            if (entrada.Alimentador) Passo(referencia, "Exigência de IDR", "IDR no alimentador (exigido pelo projetista)", valores, 1m, "IDR", observacao);
             else Passo(referencia, "Exigência de IDR", "n = todos os pontos (IDR exigido pelo projetista)", valores, total, "pontos", observacao);
             var sensibilidade = decisao.SensibilidadeMa!.Value;
             var dadoDaSerie = perfil.SensibilidadesNominaisDeIdrMa();
@@ -350,7 +350,8 @@ public static class DimensionamentoDeCircuito
                 + " com o diâmetro da fase (conservador para a ocupação)");
 
             var diametro = Consultar(catalogos.Condutores.DiametroExternoMm(entrada.TipoDeCondutor, secao), "Diâmetro externo do condutor",
-                $"d = catálogo ({Tipo(entrada.TipoDeCondutor)}; {Numero(secao)} mm²)", [], "mm");
+                $"d = catálogo ({Tipo(entrada.TipoDeCondutor)}; {Numero(secao)} mm²)", [], "mm",
+                catalogos.Condutores.Isolacao(entrada.TipoDeCondutor) is { } isolacao ? $"isolação do condutor: {isolacao.Isolacao}, a do circuito" : null);
             var dadoDaTaxa = perfil.OcupacaoMaximaDeEletrodutoPct(condutores);
             var faixa = perfil.FaixaDeOcupacao(condutores);
             var linhaDaTabela = faixa is { } usada && usada != condutores ? $"{condutores} condutores: faixa de {usada} ou mais" : $"{condutores} condutores";

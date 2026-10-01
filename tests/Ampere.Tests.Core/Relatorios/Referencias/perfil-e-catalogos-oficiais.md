@@ -1,7 +1,7 @@
 # Memória de cálculo — circuito TUG-01
 
 - **Perfil normativo:** NBR5410:2004
-- **Identificador (AMP_MemoriaCalculoId):** `sha256:f9be35baf1e6e9939e27b89903ce318dc0bd88c17273726dbe7247bd4fdbbc5d`
+- **Identificador (AMP_MemoriaCalculoId):** `sha256:32917aa6e893eec48604c5d7d040bc1037b300cb9dc42fa3aff79847f318cfc5`
 - **Esquema do documento:** 1
 - **Situação:** cálculo completo (17 passos)
 - **Referências pendentes (TODO_NORMA ou TODO_CATALOGO):** 1 passo (13), sem fonte oficial
@@ -106,6 +106,7 @@
 - **Referência:** Prysmian, ficha técnica Superastic Flex 450/750 V (rodapé BW_005_02_PT), p. 4: diâmetro nominal externo
 - **Expressão:** `d = catálogo (Prysmian Superastic Flex 450/750 V; 2,5 mm²)`
 - **Resultado:** 3,5 mm
+- **Observação:** isolação do condutor: PVC, a do circuito
 
 ### 15. Taxa máxima de ocupação
 

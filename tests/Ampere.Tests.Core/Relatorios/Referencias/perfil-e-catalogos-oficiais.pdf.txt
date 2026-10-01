@@ -2,7 +2,7 @@
 56,7 [Titulo 56,7] Memória de cálculo — circuito TUG-01
 80,2 [Rotulo 56,7] Perfil normativo: [Texto 150,4] NBR5410:2004
 91,2 [Rotulo 56,7] Identificador (AMP_MemoriaCalculoId):
-102,3 [Codigo 56,7] sha256:f9be35baf1e6e9939e27b89903ce318dc0bd88c17273726dbe7247bd4fdbbc5d
+102,3 [Codigo 56,7] sha256:32917aa6e893eec48604c5d7d040bc1037b300cb9dc42fa3aff79847f318cfc5
 112,8 [Rotulo 56,7] Esquema do documento: [Texto 191,8] 1
 123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo completo (17 passos)
 134,9 [Rotulo 56,7] Referências pendentes (TODO_NORMA ou TODO_CATALOGO): [Texto 387,4] 1 passo (13), sem fonte oficial
@@ -91,16 +91,17 @@
 547,1 [Texto 68,7] diâmetro nominal externo
 558,1 [Rotulo 68,7] Expressão: [Codigo 132,7] d = catálogo (Prysmian Superastic Flex 450/750 V; 2,5 mm²)
 569,2 [Rotulo 68,7] Resultado: [Texto 129,2] 3,5 mm
-588,3 [TituloDoPasso 56,7] 15. Taxa máxima de ocupação
-602,5 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.2.11.1.6, alinea a
-613,5 [Rotulo 68,7] Expressão: [Codigo 132,7] taxa = tabela (3 condutores)
-624,6 [Rotulo 68,7] Resultado: [Texto 129,2] 40%
-643,6 [TituloDoPasso 56,7] 16. Eletroduto adotado
-657,9 [Rotulo 68,7] Referência: [Texto 133] Tigre, Ficha Técnica Tigreflex (setembro/2025), p. 1: diâmetro interno
-668,9 [Rotulo 68,7] Expressão: [Codigo 132,7] menor Di com n · d² / Di² · 100 ≤ taxa
-680 [Rotulo 68,7] Valores: [Texto 115,8] n = 3 condutores; d = 3,5 mm; taxa = 40%
-691 [Rotulo 68,7] Resultado: [Texto 129,2] 15 mm
-702,1 [Rotulo 68,7] Observação: [Texto 138,3] tamanho nominal DN 20 (Tigre Tigreflex amarelo)
+580,3 [Rotulo 68,7] Observação: [Texto 138,3] isolação do condutor: PVC, a do circuito
+599,3 [TituloDoPasso 56,7] 15. Taxa máxima de ocupação
+613,5 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.2.11.1.6, alinea a
+624,6 [Rotulo 68,7] Expressão: [Codigo 132,7] taxa = tabela (3 condutores)
+635,6 [Rotulo 68,7] Resultado: [Texto 129,2] 40%
+654,7 [TituloDoPasso 56,7] 16. Eletroduto adotado
+668,9 [Rotulo 68,7] Referência: [Texto 133] Tigre, Ficha Técnica Tigreflex (setembro/2025), p. 1: diâmetro interno
+680 [Rotulo 68,7] Expressão: [Codigo 132,7] menor Di com n · d² / Di² · 100 ≤ taxa
+691 [Rotulo 68,7] Valores: [Texto 115,8] n = 3 condutores; d = 3,5 mm; taxa = 40%
+702,1 [Rotulo 68,7] Resultado: [Texto 129,2] 15 mm
+713,2 [Rotulo 68,7] Observação: [Texto 138,3] tamanho nominal DN 20 (Tigre Tigreflex amarelo)
 776 [Rodape 189,5] Memória de cálculo — circuito TUG-01 · página 2 de 3
 == página 3 de 3
 56,7 [TituloDoPasso 56,7] 17. Ocupação do eletroduto

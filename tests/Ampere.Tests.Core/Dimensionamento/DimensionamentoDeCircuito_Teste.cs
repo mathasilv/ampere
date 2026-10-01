@@ -36,7 +36,7 @@ public class DimensionamentoDeCircuito_Teste
     }
 
     [Test]
-    public async Task Condutor_do_catalogo_com_a_mesma_isolacao_segue_sem_passo_a_mais()
+    public async Task Condutor_do_catalogo_com_a_mesma_isolacao_segue_e_a_memoria_diz_a_isolacao()
     {
         var comIsolacao = CatalogosFicticiosCarregados with
         {
@@ -47,7 +47,8 @@ public class DimensionamentoDeCircuito_Teste
         var sem = DimensionamentoDeCircuito.Dimensionar(Entrada(), Ficticio, CatalogosFicticiosCarregados);
 
         await Assert.That(com.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
-        await Assert.That(com.Memoria!.Hash()).IsEqualTo(sem.Memoria!.Hash());
+        await Assert.That(com.Memoria!.Passos.Count).IsEqualTo(sem.Memoria!.Passos.Count);
+        await Assert.That(PassoDe(com, "Diâmetro externo do condutor").Observacao).IsEqualTo("isolação do condutor: pvc, a do circuito");
     }
 
     [Test]

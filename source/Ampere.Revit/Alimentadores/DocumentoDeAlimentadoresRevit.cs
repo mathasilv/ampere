@@ -36,9 +36,10 @@ public sealed class DocumentoDeAlimentadoresRevit(Document documento) : IDocumen
             .OfCategory(BuiltInCategory.OST_ElectricalEquipment)
             .OfClass(typeof(FamilyInstance))
             .Cast<FamilyInstance>()
-            .Select(painel => (Painel: painel, Circuitos: LeituraDoPainel.CircuitosDoQuadro(painel)))
-            .Where(par => par.Circuitos.Count > 0)
-            .Select(par => Ler(par.Painel, par.Circuitos))
+            .Select(painel => (Painel: painel, Circuitos: LeituraDoPainel.CircuitosDoQuadro(painel), Alimentadores: LeituraDoPainel.Alimentadores(painel)))
+            // Quadro que ficou só com reservas, mas tem alimentador: entra, para o alimentador ser apagado com o motivo.
+            .Where(par => par.Circuitos.Count > 0 || par.Alimentadores.Count > 0)
+            .Select(par => Ler(par.Painel, par.Circuitos, par.Alimentadores))
             .OrderBy(quadro => quadro.Quadro, StringComparer.Ordinal)
             .ToList();
 
@@ -55,9 +56,8 @@ public sealed class DocumentoDeAlimentadoresRevit(Document documento) : IDocumen
 
     public IReadOnlyDictionary<long, ResultadosNoCircuito> LerResultados(IReadOnlyCollection<long> ids) => _circuitos.LerResultados(ids);
 
-    private QuadroComAlimentador Ler(FamilyInstance painel, List<ElectricalSystem> circuitos)
+    private QuadroComAlimentador Ler(FamilyInstance painel, List<ElectricalSystem> circuitos, List<ElectricalSystem> alimentadores)
     {
-        var alimentadores = LeituraDoPainel.Alimentadores(painel);
         var alimentador = alimentadores.FirstOrDefault();
         var origem = alimentador?.BaseEquipment;
         var origemAlimentada = origem is not null && LeituraDoPainel.Alimentadores(origem).Count > 0;
@@ -69,7 +69,8 @@ public sealed class DocumentoDeAlimentadoresRevit(Document documento) : IDocumen
             origem is null ? null : LeituraDoPainel.Nome(origem),
             origemAlimentada,
             alimentaQuadros,
-            Impedimento(painel, alimentadores));
+            Impedimento(painel, alimentadores),
+            alimentadores.Skip(1).Select(outro => outro.Id.Value).ToList());
     }
 
     private string? Impedimento(FamilyInstance painel, List<ElectricalSystem> alimentadores)

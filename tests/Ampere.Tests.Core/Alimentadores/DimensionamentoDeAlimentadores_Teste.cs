@@ -50,6 +50,8 @@ public class DimensionamentoDeAlimentadores_Teste
         var baseDaQueda = Passo(memoria, "Corrente para a queda de tensão");
         await Assert.That(baseDaQueda.Expressao).IsEqualTo("IΔV = IB + IN; IN = máx(IFN) − mín(IFN)");
         await Assert.That(baseDaQueda.Resultado).IsEqualTo(20m);
+        await Assert.That(baseDaQueda.Referencia).IsEqualTo(DimensionamentoDeAlimentadores.CriterioDoAmpere);
+        await Assert.That(baseDaQueda.Observacao!).Contains("Premissa: as cargas fase-neutro no mesmo fator de potência");
         var queda = Passo(memoria, "Queda de tensão");
         await Assert.That(queda.Expressao).IsEqualTo("ΔV% = k · ρ · L · IΔV / (S · V) · 100");
         await Assert.That(queda.Valores.Single(valor => valor.Nome == "k").Valor).IsEqualTo(1.7320508075688772935274463415m);
@@ -222,7 +224,7 @@ public class DimensionamentoDeAlimentadores_Teste
         var problemas = Executar(cenario).Single().Problemas;
 
         await Assert.That(problemas.Single()).IsEqualTo(
-            "circuitos do quadro sem queda de tensão calculada: TUG-01 (sem AMP_ComprimentoRotaM e sem comprimento do circuito no Revit)");
+            "circuitos do quadro sem queda de tensão ou proteção calculada: TUG-01 (sem AMP_ComprimentoRotaM e sem comprimento do circuito no Revit)");
     }
 
     [Test]
@@ -259,7 +261,65 @@ public class DimensionamentoDeAlimentadores_Teste
         var exigencia = Passo(calculo.Memoria!, "Exigência de IDR");
         await Assert.That(exigencia.Expressao).IsEqualTo("IDR no alimentador (exigido pelo projetista)");
         await Assert.That(exigencia.Valores).IsEmpty();
-        await Assert.That(exigencia.Unidade).IsEqualTo("alimentador");
+        await Assert.That(exigencia.Unidade).IsEqualTo("IDR");
+    }
+
+    [Test]
+    public async Task Delta_com_neutro_usa_a_tensao_fase_neutro_do_Revit_no_fator_da_queda()
+    {
+        // 240/120 V (delta com neutro): k = 240 / 120 = 2, não √3 (a queda sobre 138,6 V seria 13% menor).
+        var cenario = new CenarioDeAlimentador { Alimentacao = new AlimentacaoDoQuadro("3F+N", 240m, "teste", ["A", "B", "C"], 120m) };
+        foreach (var indice in Enumerable.Range(0, cenario.Circuitos.Count))
+        {
+            var lido = cenario.Circuitos[indice];
+            cenario.Circuitos[indice] = lido with { TensaoV = lido.Fases == "F+N" ? 120m : 240m };
+            cenario.Terminais[indice] = cenario.Terminais[indice] with
+            {
+                Pontos = cenario.Terminais[indice].Pontos.Select(ponto => ponto with { TensaoV = lido.Fases == "F+N" ? 120m : 240m }).ToList()
+            };
+        }
+
+        var calculo = Executar(cenario).Single().Circuito!.Dimensionamento!;
+
+        await Assert.That(Passo(calculo.Memoria!, "Queda de tensão").Valores.Single(valor => valor.Nome == "k").Valor).IsEqualTo(2m);
+    }
+
+    [Test]
+    public async Task Quadro_trifasico_sem_as_tres_fases_conhecidas_para()
+    {
+        var cenario = new CenarioDeAlimentador { Alimentacao = new AlimentacaoDoQuadro("3F+N", 220m, "teste") };
+        cenario.Circuitos[2] = cenario.Circuitos[2] with { FasesNoQuadro = ["A", "B"] };
+
+        var problemas = Executar(cenario).Single().Problemas;
+
+        await Assert.That(problemas.Single()).StartsWith("o quadro trifásico tem 2 fases conhecidas (A, B)");
+    }
+
+    [Test]
+    public async Task Os_outros_alimentadores_do_quadro_sao_apagados_junto()
+    {
+        var cenario = new CenarioDeAlimentador
+        {
+            Impedimento = "quadro alimentado por mais de um circuito (A1, A2): o Ampere dimensiona um alimentador por quadro",
+            OutrosAlimentadores = [901, 902]
+        };
+
+        var resultado = Executar(cenario).Single();
+
+        await Assert.That(resultado.OutrosApagados!.Select(circuito => circuito.Id)).IsEquivalentTo([901L, 902L]);
+        await Assert.That(resultado.OutrosApagados!.All(circuito => circuito.Memoria is null)).IsTrue();
+        await Assert.That(string.Join("|", cenario.Documento.Chamadas)).IsEqualTo($"transacao:{DimensionamentoDeAlimentadores.NomeDaTransacao}|gravar:900,901,902");
+    }
+
+    [Test]
+    public async Task Terminal_parado_no_IDR_impede_o_alimentador()
+    {
+        var cenario = new CenarioDeAlimentador();
+        cenario.Terminais[1] = cenario.Terminais[1] with { Pontos = cenario.Terminais[1].Pontos.Select(ponto => ponto with { Local = null }).ToList() };
+
+        var problemas = Executar(cenario).Single().Problemas;
+
+        await Assert.That(problemas.Single()).StartsWith("circuitos do quadro sem queda de tensão ou proteção calculada: TUG-01");
     }
 
     [Test]
@@ -386,7 +446,11 @@ internal sealed class CenarioDeAlimentador
 
     public decimal ComprimentoDoAlimentadorM { get; set; } = 30m;
 
-    public QuadroLido Quadro => new(1, "QD1", Circuitos.ToList(), new AlimentacaoDoQuadro("3F+N", 220m, "teste", ["A", "B", "C"]));
+    public IReadOnlyList<long>? OutrosAlimentadores { get; init; }
+
+    public AlimentacaoDoQuadro Alimentacao { get; init; } = new("3F+N", 220m, "teste", ["A", "B", "C"]);
+
+    public QuadroLido Quadro => new(1, "QD1", Circuitos.ToList(), Alimentacao);
 
     public static PerfilNormativo ComQuedaTotal(decimal total) =>
         PerfilNormativo.Carregar(PerfilFicticio.Json.Replace("\"valores\": { \"circuito_terminal\": 5 }",
@@ -423,7 +487,7 @@ internal sealed class CenarioDeAlimentador
         [
             new(1, "QD1",
                 cenario.SemAlimentador ? null : new DadosDoAlimentador(900, cenario.ComprimentoDoAlimentadorM, null, null, null, cenario.Decisoes),
-                "QGBT", cenario.OrigemAlimentada, cenario.AlimentaQuadros, cenario.Impedimento)
+                "QGBT", cenario.OrigemAlimentada, cenario.AlimentaQuadros, cenario.Impedimento, cenario.OutrosAlimentadores)
         ];
 
         public CondicoesDoProjeto? LerCondicoes() => Condicoes;

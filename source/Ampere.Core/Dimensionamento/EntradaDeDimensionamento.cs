@@ -105,7 +105,8 @@ public sealed record CorrenteCalculada(decimal CorrenteA, string Expressao, IRea
 /// <param name="CorrenteA">I<sub>ΔV</sub>.</param>
 /// <param name="Expressao">A conta de I<sub>ΔV</sub> (ex.: "IΔV = IB + IN").</param>
 /// <param name="Observacao">Por que esse k e essa corrente (vai para a memória).</param>
-public sealed record CorrenteDaQuedaDeTensao(decimal Fator, decimal CorrenteA, string Expressao, IReadOnlyList<ValorDoPasso> Valores, string Observacao);
+/// <param name="Referencia">De onde vem o critério (ex.: critério do Ampere, quando não é item da norma).</param>
+public sealed record CorrenteDaQuedaDeTensao(decimal Fator, decimal CorrenteA, string Expressao, IReadOnlyList<ValorDoPasso> Valores, string Observacao, string Referencia);
 
 /// <summary>
 ///     Decisão do projetista sobre o IDR de um circuito. Prevalece sobre a tabela de proteção diferencial por local; a

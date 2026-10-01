@@ -27,6 +27,9 @@ public sealed record DadosDoAlimentador(
 ///     O que o modelo tem e o Ampere ainda não calcula (ex.: quadro alimentado por mais de um circuito, circuito
 ///     alimentador que também alimenta outras cargas, transformador); nulo = nada. O alimentador, se houver, fica apagado.
 /// </param>
+/// <param name="OutrosAlimentadores">
+///     Os demais circuitos de que o quadro é carga (com mais de um, há impedimento): ficam com os resultados apagados.
+/// </param>
 public sealed record QuadroComAlimentador(
     long QuadroId,
     string Quadro,
@@ -34,7 +37,8 @@ public sealed record QuadroComAlimentador(
     string? Origem,
     bool OrigemAlimentada,
     bool AlimentaQuadros,
-    string? Impedimento = null);
+    string? Impedimento = null,
+    IReadOnlyList<long>? OutrosAlimentadores = null);
 
 /// <summary>Porta dos alimentadores (implementada pelo adapter Revit): leitura dos quadros e dos terminais, e gravação.</summary>
 public interface IDocumentoDeAlimentadores : IDocumentoDeDimensionamento
@@ -55,7 +59,9 @@ public interface IDocumentoDeAlimentadores : IDocumentoDeDimensionamento
 /// <summary>O alimentador de um quadro: o cálculo (se houve) e o que impediu.</summary>
 /// <param name="Circuito">Resultado do circuito alimentador (nulo se o quadro não tem alimentador no Revit).</param>
 /// <param name="Problemas">O que impediu o cálculo (o circuito fica com os resultados anteriores apagados).</param>
-public sealed record ResultadoDoAlimentador(long QuadroId, string Quadro, ResultadoDoCircuito? Circuito, IReadOnlyList<string> Problemas);
+/// <param name="OutrosApagados">Os demais alimentadores do quadro, sem cálculo: gravados apagados junto.</param>
+public sealed record ResultadoDoAlimentador(
+    long QuadroId, string Quadro, ResultadoDoCircuito? Circuito, IReadOnlyList<string> Problemas, IReadOnlyList<ResultadoDoCircuito>? OutrosApagados = null);
 
 /// <summary>
 ///     Caso de uso "Dimensionar alimentadores": o circuito que alimenta cada quadro, pelo mesmo motor dos circuitos
@@ -68,9 +74,10 @@ public sealed record ResultadoDoAlimentador(long QuadroId, string Quadro, Result
 ///         <item>IB em 3F e 3F+N: a corrente da fase de maior corrente (soma das correntes de linha dos circuitos nela),
 ///         mais a dos circuitos sem fase identificada no Revit (podem estar todos nela), nunca a média. Sem a corrente de
 ///         cada fase, o alimentador para.</item>
-///         <item>Queda de tensão em 3F e 3F+N com carga desequilibrada: a da carga mais desfavorecida, a favor da segurança —
-///         fase-neutro, com o retorno pelo neutro (I<sub>N</sub> ≤ maior − menor corrente fase-neutro das fases, com as
-///         cargas no mesmo fator de potência), ou entre fases, até 2 · I<sub>B</sub>. Só cargas trifásicas: equilibrada.</item>
+///         <item>Queda de tensão em 3F e 3F+N com carga desequilibrada: a da carga mais desfavorecida — fase-neutro, com o
+///         retorno pelo neutro (I<sub>N</sub> ≤ maior − menor corrente fase-neutro das fases, premissa de cargas no mesmo
+///         fator de potência, declarada na memória), ou entre fases, até 2 · I<sub>B</sub>. Só cargas trifásicas:
+///         equilibrada. Critério do Ampere, não item da norma.</item>
 ///         <item>Limite de queda: o alimentador fica com o que sobra do limite total da instalação (ponto de entrega,
 ///         transformador ou gerador próprio, tomado na origem do alimentador) depois da maior queda dos circuitos
 ///         terminais do quadro (reservas fora), refeitos com as condições da rodada que os dimensionou e conferidos com a
@@ -99,7 +106,9 @@ public static class DimensionamentoDeAlimentadores
         var condicoes = documento.LerCondicoes();
         var resultados = Calcular(origemDaInstalacao, perfil, catalogos, documento, quadros);
 
-        var paraGravar = resultados.Select(resultado => resultado.Circuito).OfType<ResultadoDoCircuito>().ToList();
+        var paraGravar = resultados.Select(resultado => resultado.Circuito).OfType<ResultadoDoCircuito>()
+            .Concat(resultados.SelectMany(resultado => resultado.OutrosApagados ?? []))
+            .ToList();
         if (paraGravar.Count > 0)
         {
             documento.EmUmaTransacao(NomeDaTransacao, () =>
@@ -138,7 +147,8 @@ public static class DimensionamentoDeAlimentadores
         var nome = $"Alimentador {quadro.Quadro}";
         var problemas = new List<string>();
         ResultadoDoAlimentador Apagado() =>
-            new(quadro.QuadroId, quadro.Quadro, new ResultadoDoCircuito(dados.Id, nome, null, problemas, quadro.Origem), problemas);
+            new(quadro.QuadroId, quadro.Quadro, new ResultadoDoCircuito(dados.Id, nome, null, problemas, quadro.Origem), problemas,
+                (quadro.OutrosAlimentadores ?? []).Select(outro => new ResultadoDoCircuito(outro, nome, null, problemas, quadro.Origem)).ToList());
 
         // O que o Ampere ainda não calcula vem antes: as conferências do quadro e dos terminais só fariam ruído.
         if (quadro.Impedimento is { } impedimento) problemas.Add(impedimento);
@@ -150,7 +160,7 @@ public static class DimensionamentoDeAlimentadores
         if (problemas.Count > 0 || condicoes is null) return Apagado();
 
         if (QuadroDeCargas(quadro, lidos, perfil, quadros, problemas) is not { } quadroDeCargas) return Apagado();
-        var correntes = Correntes(quadroDeCargas, problemas);
+        var correntes = Correntes(quadroDeCargas, lidos[quadro.QuadroId].Alimentacao?.FaseNeutro, problemas);
         if (problemas.Count > 0) return Apagado();
         if (MaiorQuedaTerminal(quadroDeCargas, condicoes, perfil, catalogos, documento, problemas) is not { } terminal) return Apagado();
         if (Entrada(nome, dados, quadroDeCargas, correntes, terminal, origem, quadro.Origem, condicoes, perfil, problemas) is not { } entrada) return Apagado();
@@ -226,10 +236,11 @@ public static class DimensionamentoDeAlimentadores
             .Select(dados => DimensionamentoDoProjeto.Calcular(dados, condicoes.GetValueOrDefault(dados.Id) ?? doProjeto, perfil, catalogos))
             .ToList();
 
-        var semQueda = calculados.Where(circuito => circuito.Dimensionamento?.QuedaDeTensaoPct is null).ToList();
+        // Sem a proteção decidida (IDR), a seção não vai para o modelo: o limite não pode se apoiar nela.
+        var semQueda = calculados.Where(circuito => circuito.Dimensionamento is not { QuedaDeTensaoPct: not null, IdrAvaliado: true }).ToList();
         if (semQueda.Count > 0)
         {
-            problemas.Add("circuitos do quadro sem queda de tensão calculada: " + string.Join("; ", semQueda.Select(circuito =>
+            problemas.Add("circuitos do quadro sem queda de tensão ou proteção calculada: " + string.Join("; ", semQueda.Select(circuito =>
                 $"{Numero(circuito)} ({string.Join(" | ", circuito.ProblemasDeDados.Count > 0 ? circuito.ProblemasDeDados : circuito.Dimensionamento?.Problemas ?? [])})")));
             return null;
         }
@@ -257,12 +268,19 @@ public static class DimensionamentoDeAlimentadores
 
     // IB e base da queda em 3F e 3F+N, pelas cargas por fase do quadro, a favor da segurança. F+N e 2F: nulos (o motor
     // faz S / V com a demanda, e a queda com k = 2).
-    private static (CorrenteCalculada Corrente, CorrenteDaQuedaDeTensao? Queda)? Correntes(ResultadoDoQuadro quadro, List<string> problemas)
+    private static (CorrenteCalculada Corrente, CorrenteDaQuedaDeTensao? Queda)? Correntes(ResultadoDoQuadro quadro, decimal? faseNeutroV, List<string> problemas)
     {
         if (quadro.Quadro.Esquema is not ("3F" or "3F+N")) return null;
         if (quadro.Fases is not { } fases)
         {
             problemas.Add("fases dos circuitos no quadro não identificadas no Revit: sem a corrente de cada fase, o alimentador trifásico não é dimensionado");
+            return null;
+        }
+
+        // Sem as três fases do quadro (rótulos do sistema de distribuição), uma fase vazia some da conta e IN sai menor.
+        if (fases.Fases.Count != 3)
+        {
+            problemas.Add($"o quadro trifásico tem {fases.Fases.Count} fases conhecidas ({string.Join(", ", fases.Fases.Select(fase => fase.Fase))}): atribua a ele o sistema de distribuição no Revit");
             return null;
         }
 
@@ -284,15 +302,19 @@ public static class DimensionamentoDeAlimentadores
             "(F+N e 2F: S / V; 3F e 3F+N: S / (√3 · V); 2F+N: S / (2 · V fase-neutro)), a favor da segurança" +
             (semFaseIdentificada ? $"; sem fase identificada no Revit: {string.Join(", ", fases.CircuitosSemFase)}, somados à fase de maior corrente" : string.Empty) +
             $"; demanda total {NumeroEmTexto.FormatarParaLeitura(quadro.Quadro.DemandaVA!.Value)} VA; quadro de cargas {quadro.Quadro.Memoria!.Hash()}");
-        return (corrente, Queda(quadro, fases, ib));
+        return (corrente, Queda(quadro, fases, ib, faseNeutroV ?? CargasPorFase.FaseNeutro(quadro.Quadro.Esquema, quadro.Quadro.TensaoV)));
     }
 
+    /// <summary>Referência dos passos que são critério do Ampere, não item da norma.</summary>
+    public const string CriterioDoAmpere = "Critério do Ampere, não item da norma (data/DATA_GAPS.md, alimentadores)";
+
     // A carga mais desfavorecida dá a queda: fase-neutro (3F+N), com a fase de maior corrente e o retorno pelo neutro —
-    // ΔV fase-neutro ≤ R · (IB + IN), que com V fase-fase é k = √3 e IΔV = IB + IN; entre fases, ΔV ≤ R · (I1 + I2) ≤ 2 · R · IB,
-    // k = 2 e IΔV = IB. IN ≤ maior − menor corrente fase-neutro das fases (fasores a 120°, cargas no mesmo fator de
-    // potência), mais a dos circuitos fase-neutro sem fase identificada. Só cargas trifásicas (equilibradas): nulo, a
-    // fórmula do motor (k = √3, IB).
-    private static CorrenteDaQuedaDeTensao? Queda(ResultadoDoQuadro quadro, BalancoDasFases fases, decimal ib)
+    // ΔV fase-neutro ≤ R · (IB + IN), que com V fase-fase é k = V / VFN (√3 na estrela) e IΔV = IB + IN; entre fases,
+    // ΔV ≤ R · (I1 + I2) ≤ 2 · R · IB, k = 2 e IΔV = IB. IN ≤ maior − menor corrente fase-neutro das fases, mais a dos
+    // circuitos fase-neutro sem fase identificada: vale com as cargas fase-neutro no mesmo fator de potência (fasores a
+    // 120°); com fatores diferentes, IN pode passar disso — premissa declarada na memória, não a favor da segurança. Só
+    // cargas trifásicas (equilibradas): nulo, a fórmula do motor (k = √3, IB).
+    private static CorrenteDaQuedaDeTensao? Queda(ResultadoDoQuadro quadro, BalancoDasFases fases, decimal ib, decimal? faseNeutroV)
     {
         if (fases.Configuracoes.All(configuracao => configuracao is "3F" or "3F+N")) return null;
 
@@ -301,7 +323,8 @@ public static class DimensionamentoDeAlimentadores
         var correntesFn = fases.Fases.Select(fase => fase.CorrenteFaseNeutroA!.Value).ToList();
         var semFaseFn = fases.CorrenteFaseNeutroSemFaseA ?? 0m;
         var neutro = correntesFn.Max() - correntesFn.Min() + semFaseFn;
-        var porFaseNeutro = faseNeutro ? Raiz3 * (ib + neutro) : (decimal?)null;
+        var fatorFaseNeutro = faseNeutroV is > 0m ? quadro.Quadro.TensaoV / faseNeutroV.Value : Raiz3;
+        var porFaseNeutro = faseNeutro ? fatorFaseNeutro * (ib + neutro) : (decimal?)null;
         var porEntreFases = entreFases ? 2m * ib : (decimal?)null;
 
         var ibTexto = NumeroEmTexto.FormatarParaLeitura(ib);
@@ -311,13 +334,15 @@ public static class DimensionamentoDeAlimentadores
             valores.AddRange(fases.Fases.Select(fase => new ValorDoPasso($"IFN({fase.Fase})", fase.CorrenteFaseNeutroA!.Value, "A")));
             if (semFaseFn > 0m) valores.Add(new ValorDoPasso("IFN(sem fase)", semFaseFn, "A"));
             return new CorrenteDaQuedaDeTensao(
-                Raiz3,
+                fatorFaseNeutro,
                 ib + neutro,
                 "IΔV = IB + IN; IN = máx(IFN) − mín(IFN)" + (semFaseFn > 0m ? " + IFN(sem fase)" : string.Empty),
                 valores,
-                "carga fase-neutro na fase de maior corrente, com o retorno pelo neutro (IFN: corrente dos circuitos F+N e 2F+N em cada fase; " +
-                "IN pela diferença das fases, com as cargas no mesmo fator de potência); k = √3 com V fase-fase dá a queda sobre a tensão fase-neutro" +
-                (porEntreFases is { } menor ? $"; entre fases, 2 · IB = {NumeroEmTexto.FormatarParaLeitura(menor)} A, menor que √3 · IΔV" : string.Empty));
+                "carga fase-neutro na fase de maior corrente, com o retorno pelo neutro (IFN: corrente dos circuitos F+N e 2F+N em cada fase). " +
+                "Premissa: as cargas fase-neutro no mesmo fator de potência; com fatores diferentes, IN pode passar da diferença entre as fases. " +
+                $"k = V / VFN = {NumeroEmTexto.FormatarParaLeitura(fatorFaseNeutro)} dá a queda sobre a tensão fase-neutro" +
+                (porEntreFases is { } menor ? $"; entre fases, 2 · IB = {NumeroEmTexto.FormatarParaLeitura(menor)} A, menor que k · IΔV" : string.Empty),
+                CriterioDoAmpere);
         }
 
         return new CorrenteDaQuedaDeTensao(
@@ -326,7 +351,8 @@ public static class DimensionamentoDeAlimentadores
             "IΔV = IB",
             [new ValorDoPasso("IB", ib, "A")],
             $"carga entre fases com as correntes desequilibradas: a queda entre duas fases chega a R · (I1 + I2) ≤ 2 · R · IB (k = 2, IB = {ibTexto} A)" +
-            (porFaseNeutro is { } fnMenor ? $"; fase-neutro com o retorno pelo neutro, √3 · (IB + IN) = {NumeroEmTexto.FormatarParaLeitura(fnMenor)} A, menor que 2 · IB" : string.Empty));
+            (porFaseNeutro is { } fnMenor ? $"; fase-neutro com o retorno pelo neutro, k · (IB + IN) = {NumeroEmTexto.FormatarParaLeitura(fnMenor)} A, menor que 2 · IB" : string.Empty),
+            CriterioDoAmpere);
     }
 
     private static EntradaDeDimensionamento? Entrada(

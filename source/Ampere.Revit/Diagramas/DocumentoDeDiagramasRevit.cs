@@ -33,7 +33,7 @@ public sealed class DocumentoDeDiagramasRevit(Document documento) : IDocumentoDe
             .OfCategory(BuiltInCategory.OST_ElectricalEquipment)
             .OfClass(typeof(FamilyInstance))
             .Cast<FamilyInstance>()
-            .Select(painel => (Painel: painel, Sistemas: LeituraDoPainel.CircuitosDoQuadro(painel)))
+            .Select(painel => (Painel: painel, Sistemas: LeituraDoPainel.CircuitosDeForca(painel)))
             .Where(par => par.Sistemas.Count > 0)
             .Select(par => new QuadroDoUnifilar(
                 LeituraDoPainel.Nome(par.Painel),

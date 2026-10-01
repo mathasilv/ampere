@@ -1,7 +1,7 @@
 # Memória de cálculo — circuito Alimentador QD1
 
 - **Perfil normativo:** FICTICIO-TESTE
-- **Identificador (AMP_MemoriaCalculoId):** `sha256:2ed22f09ec50a4959a909fda1a52b1779e88a54a8a98938d20f1b218580edbe8`
+- **Identificador (AMP_MemoriaCalculoId):** `sha256:0c2b50b1fb9d9e763e2b624f6ea10487ac6611f0903d353a4915062b63800c05`
 - **Esquema do documento:** 1
 - **Situação:** cálculo completo (18 passos)
 - **Atenção:** perfil fictício, só para testes
@@ -68,11 +68,11 @@
 
 ### 9. Corrente para a queda de tensão
 
-- **Referência:** FICTÍCIO: regra de queda
+- **Referência:** Critério do Ampere, não item da norma (data/DATA_GAPS.md, alimentadores)
 - **Expressão:** `IΔV = IB + IN; IN = máx(IFN) − mín(IFN)`
 - **Valores:** IB = 15 A; IFN(A) = 3,7795 A; IFN(B) = 5 A; IFN(C) = 0 A
 - **Resultado:** 20 A
-- **Observação:** carga fase-neutro na fase de maior corrente, com o retorno pelo neutro (IFN: corrente dos circuitos F+N e 2F+N em cada fase; IN pela diferença das fases, com as cargas no mesmo fator de potência); k = √3 com V fase-fase dá a queda sobre a tensão fase-neutro; entre fases, 2 · IB = 30 A, menor que √3 · IΔV
+- **Observação:** carga fase-neutro na fase de maior corrente, com o retorno pelo neutro (IFN: corrente dos circuitos F+N e 2F+N em cada fase). Premissa: as cargas fase-neutro no mesmo fator de potência; com fatores diferentes, IN pode passar da diferença entre as fases. k = V / VFN = 1,7321 dá a queda sobre a tensão fase-neutro; entre fases, 2 · IB = 30 A, menor que k · IΔV
 
 ### 10. Capacidade de condução da seção adotada
 
@@ -100,8 +100,8 @@
 ### 13. Exigência de IDR
 
 - **Referência:** FICTÍCIO: IDR por local
-- **Expressão:** `n = 0 (alimentador de quadro)`
-- **Resultado:** 0 pontos
+- **Expressão:** `sem IDR no alimentador (sem decisão do projetista)`
+- **Resultado:** 0 IDR
 - **Observação:** a tabela de IDR por local vale para os circuitos terminais; IDR no alimentador só por decisão do projetista (AMP_IDR_DecisaoProjetista)
 
 ### 14. Condutores no eletroduto

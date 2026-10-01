@@ -147,22 +147,30 @@ Resolvido (decisões do usuário):
   transformador ou gerador próprio 7%) depois da **maior queda dos circuitos do quadro**. IDR: a tabela por local é dos
   terminais; no alimentador, só por decisão do projetista. **Fora desta versão** (o comando diz o motivo): alimentação
   em cascata (QGBT → QD1 → QD2) e quadro que alimenta outros quadros — falta somar demandas e quedas em série.
-- ✅ Alimentadores, correções da revisão (01/10/2026, decisões do desenvolvedor, todas a favor da segurança):
+- ✅ Alimentadores, correções da revisão (01/10/2026, decisões do desenvolvedor; critérios do Ampere, não itens da norma):
   - IB em 3F/3F+N = maior corrente de fase **mais** a dos circuitos sem fase identificada no Revit (podem estar todos
     nessa fase); sem nenhuma fase identificada, o alimentador trifásico não é dimensionado. IB entra na memória com a
     conta (antes, S = √3·V·I voltava 1 ulp acima de I e recusava o disjuntor igual a ela).
   - Queda em 3F/3F+N com carga desequilibrada: a da carga mais desfavorecida. Fase-neutro: ΔV ≤ R·(IB + IN), com
-    IN ≤ maior − menor corrente fase-neutro das fases (fasores a 120°, **cargas no mesmo fator de potência**) mais a dos
-    circuitos fase-neutro sem fase; entre fases: ΔV ≤ R·(I1 + I2) ≤ 2·R·IB. Fica a maior. Só cargas trifásicas:
-    equilibrada (k = √3, IB). Uma conta fasorial com o fator de potência de cada carga daria menos; fica como melhoria.
+    k = V / VFN (√3 na estrela; 2 no delta com neutro 240/120) e IN ≤ maior − menor corrente fase-neutro das fases mais
+    a dos circuitos fase-neutro sem fase; entre fases: ΔV ≤ R·(I1 + I2) ≤ 2·R·IB (vale sempre). Fica a maior. Só cargas
+    trifásicas: equilibrada (k = √3, IB).
+  - **Premissa, não a favor da segurança:** o limite de IN vale com as cargas fase-neutro no mesmo fator de potência
+    (fasores a 120°). Com fatores diferentes, IN passa dele (ex.: 3 × 10 A, uma carga com FP 0,85: IN ≈ 5,5 A, não 0 A),
+    e a queda do alimentador sai menor que a real. A memória declara a premissa no passo "Corrente para a queda de
+    tensão", com a referência "critério do Ampere". Para conferir: um limite que não depende do FP (ex.: somar
+    2·sen(Δφ/2)·ΣIFN para a faixa de FP do projeto) ou a conta fasorial com o FP de cada carga.
   - Limite: o total do perfil é tomado na **origem do alimentador** (o equipamento de onde ele sai); queda antes dela
     (ramal de entrada, medição → QGBT fora do modelo) não é contada — a memória diz isso.
   - Circuito reserva (AMP_TipoCarga) e reserva/espaço do Revit ficam fora da maior queda terminal; quadro de cargas com
     pendência (circuito sem tipo ou sem potência, incompatível com a alimentação) e terminal com a memória gravada
     diferente da refeita (modelo mudou desde o "Dimensionar circuitos") impedem o alimentador.
-  - O adapter só aceita como alimentador o circuito que sai de outro equipamento e tem o quadro entre os membros (o
-    `GetElectricalSystems` do quadro também traz os que ele alimenta). Impedem: transformador (primário noutra tensão),
-    mais de um alimentador e alimentador com outras cargas.
+  - O adapter só aceita como alimentador o circuito que sai de outro equipamento (com quadro de origem) e tem o quadro
+    entre os membros (o `GetElectricalSystems` do quadro também traz os que ele alimenta). Impedem: transformador
+    (primário noutra tensão), mais de um alimentador (todos ficam apagados) e alimentador com outras cargas. Circuito é
+    alimentador quando um membro distribui (tipo da família quadro, painel, QGBT ou transformador, ou com circuitos);
+    seccionadora no circuito de um motor continua circuito terminal. Quadro de três fases precisa das três conhecidas
+    (rótulos do sistema de distribuição). Terminal sem a proteção decidida (parado no IDR) impede o alimentador.
   - **Conferir na NBR 5410 (6.2.7.1):** o perfil tem ponto de entrega 5%, transformador próprio e gerador 7%. Falta a
     alínea do ponto de entrega no secundário do transformador da distribuidora (lembrança do desenvolvedor: 7%, a
     partir dos terminais do secundário) — só entra no perfil com o texto oficial.

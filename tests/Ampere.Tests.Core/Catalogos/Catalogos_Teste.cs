@@ -23,6 +23,15 @@ public class CatalogoDeCondutores_Teste
     }
 
     [Test]
+    public async Task Isolacoes_do_catalogo_oficial_existem_no_perfil()
+    {
+        var doPerfil = Ampere.Core.Normas.PerfilNormativo.NBR5410_2004.Vocabulario.Isolacoes;
+
+        foreach (var tipo in CatalogoDeCondutores.Padrao.Tipos)
+            await Assert.That(doPerfil.Contains(CatalogoDeCondutores.Padrao.Isolacao(tipo)!.Value.Isolacao)).IsTrue();
+    }
+
+    [Test]
     public async Task Tipos_dos_catalogos_para_o_dialogo()
     {
         await Assert.That(Ficticio.Tipos).IsEquivalentTo([CatalogosFicticios.TipoDeCondutor]);

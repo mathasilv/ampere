@@ -87,19 +87,41 @@ internal static class LeituraDoPainel
 
     /// <summary>
     ///     Circuitos de força de que o equipamento é carga, em ordem de id. O <c>GetElectricalSystems</c> de um quadro também
-    ///     devolve os circuitos que ele alimenta: ficam só os que saem de outro equipamento e o têm entre os membros.
+    ///     devolve os circuitos que ele alimenta: ficam só os que saem de outro equipamento (circuito sem quadro de origem
+    ///     não é alimentador) e o têm entre os membros.
     /// </summary>
     public static List<ElectricalSystem> Alimentadores(FamilyInstance equipamento) =>
         equipamento.MEPModel?.GetElectricalSystems()?
             .Where(sistema => sistema.SystemType == ElectricalSystemType.PowerCircuit
-                              && sistema.BaseEquipment?.Id != equipamento.Id
+                              && sistema.BaseEquipment is { } origem && origem.Id != equipamento.Id
                               && sistema.Elements.Cast<Element>().Any(membro => membro.Id == equipamento.Id))
             .OrderBy(sistema => sistema.Id.Value)
             .ToList() ?? [];
 
-    /// <summary>Circuito que alimenta equipamento elétrico (quadro, transformador): é alimentador, não circuito terminal.</summary>
-    public static bool AlimentaEquipamento(ElectricalSystem sistema) =>
-        sistema.Elements.Cast<Element>().Any(membro => membro.Category?.BuiltInCategory == BuiltInCategory.OST_ElectricalEquipment);
+    /// <summary>
+    ///     Circuito que alimenta equipamento de distribuição (quadro ou transformador): é alimentador, não circuito terminal.
+    ///     Seccionadora e outro equipamento elétrico que não distribui continuam como carga do circuito terminal.
+    /// </summary>
+    public static bool AlimentaEquipamento(ElectricalSystem sistema) => sistema.Elements.Cast<Element>().Any(Distribui);
+
+    // Quadro, painel, QGBT ou transformador pelo tipo da família no Revit; sem ele, quem já tem circuitos de força.
+    private static bool Distribui(Element membro)
+    {
+        if (membro is not FamilyInstance { Category.BuiltInCategory: BuiltInCategory.OST_ElectricalEquipment } instancia) return false;
+        if (instancia.Symbol?.Family?.get_Parameter(BuiltInParameter.FAMILY_CONTENT_PART_TYPE) is { HasValue: true } tipo)
+        {
+            return (PartType)tipo.AsInteger() is PartType.PanelBoard or PartType.SwitchBoard or PartType.OtherPanel or PartType.Transformer
+                   || CircuitosDoQuadro(instancia).Count > 0;
+        }
+
+        return CircuitosDoQuadro(instancia).Count > 0;
+    }
+
+    /// <summary>Todos os circuitos de força do quadro, com as reservas e os espaços do Revit (o unifilar os desenha).</summary>
+    public static List<ElectricalSystem> CircuitosDeForca(FamilyInstance painel) =>
+        painel.MEPModel?.GetAssignedElectricalSystems()?
+            .Where(sistema => sistema.SystemType == ElectricalSystemType.PowerCircuit)
+            .ToList() ?? [];
 
     /// <summary>Equipamento com sistema de distribuição secundário: transformador (os circuitos saem do secundário).</summary>
     public static bool Transformador(Document documento, FamilyInstance equipamento) =>
