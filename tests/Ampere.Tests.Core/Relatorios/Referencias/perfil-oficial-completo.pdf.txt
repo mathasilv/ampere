@@ -1,111 +1,109 @@
-== página 1 de 3
+== página 1 de 2
 56,7 [Titulo 56,7] Memória de cálculo — circuito IL-01
 80,2 [Rotulo 56,7] Perfil normativo: [Texto 150,4] NBR5410:2004
 91,2 [Rotulo 56,7] Identificador (AMP_MemoriaCalculoId):
-102,3 [Codigo 56,7] sha256:069428fac5d4c175548b6a53b824cbb11d06113047866cab1180fd357fe8ddaf
+102,3 [Codigo 56,7] sha256:46f3a0fed0275d6fbccec73618b8905c2a1441f2ba0c40272d80ad9768e72ac4
 112,8 [Rotulo 56,7] Esquema do documento: [Texto 191,8] 1
 123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo completo (17 passos)
-134,9 [Rotulo 56,7] Referências pendentes (TODO_NORMA ou TODO_CATALOGO): [Texto 387,4] 1 passo (13), sem fonte oficial
-153,9 [Nota 56,7] Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O
-163,8 [Nota 56,7] documento JSON da memória guarda os valores completos.
-183,7 [Secao 56,7] Passos
-205,7 [TituloDoPasso 56,7] 1. Corrente de projeto
-219,9 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 5.3.4.1 (IB é a corrente de projeto do circuito; Iz ver 6.2.5)
-231 [Rotulo 68,7] Expressão: [Codigo 132,7] IB = S / V
-242 [Rotulo 68,7] Valores: [Texto 115,8] S = 200 VA; V = 127 V
-253,1 [Rotulo 68,7] Resultado: [Texto 129,2] 1,5748 A
-272,1 [TituloDoPasso 56,7] 2. Condutores carregados
-286,4 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabelas 36-41 e 6.2.6.2 (neutro conta como carregado so com
-297,4 [Texto 68,7] harmonicas >15%; sem harmonicas, nao conta)
-308,5 [Rotulo 68,7] Expressão: [Codigo 132,7] n = condutores carregados (F+N)
-319,5 [Rotulo 68,7] Resultado: [Texto 129,2] 2 condutores
-338,6 [TituloDoPasso 56,7] 3. Fator de correção de temperatura
-352,8 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabela 40 (ar; 30 C = 1,0 e a referencia)
-363,9 [Rotulo 68,7] Expressão: [Codigo 132,7] FCT = tabela (PVC; 30 °C)
-374,9 [Rotulo 68,7] Valores: [Texto 115,8] θ = 30 °C
-386 [Rotulo 68,7] Resultado: [Texto 129,2] 1
-405,1 [TituloDoPasso 56,7] 4. Fator de correção de agrupamento
-419,3 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabela 42, linha 1 (em feixe); chave = início da faixa (9 a 11, 12 a
-430,3 [Texto 68,7] 15, 16 a 19, 20 ou mais)
-441,4 [Rotulo 68,7] Expressão: [Codigo 132,7] FCA = tabela (1 circuito)
-452,5 [Rotulo 68,7] Valores: [Texto 115,8] circuitos = 1
-463,5 [Rotulo 68,7] Resultado: [Texto 129,2] 1
-482,6 [TituloDoPasso 56,7] 5. Seção mínima
-496,8 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.2.6.1.1 e Tabela 47 (instalacoes fixas, condutores e cabos
-507,9 [Texto 68,7] isolados, cobre; aluminio 16 mm2)
-518,9 [Rotulo 68,7] Expressão: [Codigo 132,7] Smín = tabela (Iluminacao)
-530 [Rotulo 68,7] Resultado: [Texto 129,2] 1,5 mm²
-549 [TituloDoPasso 56,7] 6. Seção pela capacidade de condução
-563,3 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabelas 36 e 37 (A1 a D; transcrita do texto oficial por
-574,3 [Texto 68,7] coordenadas, validada contra IEC 60364-5-52)
-585,4 [Rotulo 68,7] Expressão: [Codigo 132,7] menor S ≥ Smín com IZ₀(S) · FCA · FCT ≥ IB
-596,4 [Rotulo 68,7] Valores: [Texto 115,8] Smín = 1,5 mm²; IB = 1,5748 A; FCA = 1; FCT = 1
-607,5 [Rotulo 68,7] Resultado: [Texto 129,2] 1,5 mm²
-618,5 [Rotulo 68,7] Observação: [Texto 138,3] seções nominais: NBR 5410:2004, Tabelas 36-39 (serie de secoes listada)
-637,6 [TituloDoPasso 56,7] 7. Resistividade do condutor
-651,8 [Rotulo 68,7] Referência: [Texto 133] Condutividade do cobre eletrolitico a 20 C (1/56 O.mm2/m), conforme ABNT NBR IEC
-662,9 [Texto 68,7] 60228; valor a 20 C — o uso do valor de servico (condutor aquecido) e decisao do projetista,
-673,9 [Texto 68,7] registrada nas Simplificacoes do data/DATA_GAPS.md
-685 [Rotulo 68,7] Expressão: [Codigo 132,7] ρ = tabela (Cobre)
-696,1 [Rotulo 68,7] Resultado: [Texto 129,2] 0,0179 Ω·mm²/m
-776 [Rodape 194,5] Memória de cálculo — circuito IL-01 · página 1 de 3
-== página 2 de 3
-56,7 [TituloDoPasso 56,7] 8. Limite de queda de tensão
-70,9 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, itens 6.2.7.1 e 6.2.7.2
-82 [Rotulo 68,7] Expressão: [Codigo 132,7] ΔV%máx = tabela (circuito terminal)
-93 [Rotulo 68,7] Resultado: [Texto 129,2] 4%
-112,1 [TituloDoPasso 56,7] 9. Capacidade de condução da seção adotada
-126,3 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabelas 36 e 37 (A1 a D; transcrita do texto oficial por
-137,4 [Texto 68,7] coordenadas, validada contra IEC 60364-5-52)
-148,4 [Rotulo 68,7] Expressão: [Codigo 132,7] IZ = IZ₀(S) · FCA · FCT
-159,5 [Rotulo 68,7] Valores: [Texto 115,8] S = 1,5 mm²; IZ₀ = 17,5 A; FCA = 1; FCT = 1
-170,6 [Rotulo 68,7] Resultado: [Texto 129,2] 17,5 A
-189,6 [TituloDoPasso 56,7] 10. Disjuntor
-203,8 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 5.3.4.1 (IB <= In <= Iz e I2 <= 1,45 Iz)
-214,9 [Rotulo 68,7] Expressão: [Codigo 132,7] menor In com IB ≤ In ≤ IZ
-226 [Rotulo 68,7] Valores: [Texto 115,8] IB = 1,5748 A; IZ = 17,5 A
-237 [Rotulo 68,7] Resultado: [Texto 129,2] 6 A
-248,1 [Rotulo 68,7] Observação: [Texto 138,3] correntes nominais: Series preferenciais de disjuntores: ABNT NBR IEC 60898-1 (6
-259,1 [Texto 68,7] a 63 A, minidisjuntor) e IEC 60947-2 (caixa moldada, acima), adotadas pelos fabricantes
-270,2 [Texto 68,7] nacionais (WEG, Schneider); decisao de produto registrada em data/DATA_GAPS.md (GAP-004)
-289,2 [TituloDoPasso 56,7] 11. Queda de tensão
-303,5 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, itens 6.2.7.1 e 6.2.7.2
-314,5 [Rotulo 68,7] Expressão: [Codigo 132,7] ΔV% = k · ρ · L · IB / (S · V) · 100
-325,6 [Rotulo 68,7] Valores: [Texto 115,8] k = 2; ρ = 0,0179 Ω·mm²/m; L = 8 m; IB = 1,5748 A; S = 1,5 mm²; V = 127 V
-336,6 [Rotulo 68,7] Resultado: [Texto 129,2] 0,2368%
-347,7 [Rotulo 68,7] Observação: [Texto 138,3] fórmula resistiva (sem reatância), só o circuito terminal
-366,8 [TituloDoPasso 56,7] 12. Exigência de IDR
-381 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 5.1.3.2.2 (alineas a-e: DR In <= 30 mA; nota 1: tomadas ate
-392 [Texto 68,7] 32 A; casos da secao 9 verificados em 9.1); locais nao listados nao exigem
-403,1 [Rotulo 68,7] Expressão: [Codigo 132,7] n = pontos em locais que exigem IDR para Iluminação
-414,2 [Rotulo 68,7] Valores: [Texto 115,8] total = 1 ponto
-425,2 [Rotulo 68,7] Resultado: [Texto 129,2] 0 pontos
-436,3 [Rotulo 68,7] Observação: [Texto 138,3] Demais locais internos (1 ponto): não exige
-455,3 [TituloDoPasso 56,7] 13. Condutores no eletroduto
-469,6 [Rotulo 68,7] Referência: [Texto 133] TODO_NORMA
-480,6 [Rotulo 68,7] Expressão: [Codigo 132,7] n = F + N + PE
-491,7 [Rotulo 68,7] Resultado: [Texto 129,2] 3 condutores
-502,7 [Rotulo 68,7] Observação: [Texto 138,3] neutro e proteção com o diâmetro da fase (conservador para a ocupação)
-521,8 [TituloDoPasso 56,7] 14. Diâmetro externo do condutor
-536 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: catálogo de condutores
-547,1 [Rotulo 68,7] Expressão: [Codigo 132,7] d = catálogo (FIO-TESTE; 1,5 mm²)
-558,1 [Rotulo 68,7] Resultado: [Texto 129,2] 3 mm
-577,2 [TituloDoPasso 56,7] 15. Taxa máxima de ocupação
-591,4 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.2.11.1.6, alinea a
-602,5 [Rotulo 68,7] Expressão: [Codigo 132,7] taxa = tabela (3 condutores)
-613,5 [Rotulo 68,7] Resultado: [Texto 129,2] 40%
-632,6 [TituloDoPasso 56,7] 16. Eletroduto adotado
-646,8 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: catálogo de eletrodutos
-657,9 [Rotulo 68,7] Expressão: [Codigo 132,7] menor Di com n · d² / Di² · 100 ≤ taxa
-668,9 [Rotulo 68,7] Valores: [Texto 115,8] n = 3 condutores; d = 3 mm; taxa = 40%
-680 [Rotulo 68,7] Resultado: [Texto 129,2] 10 mm
-691 [Rotulo 68,7] Observação: [Texto 138,3] tamanho nominal A (ELETRODUTO-TESTE)
-776 [Rodape 194,5] Memória de cálculo — circuito IL-01 · página 2 de 3
-== página 3 de 3
-56,7 [TituloDoPasso 56,7] 17. Ocupação do eletroduto
-70,9 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.2.11.1.6, alinea a
-82 [Rotulo 68,7] Expressão: [Codigo 132,7] ocupação = n · d² / Di² · 100
-93 [Rotulo 68,7] Valores: [Texto 115,8] n = 3 condutores; d = 3 mm; Di = 10 mm
-104,1 [Rotulo 68,7] Resultado: [Texto 129,2] 27%
-115,2 [Rotulo 68,7] Observação: [Texto 138,3] só os condutores deste circuito: outros circuitos na mesma tubulação não entram
-776 [Rodape 194,5] Memória de cálculo — circuito IL-01 · página 3 de 3
+142,9 [Nota 56,7] Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O
+152,8 [Nota 56,7] documento JSON da memória guarda os valores completos.
+172,7 [Secao 56,7] Passos
+194,6 [TituloDoPasso 56,7] 1. Corrente de projeto
+208,9 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 5.3.4.1 (IB é a corrente de projeto do circuito; Iz ver 6.2.5)
+219,9 [Rotulo 68,7] Expressão: [Codigo 132,7] IB = S / V
+231 [Rotulo 68,7] Valores: [Texto 115,8] S = 200 VA; V = 127 V
+242 [Rotulo 68,7] Resultado: [Texto 129,2] 1,5748 A
+261,1 [TituloDoPasso 56,7] 2. Condutores carregados
+275,3 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabelas 36-41 e 6.2.6.2 (neutro conta como carregado so com
+286,4 [Texto 68,7] harmonicas >15%; sem harmonicas, nao conta)
+297,4 [Rotulo 68,7] Expressão: [Codigo 132,7] n = condutores carregados (F+N)
+308,5 [Rotulo 68,7] Resultado: [Texto 129,2] 2 condutores
+327,5 [TituloDoPasso 56,7] 3. Fator de correção de temperatura
+341,8 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabela 40 (ar; 30 C = 1,0 e a referencia)
+352,8 [Rotulo 68,7] Expressão: [Codigo 132,7] FCT = tabela (PVC; 30 °C)
+363,9 [Rotulo 68,7] Valores: [Texto 115,8] θ = 30 °C
+374,9 [Rotulo 68,7] Resultado: [Texto 129,2] 1
+394 [TituloDoPasso 56,7] 4. Fator de correção de agrupamento
+408,2 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabela 42, linha 1 (em feixe); chave = início da faixa (9 a 11, 12 a
+419,3 [Texto 68,7] 15, 16 a 19, 20 ou mais)
+430,3 [Rotulo 68,7] Expressão: [Codigo 132,7] FCA = tabela (1 circuito)
+441,4 [Rotulo 68,7] Valores: [Texto 115,8] circuitos = 1
+452,5 [Rotulo 68,7] Resultado: [Texto 129,2] 1
+471,5 [TituloDoPasso 56,7] 5. Seção mínima
+485,7 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.2.6.1.1 e Tabela 47 (instalacoes fixas, condutores e cabos
+496,8 [Texto 68,7] isolados, cobre; aluminio 16 mm2)
+507,9 [Rotulo 68,7] Expressão: [Codigo 132,7] Smín = tabela (Iluminacao)
+518,9 [Rotulo 68,7] Resultado: [Texto 129,2] 1,5 mm²
+538 [TituloDoPasso 56,7] 6. Seção pela capacidade de condução
+552,2 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabelas 36 e 37 (A1 a D; transcrita do texto oficial por
+563,3 [Texto 68,7] coordenadas, validada contra IEC 60364-5-52)
+574,3 [Rotulo 68,7] Expressão: [Codigo 132,7] menor S ≥ Smín com IZ₀(S) · FCA · FCT ≥ IB
+585,4 [Rotulo 68,7] Valores: [Texto 115,8] Smín = 1,5 mm²; IB = 1,5748 A; FCA = 1; FCT = 1
+596,4 [Rotulo 68,7] Resultado: [Texto 129,2] 1,5 mm²
+607,5 [Rotulo 68,7] Observação: [Texto 138,3] seções nominais: NBR 5410:2004, Tabelas 36-39 (serie de secoes listada)
+626,5 [TituloDoPasso 56,7] 7. Resistividade do condutor
+640,8 [Rotulo 68,7] Referência: [Texto 133] Condutividade do cobre eletrolitico a 20 C (1/56 O.mm2/m), conforme ABNT NBR IEC
+651,8 [Texto 68,7] 60228; valor a 20 C — o uso do valor de servico (condutor aquecido) e decisao do projetista,
+662,9 [Texto 68,7] registrada nas Simplificacoes do data/DATA_GAPS.md
+673,9 [Rotulo 68,7] Expressão: [Codigo 132,7] ρ = tabela (Cobre)
+685 [Rotulo 68,7] Resultado: [Texto 129,2] 0,0179 Ω·mm²/m
+704,1 [TituloDoPasso 56,7] 8. Limite de queda de tensão
+718,3 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, itens 6.2.7.1 (alíneas a a d) e 6.2.7.2
+729,3 [Rotulo 68,7] Expressão: [Codigo 132,7] ΔV%máx = tabela (circuito terminal)
+740,4 [Rotulo 68,7] Resultado: [Texto 129,2] 4%
+776 [Rodape 194,5] Memória de cálculo — circuito IL-01 · página 1 de 2
+== página 2 de 2
+56,7 [TituloDoPasso 56,7] 9. Capacidade de condução da seção adotada
+70,9 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabelas 36 e 37 (A1 a D; transcrita do texto oficial por
+82 [Texto 68,7] coordenadas, validada contra IEC 60364-5-52)
+93 [Rotulo 68,7] Expressão: [Codigo 132,7] IZ = IZ₀(S) · FCA · FCT
+104,1 [Rotulo 68,7] Valores: [Texto 115,8] S = 1,5 mm²; IZ₀ = 17,5 A; FCA = 1; FCT = 1
+115,2 [Rotulo 68,7] Resultado: [Texto 129,2] 17,5 A
+134,2 [TituloDoPasso 56,7] 10. Disjuntor
+148,4 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 5.3.4.1 (IB <= In <= Iz e I2 <= 1,45 Iz)
+159,5 [Rotulo 68,7] Expressão: [Codigo 132,7] menor In com IB ≤ In ≤ IZ
+170,6 [Rotulo 68,7] Valores: [Texto 115,8] IB = 1,5748 A; IZ = 17,5 A
+181,6 [Rotulo 68,7] Resultado: [Texto 129,2] 6 A
+192,7 [Rotulo 68,7] Observação: [Texto 138,3] correntes nominais: Series preferenciais de disjuntores: ABNT NBR IEC 60898-1 (6
+203,7 [Texto 68,7] a 63 A, minidisjuntor) e IEC 60947-2 (caixa moldada, acima), adotadas pelos fabricantes
+214,8 [Texto 68,7] nacionais (WEG, Schneider); decisao de produto registrada em data/DATA_GAPS.md (GAP-004)
+233,8 [TituloDoPasso 56,7] 11. Queda de tensão
+248,1 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, itens 6.2.7.1 e 6.2.7.2
+259,1 [Rotulo 68,7] Expressão: [Codigo 132,7] ΔV% = k · ρ · L · IB / (S · V) · 100
+270,2 [Rotulo 68,7] Valores: [Texto 115,8] k = 2; ρ = 0,0179 Ω·mm²/m; L = 8 m; IB = 1,5748 A; S = 1,5 mm²; V = 127 V
+281,2 [Rotulo 68,7] Resultado: [Texto 129,2] 0,2368%
+292,3 [Rotulo 68,7] Observação: [Texto 138,3] fórmula resistiva (sem reatância), só o circuito terminal
+311,4 [TituloDoPasso 56,7] 12. Exigência de IDR
+325,6 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 5.1.3.2.2 (alineas a-e: DR In <= 30 mA; nota 1: tomadas ate
+336,6 [Texto 68,7] 32 A; casos da secao 9 verificados em 9.1); locais nao listados nao exigem
+347,7 [Rotulo 68,7] Expressão: [Codigo 132,7] n = pontos em locais que exigem IDR para Iluminação
+358,8 [Rotulo 68,7] Valores: [Texto 115,8] total = 1 ponto
+369,8 [Rotulo 68,7] Resultado: [Texto 129,2] 0 pontos
+380,9 [Rotulo 68,7] Observação: [Texto 138,3] Demais locais internos (1 ponto): não exige
+399,9 [TituloDoPasso 56,7] 13. Condutores no eletroduto
+414,2 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.2.11.1.6, alínea a (soma das seções transversais dos
+425,2 [Texto 68,7] condutores previstos no eletroduto, pelo diâmetro externo)
+436,3 [Rotulo 68,7] Expressão: [Codigo 132,7] n = F + N + PE
+447,3 [Rotulo 68,7] Resultado: [Texto 129,2] 3 condutores
+458,4 [Rotulo 68,7] Observação: [Texto 138,3] neutro e proteção com o diâmetro da fase (conservador para a ocupação)
+477,5 [TituloDoPasso 56,7] 14. Diâmetro externo do condutor
+491,7 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: catálogo de condutores
+502,7 [Rotulo 68,7] Expressão: [Codigo 132,7] d = catálogo (FIO-TESTE; 1,5 mm²)
+513,8 [Rotulo 68,7] Resultado: [Texto 129,2] 3 mm
+532,9 [TituloDoPasso 56,7] 15. Taxa máxima de ocupação
+547,1 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.2.11.1.6, alinea a
+558,1 [Rotulo 68,7] Expressão: [Codigo 132,7] taxa = tabela (3 condutores)
+569,2 [Rotulo 68,7] Resultado: [Texto 129,2] 40%
+588,3 [TituloDoPasso 56,7] 16. Eletroduto adotado
+602,5 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: catálogo de eletrodutos
+613,5 [Rotulo 68,7] Expressão: [Codigo 132,7] menor Di com n · d² / Di² · 100 ≤ taxa
+624,6 [Rotulo 68,7] Valores: [Texto 115,8] n = 3 condutores; d = 3 mm; taxa = 40%
+635,6 [Rotulo 68,7] Resultado: [Texto 129,2] 10 mm
+646,7 [Rotulo 68,7] Observação: [Texto 138,3] tamanho nominal A (ELETRODUTO-TESTE)
+665,8 [TituloDoPasso 56,7] 17. Ocupação do eletroduto
+680 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.2.11.1.6, alinea a
+691 [Rotulo 68,7] Expressão: [Codigo 132,7] ocupação = n · d² / Di² · 100
+702,1 [Rotulo 68,7] Valores: [Texto 115,8] n = 3 condutores; d = 3 mm; Di = 10 mm
+713,2 [Rotulo 68,7] Resultado: [Texto 129,2] 27%
+724,2 [Rotulo 68,7] Observação: [Texto 138,3] só os condutores deste circuito: outros circuitos na mesma tubulação não entram
+776 [Rodape 194,5] Memória de cálculo — circuito IL-01 · página 2 de 2

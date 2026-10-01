@@ -1,10 +1,9 @@
 # Memória de cálculo — circuito TUG-01
 
 - **Perfil normativo:** NBR5410:2004
-- **Identificador (AMP_MemoriaCalculoId):** `sha256:32917aa6e893eec48604c5d7d040bc1037b300cb9dc42fa3aff79847f318cfc5`
+- **Identificador (AMP_MemoriaCalculoId):** `sha256:96ac5ca43392e3b9c0d7f92aa58a3433530db2e4e2b659b5a74c3a7e1da17168`
 - **Esquema do documento:** 1
 - **Situação:** cálculo completo (17 passos)
-- **Referências pendentes (TODO_NORMA ou TODO_CATALOGO):** 1 passo (13), sem fonte oficial
 
 > Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O documento JSON da memória guarda os valores completos.
 
@@ -59,7 +58,7 @@
 
 ### 8. Limite de queda de tensão
 
-- **Referência:** NBR 5410:2004, itens 6.2.7.1 e 6.2.7.2
+- **Referência:** NBR 5410:2004, itens 6.2.7.1 (alíneas a a d) e 6.2.7.2
 - **Expressão:** `ΔV%máx = tabela (circuito terminal)`
 - **Resultado:** 4%
 
@@ -96,7 +95,7 @@
 
 ### 13. Condutores no eletroduto
 
-- **Referência:** TODO_NORMA
+- **Referência:** NBR 5410:2004, item 6.2.11.1.6, alínea a (soma das seções transversais dos condutores previstos no eletroduto, pelo diâmetro externo)
 - **Expressão:** `n = F + N + PE`
 - **Resultado:** 3 condutores
 - **Observação:** neutro e proteção com o diâmetro da fase (conservador para a ocupação)

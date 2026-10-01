@@ -35,13 +35,13 @@ dotnet test tests/Ampere.Tests.Core --list-tests --treenode-filter "/*/*/*/*[Fon
 | `secao_minima_mm2` | ✅ PREENCHIDA (item 6.2.6.1.1 e Tabela 47) | |
 | `capacidade_de_conducao_a` | ✅ PREENCHIDA (Tabelas 36 e 37, A1-D, validada contra IEC) | Especificação cita tabelas 36/37 |
 | `fator_de_temperatura` | ✅ PREENCHIDA (Tabela 40, ar; solo pendente) | Especificação cita a Tabela 40; o motor não interpola |
-| `fator_de_agrupamento` | ✅ PREENCHIDA (Tabela 42 linha 1). **Corrigida em 01/10/2026:** as chaves eram 12/16/19/20 ("limite superior"), e a busca exata parava em 9–11, 13–15 e 17–18 circuitos e dava 0,50 para 12 e 0,45 para 16 — acima dos 0,45 e 0,41 das faixas da norma (contra a segurança). Agora a chave é o início da faixa (9, 12, 16, 20) e vale a maior faixa ≤ n; os valores são os mesmos. Em qualquer leitura das faixas, o fator novo nunca é maior que o anterior | ⚠️ Conferir no texto oficial que as faixas são 9 a 11, 12 a 15, 16 a 19 e ≥ 20 |
-| `queda_de_tensao_maxima_pct` | ✅ PREENCHIDA (6.2.7.1/6.2.7.2): circuito_terminal 4, ponto_de_entrega 5, transformador/gerador 7 | A especificação diz "4% instalação total, 7% circuito terminal". **Conferir se não está invertido:** há indício de que o limite menor se aplica aos circuitos terminais |
+| `fator_de_agrupamento` | ✅ PREENCHIDA (Tabela 42 linha 1). **Corrigida em 01/10/2026:** as chaves eram 12/16/19/20 ("limite superior"), e a busca exata parava em 9–11, 13–15 e 17–18 circuitos e dava 0,50 para 12 e 0,45 para 16 — acima dos 0,45 e 0,41 das faixas da norma (contra a segurança). Agora a chave é o início da faixa (9, 12, 16, 20) e vale a maior faixa ≤ n; os valores são os mesmos. Em qualquer leitura das faixas, o fator novo nunca é maior que o anterior | ✅ Conferido em 01/10/2026 no texto oficial (NBR anexada pelo usuário): faixas 9 a 11, 12 a 15, 16 a 19 e ≥ 20 (0,50, 0,45, 0,41 e 0,38) |
+| `queda_de_tensao_maxima_pct` | ✅ PREENCHIDA (6.2.7.1/6.2.7.2): circuito_terminal 4, ponto_de_entrega 5, transformador próprio 7, transformador da distribuidora 7 (alínea b, 01/10/2026), gerador 7 | ✅ Conferido em 01/10/2026 no texto oficial: 4% é o máximo dos circuitos terminais (6.2.7.2) e 5%/7% o total da instalação (6.2.7.1) — a especificação estava invertida. Não aplicado (a favor da segurança): a nota 3, que permite +0,005%/m nas linhas principais acima de 100 m (até +0,5%) nas alíneas a, b e d |
 | `resistividade_ohm_mm2_por_m` | Resistividade do condutor na temperatura de serviço | Para a queda de tensão |
 | `ocupacao_maxima_eletroduto_pct` | ✅ PREENCHIDA (6.2.11.1.6-a) | A especificação diz "40% ≥ 2 condutores; 31%/53% nos casos da norma". **Conferir a que número de condutores cada taxa se aplica** |
 | `correntes_nominais_idr_a` | Correntes nominais de IDR | Valores preferenciais da norma do dispositivo / fabricante |
 | `protecao_diferencial_por_local` | Locais em que o IDR é exigido: para cada local, os tipos de carga atingidos e a I<sub>Δn</sub> máxima | O vocabulário de locais é do perfil (quem classifica os ambientes do projeto usa esses nomes); local que não exige entra com `tipos_de_carga: []` |
-| `regras` (`coordenacao_condutor_protecao`, `queda_de_tensao`, `condutores_no_eletroduto`, `coordenacao_idr_disjuntor`) | Itens que definem a coordenação I<sub>B</sub> ≤ I<sub>n</sub> ≤ I<sub>Z</sub>, o critério de queda de tensão, os condutores que contam na ocupação do eletroduto e a corrente nominal do IDR frente ao disjuntor | Não são tabelas, mas a memória cita a `ref` de cada uma; `corrente_de_projeto` está no GAP-001 |
+| `regras` (`coordenacao_condutor_protecao`, `queda_de_tensao`, `condutores_no_eletroduto`, `coordenacao_idr_disjuntor`) | Itens que definem a coordenação I<sub>B</sub> ≤ I<sub>n</sub> ≤ I<sub>Z</sub>, o critério de queda de tensão, os condutores que contam na ocupação do eletroduto e a corrente nominal do IDR frente ao disjuntor | Não são tabelas, mas a memória cita a `ref` de cada uma; `corrente_de_projeto` está no GAP-001. ✅ `condutores_no_eletroduto` = 6.2.11.1.6-a (01/10/2026). `coordenacao_idr_disjuntor` continua TODO_NORMA: a NBR 5410 (6.3.3.2) não fixa a corrente nominal do DR frente ao disjuntor — vem da norma de produto (IEC 61008-1/NBR NM 61008), a anexar. `demanda_do_quadro`: a NBR 5410 não tem fatores de demanda por tipo de carga (GAP-005) |
 
 ## Simplificações do motor de dimensionamento (a validar pelo projetista)
 
@@ -171,9 +171,8 @@ Resolvido (decisões do usuário):
     alimentador quando um membro distribui (tipo da família quadro, painel, QGBT ou transformador, ou com circuitos);
     seccionadora no circuito de um motor continua circuito terminal. Quadro de três fases precisa das três conhecidas
     (rótulos do sistema de distribuição). Terminal sem a proteção decidida (parado no IDR) impede o alimentador.
-  - **Conferir na NBR 5410 (6.2.7.1):** o perfil tem ponto de entrega 5%, transformador próprio e gerador 7%. Falta a
-    alínea do ponto de entrega no secundário do transformador da distribuidora (lembrança do desenvolvedor: 7%, a
-    partir dos terminais do secundário) — só entra no perfil com o texto oficial.
+  - ✅ 6.2.7.1-b conferida no texto oficial (01/10/2026): ponto de entrega nos terminais secundários do transformador
+    MT/BT da distribuidora, 7% — nova origem no "Dimensionar alimentadores".
 
 Comportamento do modelo a validar pelo projetista:
 

@@ -84,6 +84,7 @@ public class DimensionarAlimentadoresCommand : ExternalCommand
         {
             (Origem: "ponto_de_entrega", Link: TaskDialogCommandLinkId.CommandLink1, Resultado: TaskDialogResult.CommandLink1),
             (Origem: "transformador_proprio", Link: TaskDialogCommandLinkId.CommandLink2, Resultado: TaskDialogResult.CommandLink2),
+            (Origem: "transformador_da_distribuidora", Link: TaskDialogCommandLinkId.CommandLink4, Resultado: TaskDialogResult.CommandLink4),
             (Origem: "gerador", Link: TaskDialogCommandLinkId.CommandLink3, Resultado: TaskDialogResult.CommandLink3)
         };
         foreach (var (origem, link, _) in opcoes)

@@ -97,6 +97,7 @@ public static class DimensionamentoDeAlimentadores
     {
         ["ponto_de_entrega"] = "instalação alimentada em baixa tensão pela distribuidora (a partir do ponto de entrega)",
         ["transformador_proprio"] = "instalação alimentada por transformador próprio",
+        ["transformador_da_distribuidora"] = "ponto de entrega nos terminais secundários do transformador MT/BT da distribuidora",
         ["gerador"] = "instalação alimentada por gerador próprio"
     };
 
