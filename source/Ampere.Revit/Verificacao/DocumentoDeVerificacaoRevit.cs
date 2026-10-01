@@ -20,22 +20,13 @@ namespace Ampere.Revit.Verificacao;
 /// </remarks>
 public sealed class DocumentoDeVerificacaoRevit(Document documento) : IDocumentoDeVerificacao
 {
-    private static readonly BuiltInCategory[] CategoriasDosPontos = CatalogoDeParametros.Padrao.Parametros
-        .Single(parametro => parametro.Nome == ParametrosAmpere.Local.Nome).Categorias
-        .Select(MapeamentoRevit.Categoria)
-        .ToArray();
-
     private readonly DocumentoDeDimensionamentoRevit _dimensionamento = new(documento);
 
     /// <summary>Todos os parâmetros do catálogo já estão no documento?</summary>
     public bool ParametrosInjetados() => _dimensionamento.ParametrosInjetados();
 
     public IReadOnlyList<PontoVerificado> LerPontos() =>
-        new FilteredElementCollector(documento)
-            .WherePasses(new ElementMulticategoryFilter(CategoriasDosPontos))
-            .WhereElementIsNotElementType()
-            .OfType<FamilyInstance>()
-            .Where(instancia => ConectorDeForca.De(instancia) is not null)
+        PontosDeCarga.Instancias(documento)
             .Select(instancia => new PontoVerificado(
                 instancia.Id.Value,
                 Texto(instancia, ParametrosAmpere.TipoCarga),

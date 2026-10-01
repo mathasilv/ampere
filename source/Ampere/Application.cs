@@ -64,6 +64,11 @@ public class Application : ExternalApplication
             .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
             .SetToolTip("Dimensiona o circuito que alimenta cada quadro (IB pela demanda do quadro de cargas — fase de maior corrente —, queda que sobra do limite total, disjuntor e eletroduto), com memória de cálculo (um único desfazer). Rode antes 'Dimensionar circuitos' e 'Montar quadro de cargas'.");
 
+        quadros.AddPushButton<DemandaDaEntradaCommand>("Demanda da\nentrada")
+            .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
+            .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
+            .SetToolTip("Calcula a demanda da instalação pela norma da distribuidora (CELG CT 04/18, vigência a conferir), com todos os pontos classificados — TUE pelo aparelho —, e salva a memória de cálculo. Não grava nada no modelo.");
+
         quadros.AddPushButton<DiagramasUnifilaresCommand>("Diagramas\nunifilares")
             .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
             .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")

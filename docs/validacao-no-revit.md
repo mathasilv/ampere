@@ -19,6 +19,7 @@ não puderam ser conferidas fora do Revit. Se algum desses testes falhar, envie 
 | `QuadroDeCargasNoRevit_Teste.Monta_quadro_completo_com_fatores_informados` | Cargas por fase sem "circuitos sem fase identificada" |
 | `DimensionamentoNoRevit_Teste.Condicoes_da_rodada_ficam_nos_circuitos…` | Extensible Storage: condições nos circuitos e num `DataStorage` |
 | `AlimentadoresNoRevit_Teste.*` | Quadro ligado a outro quadro por `ElectricalSystem.Create` + `SelectPanel`; o alimentador é o circuito com `BaseEquipment` em outro quadro (o `GetElectricalSystems` do quadro também traz os circuitos dele); IB pela fase do circuito no quadro |
+| `DemandaNoRevit_Teste.*` | Leitura de AMP_TipoCarga, AMP_Aparelho e AMP_PotenciaInstaladaVA dos pontos (VA convertido das unidades internas) |
 | `VerificacaoNoRevit_Teste.*` | Pontos com conector de força nas categorias do Ampere; conferência das memórias |
 
 ## 2. Roteiro manual
@@ -27,7 +28,8 @@ Use um projeto de teste com arquitetura vinculada ou com ambientes (Rooms/Spaces
 220/127 V (ou 380/220 V) e algumas tomadas, luminárias e um chuveiro.
 
 1. **Injetar parâmetros.** O resumo deve mostrar os 35 parâmetros. Rodar de novo não deve criar nada.
-2. **Classificar cargas.** Classifique tomadas (TUG), luminárias (Iluminação) e o chuveiro (TUE, 2F 220 V).
+2. **Classificar cargas.** Classifique tomadas (TUG), luminárias (Iluminação) e o chuveiro (TUE, 2F 220 V, aparelho
+   Chuveiro). Reclassifique o chuveiro como TUG e de volta: o aparelho deve sumir e precisar ser escolhido de novo.
 3. **Locais pelos ambientes.** O diálogo deve listar os ambientes com os pontos. Escolha um local para cada ambiente
    (banheiro = "Local com banheira ou chuveiro").
 4. **Criar circuitos.** Os circuitos devem ser numerados no quadro escolhido.
@@ -65,7 +67,10 @@ Use um projeto de teste com arquitetura vinculada ou com ambientes (Rooms/Spaces
    - Mude o comprimento de um circuito: a memória deve aparecer como desatualizada. "Selecionar no modelo" deve
      selecionar o circuito.
    - Mude o `AMP_ComprimentoRotaM` do alimentador: ele deve aparecer em "Alimentadores desatualizados".
-10. **Diagramas unifilares.** Deve sair uma vista de desenho por quadro, com os valores do dimensionamento.
+10. **Demanda da entrada.** Escolha "Residências". Com um TUE sem aparelho, o diálogo de erro deve oferecer selecionar o
+    ponto no modelo. Com tudo classificado, o resumo traz D e as parcelas (a, b1…), e a memória vai para
+    `Documentos\Ampere\{projeto}\Demanda`. Confira uma parcela à mão com a tabela da CT 04/18.
+11. **Diagramas unifilares.** Deve sair uma vista de desenho por quadro, com os valores do dimensionamento.
 
 ## 3. O que conferir com a norma (pendências do usuário)
 

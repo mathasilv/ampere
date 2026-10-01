@@ -1,0 +1,60 @@
+<Window
+    x:Class="Ampere.Views.DemandaView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:viewModels="clr-namespace:Ampere.ViewModels"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance viewModels:DemandaViewModel}"
+    Title="Demanda da entrada"
+    SizeToContent="WidthAndHeight"
+    ResizeMode="NoResize"
+    WindowStartupLocation="CenterOwner"
+    ShowInTaskbar="False">
+    <StackPanel Margin="16" Width="480">
+        <TextBlock Text="{Binding Titulo}" FontWeight="SemiBold" Margin="0,0,0,6" />
+        <TextBlock Text="{Binding Situacao}" TextWrapping="Wrap" Foreground="DarkGoldenrod" Margin="0,0,0,12" />
+
+        <Grid Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="110" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Edificação" VerticalAlignment="Center"
+                       ToolTip="Linha da tabela de iluminação e tomadas de uso geral do documento" />
+            <ComboBox Grid.Column="1" ItemsSource="{Binding Edificacoes}" SelectedItem="{Binding Edificacao}" />
+        </Grid>
+
+        <TextBlock Text="{Binding Motores}" FontWeight="SemiBold" Margin="0,8,0,4" />
+        <StackPanel IsEnabled="{Binding TemMotores}">
+            <RadioButton GroupName="Motores" Margin="0,2" IsChecked="{Binding RegraDoDocumento}">
+                <TextBlock Text="{Binding RegraDoDocumentoTexto}" TextWrapping="Wrap" />
+            </RadioButton>
+            <RadioButton GroupName="Motores" Margin="0,2" IsChecked="{Binding RegraDoProjetista}" Content="Fator do projetista (indústrias e outros)" />
+            <Grid Margin="20,4,0,0" IsEnabled="{Binding RegraDoProjetista}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="90" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock Text="Fator (%)" VerticalAlignment="Center" />
+                <TextBox Grid.Column="1" Margin="0,2" Text="{Binding FatorDosMotores, UpdateSourceTrigger=PropertyChanged}" />
+                <TextBlock Grid.Row="1" Text="Justificativa" VerticalAlignment="Center" />
+                <TextBox Grid.Row="1" Grid.Column="1" Margin="0,2" Text="{Binding Justificativa, UpdateSourceTrigger=PropertyChanged}" />
+            </Grid>
+        </StackPanel>
+
+        <TextBlock Margin="0,10,0,0" TextWrapping="Wrap" Foreground="Gray"
+                   Text="Soma os pontos classificados do modelo (TUE pelo AMP_Aparelho). Nada é gravado: a memória vai para Documentos\Ampere\{projeto}\Demanda." />
+        <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" Foreground="Firebrick" Text="{Binding Problemas}" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Calcular" IsDefault="True" Width="96" Margin="0,0,8,0" Click="Confirmar" />
+            <Button Content="Cancelar" IsCancel="True" Width="96" />
+        </StackPanel>
+    </StackPanel>
+</Window>
