@@ -44,7 +44,9 @@ public sealed class QuadroDeCargasNoRevit_Teste : TesteComProjetoEletrico
         await Assert.That(leituras[1].PotenciaVA!.Value).IsEqualTo(720m);
         await Assert.That(leituras.All(circuito => circuito.Fases == "F+N" && circuito.TensaoV == 120m)).IsTrue();
         // O cenário atribui ao QD1 o sistema "120/208 Wye" (3 fases, 4 fios).
-        await Assert.That(quadros[0].Alimentacao).IsEqualTo(new AlimentacaoDoQuadro("3F+N", 208m, "sistema de distribuição '120/208 Wye' do quadro"));
+        await Assert.That(quadros[0].Alimentacao).IsEqualTo(new AlimentacaoDoQuadro("3F+N", 208m, "sistema de distribuição '120/208 Wye' do quadro", ["A", "B", "C"]));
+        // Circuitos F+N: uma fase cada, das três do quadro (rótulos padrão das configurações elétricas).
+        await Assert.That(leituras.All(circuito => circuito.FasesNoQuadro is { Count: 1 } fases && "ABC".Contains(fases[0]))).IsTrue();
     }
 
     [Test]
@@ -77,6 +79,9 @@ public sealed class QuadroDeCargasNoRevit_Teste : TesteComProjetoEletrico
         await Assert.That(quadro.DemandaVA).IsEqualTo(546m);
         await Assert.That(quadro.CorrenteDeDemandaA).IsEqualTo(546m / (1.7320508075688772935274463415m * 208m));
         await Assert.That(quadro.Memoria!.Passos[^1].Observacao).IsEqualTo("alimentação 3F+N 208 V: sistema de distribuição '120/208 Wye' do quadro");
+        var fases = resultados[0].Fases!;
+        await Assert.That(fases.CircuitosSemFase).IsEmpty();
+        await Assert.That(fases.Fases.Sum(fase => fase.DemandaVA!.Value)).IsEqualTo(546m);
         await Assert.That(quadro.Memoria).IsNotNull();
         await Assert.That(quadro.Memoria!.Circuito).IsEqualTo("QD1");
         await Assert.That(resultados[0].Nome).IsEqualTo("QD1");

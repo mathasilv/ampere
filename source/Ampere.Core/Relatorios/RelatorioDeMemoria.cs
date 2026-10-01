@@ -29,7 +29,8 @@ public static class RelatorioDeMemoria
 
     /// <summary>O relatório do quadro de cargas: circuitos e totais antes dos passos da memória.</summary>
     /// <exception cref="InvalidOperationException">Quadro incompleto (sem memória) não gera relatório.</exception>
-    public static string MarkdownDoQuadro(ResultadoDoQuadroDeCargas quadro) => Renderizar(ConteudoDoRelatorio.DeQuadro(quadro));
+    public static string MarkdownDoQuadro(ResultadoDoQuadroDeCargas quadro, BalancoDasFases? fases = null) =>
+        Renderizar(ConteudoDoRelatorio.DeQuadro(quadro, fases));
 
     private static string Renderizar(ConteudoDoRelatorio conteudo)
     {
@@ -73,8 +74,8 @@ public static class RelatorioDeMemoria
 
     /// <summary>O quadro de cargas em PDF, com o identificador da memória como Assunto.</summary>
     /// <exception cref="InvalidOperationException">Quadro incompleto (sem memória) não gera relatório.</exception>
-    public static byte[] PdfDoQuadro(ResultadoDoQuadroDeCargas quadro) =>
-        PdfDoRelatorio.Gerar(ConteudoDoRelatorio.DeQuadro(quadro), quadro.Memoria!.Hash());
+    public static byte[] PdfDoQuadro(ResultadoDoQuadroDeCargas quadro, BalancoDasFases? fases = null) =>
+        PdfDoRelatorio.Gerar(ConteudoDoRelatorio.DeQuadro(quadro, fases), quadro.Memoria!.Hash());
 
     // Barra invertida antes de todo caractere que o Markdown pode interpretar. O sublinhado entre letras ou dígitos
     // (TODO_NORMA, AMP_TipoCarga) não abre ênfase e fica como está, para o texto continuar pesquisável.

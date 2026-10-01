@@ -206,6 +206,25 @@ public class QuadroDeCargasDoProjeto_Teste
         await Assert.That(string.Join("\n", resultado.Problemas)).Contains("esquema desconhecido '2F+N'");
     }
 
+    [Test]
+    public async Task Cargas_por_fase_acompanham_o_quadro_com_as_fases_dos_circuitos()
+    {
+        var quadro = new QuadroLido(10, "QD1",
+        [
+            new CircuitoLido(101, "IL-01", "Iluminação", 600m, "F+N", 127m, ["A"]),
+            new CircuitoLido(102, "TUE-01", "TUE", 2000m, "2F", 220m, ["B", "C"]),
+            new CircuitoLido(103, "X-01", null, 100m, "F+N", 127m, ["A"])
+        ], new AlimentacaoDoQuadro("3F+N", 220m, "teste", ["A", "B", "C"]));
+
+        var resultado = QuadroDeCargasDoProjeto.Executar(new DocumentoDeQuadrosFalso([quadro]), Ficticio)[0];
+
+        // Fictício: Iluminação 0,8 e TUE 1 → A = 480 VA; B = C = 1000 VA. X-01 está fora do quadro (sem tipo).
+        var fases = resultado.Fases!;
+        await Assert.That(string.Join("|", fases.Fases.Select(fase => $"{fase.Fase}:{fase.DemandaVA:0.##}"))).IsEqualTo("A:480|B:1000|C:1000");
+        await Assert.That(fases.FaseMaisCarregada).IsEqualTo("B");
+        await Assert.That(fases.DesequilibrioPct).IsEqualTo(52m);
+    }
+
     private sealed class DocumentoDeQuadrosFalso(IReadOnlyList<QuadroLido> quadros) : IDocumentoDeQuadros
     {
         public List<string> Chamadas { get; } = [];

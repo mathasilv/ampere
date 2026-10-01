@@ -39,13 +39,15 @@ internal sealed record ConteudoDoRelatorio(
 
     /// <summary>Relatório do quadro de cargas: os circuitos e os totais antes dos passos da memória.</summary>
     /// <exception cref="InvalidOperationException">Quadro incompleto (sem memória) não gera relatório.</exception>
-    public static ConteudoDoRelatorio DeQuadro(ResultadoDoQuadroDeCargas quadro)
+    /// <param name="fases">Cargas por fase (indicador, fora da memória): seção própria antes das pendências.</param>
+    public static ConteudoDoRelatorio DeQuadro(ResultadoDoQuadroDeCargas quadro, BalancoDasFases? fases = null)
     {
         if (quadro.Memoria is not { } memoria)
             throw new InvalidOperationException($"O quadro {quadro.Nome} está incompleto (sem fator para algum tipo): relatório só de quadro montado.");
 
         var campos = quadro.Linhas.Select(LinhaDoQuadro).Append(new Campo("Total do quadro", TotalDoQuadro(quadro))).ToList();
         var abertura = new List<SecaoDePasso> { new("Circuitos do quadro", campos) };
+        if (fases is not null) abertura.Add(new SecaoDePasso("Cargas por fase", CamposDasFases(fases)));
         if (quadro.Problemas.Count > 0)
             abertura.Add(new SecaoDePasso("Pendências", quadro.Problemas.Select(problema => new Campo("Aviso", problema)).ToList()));
         return Montar(memoria, null, $"Memória de cálculo — quadro {quadro.Nome}", abertura);
@@ -86,6 +88,22 @@ internal sealed record ConteudoDoRelatorio(
         new($"{linha.Numero} ({CodigosDeTipoDeCarga.Codigo(linha.Tipo)})", linha.DemandaVA is { } demanda
             ? $"instalada {Quantidade(linha.PotenciaInstaladaVA, "VA")} · fd {Quantidade(linha.Fator!.Value, string.Empty)} · demanda {Quantidade(demanda, "VA")}"
             : $"instalada {Quantidade(linha.PotenciaInstaladaVA, "VA")} · sem fator");
+
+    private static List<Campo> CamposDasFases(BalancoDasFases balanco)
+    {
+        var campos = balanco.Fases
+            .Select(fase => new Campo($"Fase {fase.Fase}",
+                $"instalada {Quantidade(fase.PotenciaInstaladaVA, "VA")}"
+                + (fase.DemandaVA is { } demanda ? $" · demanda {Quantidade(demanda, "VA")}" : string.Empty)
+                + (fase.CorrenteA is { } corrente ? $" · corrente {Quantidade(corrente, "A")}" : string.Empty)))
+            .ToList();
+        campos.Add(new Campo("Desequilíbrio",
+            $"{Quantidade(balanco.DesequilibrioPct, "%")} = (maior − menor) / maior, pela {(balanco.PelaDemanda ? "demanda" : "potência instalada")}; " +
+            $"fase mais carregada: {balanco.FaseMaisCarregada}. Indicador para distribuir os circuitos: a NBR 5410 não fixa limite"));
+        if (balanco.CircuitosSemFase.Count > 0)
+            campos.Add(new Campo("Sem fase identificada (fora da conta)", string.Join(", ", balanco.CircuitosSemFase)));
+        return campos;
+    }
 
     private static string TotalDoQuadro(ResultadoDoQuadroDeCargas quadro)
     {

@@ -37,6 +37,15 @@ internal static class ResumoDeQuadros
                 {
                     texto.AppendLine("   Demanda: incompleta (sem fator para algum tipo)");
                 }
+
+                if (resultado.Fases is { } fases)
+                {
+                    var cargas = string.Join(" · ", fases.Fases.Select(fase =>
+                        $"{fase.Fase} {NumeroEmTexto.FormatarParaLeitura(fases.PelaDemanda ? fase.DemandaVA!.Value : fase.PotenciaInstaladaVA)} VA"
+                        + (fase.CorrenteA is { } corrente ? $" ({NumeroEmTexto.FormatarParaLeitura(corrente)} A)" : string.Empty)));
+                    texto.AppendLine($"   Fases ({(fases.PelaDemanda ? "demanda" : "instalada")}): {cargas} · desequilíbrio {NumeroEmTexto.FormatarParaLeitura(fases.DesequilibrioPct)}%");
+                    if (fases.CircuitosSemFase.Count > 0) texto.AppendLine($"   Sem fase identificada: {string.Join(", ", fases.CircuitosSemFase)}");
+                }
             }
         }
 

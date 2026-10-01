@@ -26,12 +26,12 @@ internal static class RelatoriosDosQuadros
             {
                 var memoria = resultado.Quadro.Memoria!;
                 var baseNome = $"{PastaDeRelatorios.NomeDeArquivo(resultado.Nome)}-{PastaDeRelatorios.Prefixo(memoria.Hash())}";
-                var pdf = pdfDisponivel ? RelatorioEmPdf.Gerar(() => RelatorioDeMemoria.PdfDoQuadro(resultado.Quadro), erros) : null;
+                var pdf = pdfDisponivel ? RelatorioEmPdf.Gerar(() => RelatorioDeMemoria.PdfDoQuadro(resultado.Quadro, resultado.Fases), erros) : null;
                 pdfDisponivel = pdf is not null;
                 try
                 {
                     File.WriteAllText(Path.Combine(pasta, baseNome + ".json"), memoria.JsonCanonico(), new UTF8Encoding(false));
-                    File.WriteAllText(Path.Combine(pasta, baseNome + ".md"), RelatorioDeMemoria.MarkdownDoQuadro(resultado.Quadro), new UTF8Encoding(false));
+                    File.WriteAllText(Path.Combine(pasta, baseNome + ".md"), RelatorioDeMemoria.MarkdownDoQuadro(resultado.Quadro, resultado.Fases), new UTF8Encoding(false));
                     if (pdf is not null) File.WriteAllBytes(Path.Combine(pasta, baseNome + ".pdf"), pdf);
                     gerados++;
                 }

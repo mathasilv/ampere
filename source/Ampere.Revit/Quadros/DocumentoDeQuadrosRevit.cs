@@ -146,8 +146,10 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
         return campo;
     }
 
-    public IReadOnlyList<QuadroLido> LerQuadrosComCircuitos() =>
-        new FilteredElementCollector(documento)
+    public IReadOnlyList<QuadroLido> LerQuadrosComCircuitos()
+    {
+        var rotulos = RotulosDasFases();
+        return new FilteredElementCollector(documento)
             .OfCategory(BuiltInCategory.OST_ElectricalEquipment)
             .OfClass(typeof(FamilyInstance))
             .Cast<FamilyInstance>()
@@ -156,13 +158,46 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
             .Select(par => new QuadroLido(
                 par.Painel.Id.Value,
                 NomeDoPainel(par.Painel),
-                par.Sistemas.Select(LerCircuito).ToList(),
-                Alimentacao(par.Painel)))
+                par.Sistemas.Select(sistema => LerCircuito(sistema) with { FasesNoQuadro = FasesNoQuadro(sistema, rotulos) }).ToList(),
+                Alimentacao(par.Painel, rotulos)))
             .ToList();
+    }
+
+    // Rótulos das fases nas configurações elétricas do projeto (padrão A, B, C; no Brasil, às vezes R, S, T).
+    private string[] RotulosDasFases()
+    {
+        var configuracao = ElectricalSetting.GetElectricalSettings(documento);
+        return new[] { configuracao.CircuitNamePhaseA, configuracao.CircuitNamePhaseB, configuracao.CircuitNamePhaseC }
+            .Select(rotulo => rotulo?.Trim() ?? string.Empty)
+            .Where(rotulo => rotulo.Length > 0)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+    }
+
+    // Fases do circuito pelo rótulo que o Revit dá a ele no quadro (ex.: "A", "A,B"), conferido com o número de polos:
+    // rótulo que não bate com os polos fica sem fase (o Core lista o circuito como não identificado), nunca adivinhado.
+    private static IReadOnlyList<string>? FasesNoQuadro(ElectricalSystem sistema, string[] rotulos)
+    {
+        string? rotulo;
+        int polos;
+        try
+        {
+            rotulo = sistema.PhaseLabel;
+            polos = sistema.PolesNumber;
+        }
+        catch (Autodesk.Revit.Exceptions.ApplicationException)
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(rotulo) || rotulos.Length < 3) return null;
+        var fases = rotulos.Where(fase => rotulo.Contains(fase, StringComparison.Ordinal)).ToList();
+        return fases.Count == polos ? fases : null;
+    }
 
     // Sistema de distribuição atribuído ao quadro: fases, fios e tensões. Tensão pelo parâmetro do VoltageType, em unidades
     // internas convertidas (como as demais leituras do adapter). Sem sistema, o Core usa o esquema comum dos circuitos.
-    private AlimentacaoDoQuadro? Alimentacao(FamilyInstance painel)
+    private AlimentacaoDoQuadro? Alimentacao(FamilyInstance painel, string[] rotulos)
     {
         if (painel.get_Parameter(BuiltInParameter.RBS_FAMILY_CONTENT_DISTRIBUTION_SYSTEM)?.AsElementId() is not { } id
             || documento.GetElement(id) is not DistributionSysType sistema)
@@ -176,9 +211,11 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
             ElectricalPhase.SinglePhase => sistema.NumWires >= 3 ? ("2F+N", linha) : ("F+N", terra ?? linha),
             _ => ((string?)null, (decimal?)null)
         };
-        return esquema is null || tensao is not > 0m
-            ? null
-            : new AlimentacaoDoQuadro(esquema, tensao.Value, $"sistema de distribuição '{sistema.Name}' do quadro");
+        if (esquema is null || tensao is not > 0m) return null;
+
+        var quantas = esquema.StartsWith("3F", StringComparison.Ordinal) ? 3 : esquema.StartsWith("2F", StringComparison.Ordinal) ? 2 : 1;
+        IReadOnlyList<string>? fases = rotulos.Length >= quantas ? rotulos.Take(quantas).ToList() : null;
+        return new AlimentacaoDoQuadro(esquema, tensao.Value, $"sistema de distribuição '{sistema.Name}' do quadro", fases);
     }
 
     private static decimal? Volts(VoltageType? tensao) =>

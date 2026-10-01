@@ -33,16 +33,26 @@ public class ReferenciasDoQuadro_Teste
     [Arguments("quadro-completo")]
     [Arguments("quadro-fator-informado")]
     [Arguments("quadro-2fn-sem-corrente")]
+    [Arguments("quadro-3fn-fases")]
     public async Task Memoria_e_relatorio_do_quadro_iguais_aos_de_referencia(string cenario)
     {
         var quadro = Montar(cenario);
+        var fases = cenario == "quadro-3fn-fases" ? Fases(quadro) : null;
 
         await Conferir($"{cenario}.json", quadro.Memoria!.JsonCanonico());
-        await Conferir($"{cenario}.md", RelatorioDeMemoria.MarkdownDoQuadro(quadro));
-        await Conferir($"{cenario}.pdf.txt", PdfDoRelatorio.Roteiro(ConteudoDoRelatorio.DeQuadro(quadro)));
+        await Conferir($"{cenario}.md", RelatorioDeMemoria.MarkdownDoQuadro(quadro, fases));
+        await Conferir($"{cenario}.pdf.txt", PdfDoRelatorio.Roteiro(ConteudoDoRelatorio.DeQuadro(quadro, fases)));
 
         if (Environment.GetEnvironmentVariable(VariavelDeAmostras) is { Length: > 0 } pasta)
-            await File.WriteAllBytesAsync(Path.Combine(pasta, $"{cenario}.pdf"), RelatorioDeMemoria.PdfDoQuadro(quadro));
+            await File.WriteAllBytesAsync(Path.Combine(pasta, $"{cenario}.pdf"), RelatorioDeMemoria.PdfDoQuadro(quadro, fases));
+    }
+
+    // IL-01 na fase A, IL-02 na B, TUG-01 na C e o chuveiro (2F) em A e B.
+    private static BalancoDasFases Fases(ResultadoDoQuadroDeCargas quadro)
+    {
+        string[][] fases = [["A"], ["B"], ["C"], ["A", "B"]];
+        return CargasPorFase.Calcular(["A", "B", "C"], CargasPorFase.FaseNeutro(quadro.Esquema, quadro.TensaoV),
+            quadro.Linhas.Select((linha, indice) => new CircuitoNasFases(linha.Numero, linha.PotenciaInstaladaVA, linha.DemandaVA, fases[indice])).ToList())!;
     }
 
     private static ResultadoDoQuadroDeCargas Montar(string cenario) => cenario switch
@@ -51,6 +61,7 @@ public class ReferenciasDoQuadro_Teste
         "quadro-fator-informado" => QuadroDeCargas.Montar("QD-02", "F+N", 127m, Circuitos, Ficticio,
             new Dictionary<TipoDeCarga, decimal> { [TipoDeCarga.Iluminacao] = 1m }),
         "quadro-2fn-sem-corrente" => QuadroDeCargas.Montar("QD-03", "2F+N", 220m, Circuitos, Ficticio),
+        "quadro-3fn-fases" => QuadroDeCargas.Montar("QD-04", "3F+N", 220m, Circuitos, Ficticio, null, "sistema de distribuição '220/127 Y' do quadro"),
         _ => throw new ArgumentOutOfRangeException(nameof(cenario), cenario, "cenário sem definição")
     };
 

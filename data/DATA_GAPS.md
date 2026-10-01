@@ -124,8 +124,14 @@ Resolvido (decisões do usuário):
   quadro de cargas ainda não calcula). Antes, vinham dos circuitos e precisavam ser uniformes: o quadro residencial
   típico (TUG e iluminação F+N 127 V com chuveiro 2F 220 V) ficava sem corrente de demanda. Circuito cuja tensão ou
   esquema a alimentação não fornece (ex.: F+N 220 V num quadro 220/127 V; folga de 2% para 380/220 V) é problema
-  apontado. Sem sistema de distribuição, vale a regra antiga (esquema comum dos circuitos). A corrente de demanda segue
-  equilibrada (D / √3·V); cargas por fase e desequilíbrio ficam para a próxima etapa.
+  apontado. Sem sistema de distribuição, vale a regra antiga (esquema comum dos circuitos). A corrente de demanda da
+  memória segue equilibrada (D / √3·V).
+- ✅ Cargas por fase (01/10/2026): cada circuito ocupa as fases que o Revit lhe dá no quadro (`PhaseLabel`, com os
+  rótulos das configurações elétricas, conferido com o número de polos — rótulo que não bate fica "sem fase
+  identificada"); a carga dele se divide igualmente entre elas. Por fase: instalada, demanda e corrente (fase-neutro);
+  desequilíbrio = (maior − menor) / maior. É **indicador**, fora da memória de cálculo: a NBR 5410 não fixa limite.
+  Aparece no resumo e numa seção do relatório do quadro. A validar no Revit: o formato do `PhaseLabel` (teste de
+  integração do quadro).
 
 Comportamento do modelo a validar pelo projetista:
 

@@ -10,7 +10,9 @@ namespace Ampere.Core.Quadros;
 /// <param name="PotenciaVA">Soma de AMP_PotenciaInstaladaVA dos membros, se houver.</param>
 /// <param name="Fases">AMP_Fases do primeiro membro que tiver (ex.: "F+N").</param>
 /// <param name="TensaoV">AMP_TensaoCircuitoV do primeiro membro que tiver.</param>
-public sealed record CircuitoLido(long Id, string? Numero, string? Tipo, decimal? PotenciaVA, string? Fases, decimal? TensaoV);
+/// <param name="FasesNoQuadro">Fases do quadro que o circuito ocupa (rótulos do Revit, ex.: A, B); nulo se não identificadas.</param>
+public sealed record CircuitoLido(long Id, string? Numero, string? Tipo, decimal? PotenciaVA, string? Fases, decimal? TensaoV,
+    IReadOnlyList<string>? FasesNoQuadro = null);
 
 /// <summary>Quadro do documento com os seus circuitos lidos.</summary>
 /// <param name="Alimentacao">Alimentação do quadro pelo sistema de distribuição do Revit; nula se o quadro não tem um.</param>
@@ -20,17 +22,28 @@ public sealed record QuadroLido(long Id, string Nome, IReadOnlyList<CircuitoLido
 /// <param name="Esquema">F+N, 2F, 2F+N, 3F ou 3F+N (o quadro de cargas calcula a corrente de F+N, 2F, 3F e 3F+N).</param>
 /// <param name="TensaoV">Tensão de linha (fase-fase); em F+N, a fase-neutro.</param>
 /// <param name="Origem">De onde veio, para a memória (ex.: "sistema de distribuição '220/127 Y' do quadro").</param>
-public sealed record AlimentacaoDoQuadro(string Esquema, decimal TensaoV, string Origem);
+/// <param name="Fases">Rótulos das fases do quadro (ex.: A, B, C), para as cargas por fase; nulo = os que os circuitos ocupam.</param>
+public sealed record AlimentacaoDoQuadro(string Esquema, decimal TensaoV, string Origem, IReadOnlyList<string>? Fases = null)
+{
+    // Igualdade pelo conteúdo da lista de fases (o record compararia a referência).
+    public bool Equals(AlimentacaoDoQuadro? outra) =>
+        outra is not null && Esquema == outra.Esquema && TensaoV == outra.TensaoV && Origem == outra.Origem
+        && (Fases ?? []).SequenceEqual(outra.Fases ?? [], StringComparer.Ordinal);
+
+    public override int GetHashCode() => HashCode.Combine(Esquema, TensaoV, Origem, Fases?.Count ?? 0);
+}
 
 /// <summary>Resultado do quadro de cargas de um quadro do documento.</summary>
 /// <param name="CircuitosDasLinhas">Id do circuito de cada linha de <see cref="ResultadoDoQuadroDeCargas.Linhas" />, na mesma ordem.</param>
 /// <param name="ForaDoQuadro">Circuitos lidos que ficaram fora do quadro (sem tipo ou sem potência), com o motivo nos problemas.</param>
+/// <param name="Fases">Cargas por fase e desequilíbrio (indicador, fora da memória); nulo sem fases conhecidas.</param>
 public sealed record ResultadoDoQuadro(
     long Id,
     string Nome,
     ResultadoDoQuadroDeCargas Quadro,
     IReadOnlyList<long> CircuitosDasLinhas,
-    IReadOnlyList<CircuitoLido> ForaDoQuadro);
+    IReadOnlyList<CircuitoLido> ForaDoQuadro,
+    BalancoDasFases? Fases = null);
 
 /// <summary>
 ///     Uma linha a gravar num circuito: potência instalada, fator aplicado e o quadro em que ele está agora (AMP_Quadro, que
@@ -126,7 +139,8 @@ public static class QuadroDeCargasDoProjeto
                 Compatibilidade(quadro, alimentacao, problemas);
                 var pelaAlimentacao = QuadroDeCargas.Montar(quadro.Nome, alimentacao.Esquema, alimentacao.TensaoV, circuitos, perfil, fatoresInformados, alimentacao.Origem);
                 if (problemas.Count > 0) pelaAlimentacao = pelaAlimentacao with { Problemas = [.. pelaAlimentacao.Problemas, .. problemas] };
-                resultados.Add(new ResultadoDoQuadro(quadro.Id, quadro.Nome, pelaAlimentacao, idsDasLinhas, foraDoQuadro));
+                resultados.Add(new ResultadoDoQuadro(quadro.Id, quadro.Nome, pelaAlimentacao, idsDasLinhas, foraDoQuadro,
+                    Fases(quadro, pelaAlimentacao, idsDasLinhas, alimentacao.Fases)));
                 continue;
             }
 
@@ -158,22 +172,30 @@ public static class QuadroDeCargasDoProjeto
             // Montar devolve uma linha por circuito, na ordem recebida: é assim que os ids acompanham as linhas.
             var montado = QuadroDeCargas.Montar(quadro.Nome, esquema, tensao, circuitos, perfil, fatoresInformados);
             if (problemas.Count > 0) montado = montado with { Problemas = [.. montado.Problemas, .. problemas] };
-            resultados.Add(new ResultadoDoQuadro(quadro.Id, quadro.Nome, montado, idsDasLinhas, foraDoQuadro));
+            resultados.Add(new ResultadoDoQuadro(quadro.Id, quadro.Nome, montado, idsDasLinhas, foraDoQuadro, Fases(quadro, montado, idsDasLinhas, null)));
         }
 
         return resultados;
     }
 
-    // Tensão fase-neutro de um sistema com neutro: a de linha / √3, com folga de 2% para as nominais arredondadas
-    // (380/220 V: 380 / √3 = 219,4 V).
-    private const decimal Raiz3 = 1.7320508075688772935274463415m;
+    // Folga de 2% para as tensões nominais arredondadas (380/220 V: 380 / √3 = 219,4 V).
     private const decimal Folga = 0.02m;
+
+    // Linhas do quadro com as fases que cada circuito ocupa (pelo id, na ordem das linhas).
+    private static BalancoDasFases? Fases(QuadroLido quadro, ResultadoDoQuadroDeCargas montado, IReadOnlyList<long> idsDasLinhas, IReadOnlyList<string>? fasesDoQuadro)
+    {
+        var porId = quadro.Circuitos.ToDictionary(circuito => circuito.Id);
+        var circuitos = montado.Linhas
+            .Select((linha, indice) => new CircuitoNasFases(linha.Numero, linha.PotenciaInstaladaVA, linha.DemandaVA, porId[idsDasLinhas[indice]].FasesNoQuadro))
+            .ToList();
+        return CargasPorFase.Calcular(fasesDoQuadro, montado.TensaoV > 0m ? CargasPorFase.FaseNeutro(montado.Esquema, montado.TensaoV) : null, circuitos);
+    }
 
     /// <summary>Circuito com esquema ou tensão que a alimentação do quadro não fornece vira problema (não para a montagem).</summary>
     private static void Compatibilidade(QuadroLido quadro, AlimentacaoDoQuadro alimentacao, List<string> problemas)
     {
         var comNeutro = alimentacao.Esquema.EndsWith("+N", StringComparison.Ordinal);
-        var faseNeutro = alimentacao.Esquema == "F+N" ? alimentacao.TensaoV : alimentacao.TensaoV / Raiz3;
+        var faseNeutro = CargasPorFase.FaseNeutro(alimentacao.Esquema, alimentacao.TensaoV) ?? 0m;
         var fasesDoQuadro = alimentacao.Esquema.StartsWith("3F", StringComparison.Ordinal) ? 3 : alimentacao.Esquema.StartsWith("2F", StringComparison.Ordinal) ? 2 : 1;
         foreach (var circuito in quadro.Circuitos.Where(circuito => circuito.Fases is { Length: > 0 } && circuito.TensaoV is > 0))
         {
