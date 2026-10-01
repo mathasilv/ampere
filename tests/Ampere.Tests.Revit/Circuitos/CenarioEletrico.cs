@@ -12,12 +12,18 @@ namespace Ampere.Tests.Revit.Circuitos;
 /// <remarks>
 ///     As famílias do template são hospedadas em face (verificado em spike): tudo vai na face externa da parede.
 ///     O quadro vem sem sistema de distribuição e o Revit recusa circuitos nele até que seja definido.
+///     Os pontos vão lado a lado a cada 1,5 pé; passando do fim da parede, recomeçam numa fileira 1,5 pé acima.
 /// </remarks>
 internal sealed class CenarioEletrico
 {
+    private const double InicioX = -95;
+    private const double FimX = 95;
+    private const double Passo = 1.5;
+
     private readonly Reference _face;
     private readonly Level _nivel;
-    private double _proximoX = -95;
+    private double _proximoX = InicioX;
+    private int _fileira;
 
     private CenarioEletrico(Document documento, Wall parede, Reference face, Level nivel, FamilyInstance quadro)
     {
@@ -74,8 +80,12 @@ internal sealed class CenarioEletrico
         var ids = new List<long>();
         for (var indice = 0; indice < quantidade; indice++)
         {
-            ids.Add(Colocar(Documento, _face, _nivel, categoria, filtro, new XYZ(_proximoX, 0, altura)).Id.Value);
-            _proximoX += 1.5;
+            ids.Add(Colocar(Documento, _face, _nivel, categoria, filtro, new XYZ(_proximoX, 0, altura + _fileira * Passo)).Id.Value);
+            _proximoX += Passo;
+            if (_proximoX <= FimX) continue;
+
+            _proximoX = InicioX;
+            _fileira++;
         }
 
         transacao.Commit();

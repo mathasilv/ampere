@@ -58,7 +58,7 @@ public class DimensionamentoDoProjeto_Teste
     }
 
     [Test]
-    public async Task Dados_faltando_sao_todos_relatados_e_nada_e_gravado()
+    public async Task Dados_faltando_sao_todos_relatados_e_o_circuito_tem_os_resultados_anteriores_apagados()
     {
         var circuito = new DadosDoCircuito(1, null, "Tomada", null, null, null, [new DadosDoPonto(11, null, null, null)]);
         var documento = new DocumentoDeDimensionamentoFalso([circuito]);
@@ -71,7 +71,33 @@ public class DimensionamentoDoProjeto_Teste
         await Assert.That(problemas).Contains("sem AMP_ComprimentoRotaM");
         await Assert.That(problemas).Contains("sem AMP_MetodoInstalacao nem padrão do projeto");
         await Assert.That(problemas).Contains("ponto 11 sem AMP_PotenciaInstaladaVA");
-        await Assert.That(documento.Chamadas).IsEquivalentTo(["ler:1"], CollectionOrdering.Matching);
+        await Assert.That(resultado.Memoria).IsNull();
+        await Assert.That(documento.Chamadas).IsEquivalentTo(
+            ["ler:1", "transacao:" + DimensionamentoDoProjeto.NomeDaTransacao, "gravar:1"], CollectionOrdering.Matching);
+        await Assert.That(documento.Gravados.Single().Memoria).IsNull();
+    }
+
+    [Test]
+    public async Task Sem_circuitos_nada_e_gravado()
+    {
+        var documento = new DocumentoDeDimensionamentoFalso([]);
+
+        var resultados = DimensionamentoDoProjeto.Executar([], Condicoes, Ficticio, Catalogos, documento);
+
+        await Assert.That(resultados).IsEmpty();
+        await Assert.That(documento.Chamadas).IsEquivalentTo(["ler:0"], CollectionOrdering.Matching);
+    }
+
+    [Test]
+    public async Task Quadro_do_circuito_acompanha_o_resultado()
+    {
+        var circuito = Circuito(1, "TUG-01", "TUG", Ponto(11, 1270m)) with { Quadro = "QD1" };
+        var semDados = circuito with { Id = 2, Numero = null };
+
+        var resultados = DimensionamentoDoProjeto.Executar([1, 2], Condicoes, Ficticio, Catalogos, new DocumentoDeDimensionamentoFalso([circuito, semDados]));
+
+        await Assert.That(string.Join("|", resultados.Select(resultado => resultado.Quadro))).IsEqualTo("QD1|QD1");
+        await Assert.That(resultados[0].Memoria).IsNotNull();
     }
 
     [Test]
@@ -227,6 +253,12 @@ public class DimensionamentoDoProjeto_Teste
             return circuitos.Where(circuito => ids.Contains(circuito.Id)).ToList();
         }
 
-        public void GravarResultados(IReadOnlyList<ResultadoDoCircuito> resultados) => Chamadas.Add($"gravar:{resultados.Count}");
+        public List<ResultadoDoCircuito> Gravados { get; } = [];
+
+        public void GravarResultados(IReadOnlyList<ResultadoDoCircuito> resultados)
+        {
+            Chamadas.Add($"gravar:{resultados.Count}");
+            Gravados.AddRange(resultados);
+        }
     }
 }

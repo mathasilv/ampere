@@ -1,4 +1,5 @@
 using Ampere.Core.Catalogos;
+using Ampere.Core.Memoria;
 using Ampere.Core.Normas;
 
 namespace Ampere.Core.Dimensionamento;
@@ -11,21 +12,31 @@ public interface IDocumentoDeDimensionamento : IDocumentoTransacional
     /// <summary>Valores AMP_* dos circuitos e dos seus pontos.</summary>
     IReadOnlyList<DadosDoCircuito> LerCircuitos(IReadOnlyCollection<long> ids);
 
-    /// <summary>Grava os resultados (AMP_* e o hash da memória) nos circuitos.</summary>
+    /// <summary>
+    ///     Grava os resultados (AMP_* e o hash da memória) nos circuitos. Valor não calculado apaga o da rodada anterior —
+    ///     inclusive todos os resultados de circuito sem memória (dados faltando ou entrada inválida).
+    /// </summary>
     void GravarResultados(IReadOnlyList<ResultadoDoCircuito> resultados);
 }
 
 /// <summary>Resultado de um circuito: o dimensionamento, ou os problemas de dados que o impediram.</summary>
+/// <param name="Quadro">AMP_Quadro do circuito (para relatórios e resumo).</param>
 public sealed record ResultadoDoCircuito(
     long Id,
     string? Numero,
     ResultadoDoDimensionamento? Dimensionamento,
-    IReadOnlyList<string> ProblemasDeDados);
+    IReadOnlyList<string> ProblemasDeDados,
+    string? Quadro = null)
+{
+    /// <summary>A memória a gravar, se o circuito chegou a ser calculado.</summary>
+    public MemoriaDeCalculo? Memoria => Dimensionamento?.Memoria;
+}
 
 /// <summary>
-///     Caso de uso "Dimensionar circuitos": lê os circuitos, dimensiona cada um contra o perfil e grava tudo o que tem
-///     memória numa única transação — um único desfazer. Circuito com dados faltando não é gravado; circuito
-///     interrompido por falta de dado normativo é gravado, e a memória mostra onde parou.
+///     Caso de uso "Dimensionar circuitos": lê os circuitos, dimensiona cada um contra o perfil e grava todos numa única
+///     transação — um único desfazer. Circuito interrompido por falta de dado normativo é gravado até onde chegou, e a
+///     memória mostra onde parou; circuito com dados faltando não tem memória e fica com os resultados apagados — depois
+///     do comando, nenhum circuito mostra resultado de uma rodada anterior.
 /// </summary>
 public static class DimensionamentoDoProjeto
 {
@@ -44,13 +55,12 @@ public static class DimensionamentoDoProjeto
             {
                 var montada = EntradaDoCircuito.Montar(dados, condicoes);
                 return montada.Entrada is null
-                    ? new ResultadoDoCircuito(dados.Id, dados.Numero, null, montada.Problemas)
-                    : new ResultadoDoCircuito(dados.Id, dados.Numero, DimensionamentoDeCircuito.Dimensionar(montada.Entrada, perfil, catalogos), []);
+                    ? new ResultadoDoCircuito(dados.Id, dados.Numero, null, montada.Problemas, dados.Quadro)
+                    : new ResultadoDoCircuito(dados.Id, dados.Numero, DimensionamentoDeCircuito.Dimensionar(montada.Entrada, perfil, catalogos), [], dados.Quadro);
             })
             .ToList();
 
-        var gravaveis = resultados.Where(resultado => resultado.Dimensionamento?.Memoria is not null).ToList();
-        if (gravaveis.Count > 0) documento.EmUmaTransacao(NomeDaTransacao, () => documento.GravarResultados(gravaveis));
+        if (resultados.Count > 0) documento.EmUmaTransacao(NomeDaTransacao, () => documento.GravarResultados(resultados));
 
         return resultados;
     }

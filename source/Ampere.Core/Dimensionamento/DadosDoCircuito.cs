@@ -22,6 +22,7 @@ public sealed record ComprimentoDoRevit(decimal Metros, string Caminho);
 /// <param name="TipoDeCondutor">AMP_TipoCondutor.</param>
 /// <param name="IdrDoProjetista">Decisão do projetista sobre o IDR do circuito, se houver.</param>
 /// <param name="ComprimentoNoRevit">Comprimento calculado pelo Revit, usado quando AMP_ComprimentoRotaM está vazio.</param>
+/// <param name="Quadro">AMP_Quadro do circuito (só para identificar o circuito nos relatórios e no resumo).</param>
 public sealed record DadosDoCircuito(
     long Id,
     string? Numero,
@@ -32,7 +33,8 @@ public sealed record DadosDoCircuito(
     IReadOnlyList<DadosDoPonto> Pontos,
     string? TipoDeCondutor = null,
     DecisaoDeIdr? IdrDoProjetista = null,
-    ComprimentoDoRevit? ComprimentoNoRevit = null);
+    ComprimentoDoRevit? ComprimentoNoRevit = null,
+    string? Quadro = null);
 
 /// <summary>
 ///     Condições do projeto que não são parâmetros do circuito, informadas pelo projetista.

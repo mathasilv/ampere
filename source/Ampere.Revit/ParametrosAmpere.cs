@@ -17,6 +17,22 @@ internal static class ParametrosAmpere
     public static readonly DefinicaoDeParametro FatorDemanda = Definicao("AMP_FatorDemanda");
     public static readonly DefinicaoDeParametro MemoriaCalculoId = Definicao("AMP_MemoriaCalculoId");
     public static readonly DefinicaoDeParametro Local = Definicao("AMP_Local");
+    public static readonly DefinicaoDeParametro ComprimentoRotaM = Definicao("AMP_ComprimentoRotaM");
+    public static readonly DefinicaoDeParametro MetodoInstalacao = Definicao("AMP_MetodoInstalacao");
+    public static readonly DefinicaoDeParametro MaterialIsolacao = Definicao("AMP_MaterialIsolacao");
+    public static readonly DefinicaoDeParametro TipoCondutor = Definicao("AMP_TipoCondutor");
+    public static readonly DefinicaoDeParametro CorrenteProjetoA = Definicao("AMP_CorrenteProjetoA");
+    public static readonly DefinicaoDeParametro BitolaCondutorMm2 = Definicao("AMP_BitolaCondutorMm2");
+    public static readonly DefinicaoDeParametro CapacidadeConducaoA = Definicao("AMP_CapacidadeConducaoA");
+    public static readonly DefinicaoDeParametro FCA = Definicao("AMP_FCA");
+    public static readonly DefinicaoDeParametro FCT = Definicao("AMP_FCT");
+    public static readonly DefinicaoDeParametro DisjuntorNominalA = Definicao("AMP_DisjuntorNominalA");
+    public static readonly DefinicaoDeParametro IdrNominalA = Definicao("AMP_IDR_NominalA");
+    public static readonly DefinicaoDeParametro IdrSensibilidadeMa = Definicao("AMP_IDR_SensibilidadeMa");
+    public static readonly DefinicaoDeParametro QuedaTensaoPct = Definicao("AMP_QuedaTensaoPct");
+    public static readonly DefinicaoDeParametro EletrodutoTipo = Definicao("AMP_EletrodutoTipo");
+    public static readonly DefinicaoDeParametro OcupacaoEletrodutoPct = Definicao("AMP_OcupacaoEletrodutoPct");
+    public static readonly DefinicaoDeParametro PerfilNorma = Definicao("AMP_PerfilNorma");
 
     /// <summary>O parâmetro existe no documento (a injeção já foi feita)?</summary>
     public static bool Injetado(Document documento, DefinicaoDeParametro definicao) =>
