@@ -3,9 +3,11 @@ using System.Text;
 using System.Windows.Interop;
 using Ampere.Core.Catalogos;
 using Ampere.Core.Normas;
+using Ampere.Core.Previsao;
 using Ampere.Core.Verificacao;
 using Ampere.Relatorios;
 using Ampere.Revit.Alimentadores;
+using Ampere.Revit.Previsao;
 using Ampere.Revit.Quadros;
 using Ampere.Revit.Verificacao;
 using Ampere.ViewModels;
@@ -52,7 +54,7 @@ public class VerificarProjetoCommand : ExternalCommand
         try
         {
             relatorio = VerificacaoDoProjeto.Executar(porta, PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao, new DocumentoDeQuadrosRevit(documento),
-                new DocumentoDeAlimentadoresRevit(documento));
+                new DocumentoDeAlimentadoresRevit(documento), (new DocumentoDePrevisaoRevit(documento), NormaDePrevisao.NBR5410_2004));
         }
         catch (Exception excecao) when (excecao is InvalidOperationException or Autodesk.Revit.Exceptions.ApplicationException)
         {

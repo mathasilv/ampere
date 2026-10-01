@@ -55,7 +55,7 @@ public class Application : ExternalApplication
         dimensionamento.AddPushButton<VerificarProjetoCommand>("Verificar\nprojeto")
             .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
             .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
-            .SetToolTip("Lista o que falta ou mudou, sem alterar o modelo: pontos sem classificação, fora de circuito ou sem local; circuitos fora do Ampere, com dados faltando, não dimensionados ou com memória desatualizada. Seleciona no modelo os elementos de uma pendência.");
+            .SetToolTip("Lista o que falta ou mudou, sem alterar o modelo: pontos sem classificação, fora de circuito ou sem local; circuitos fora do Ampere, com dados faltando, não dimensionados ou com memória desatualizada; cômodos abaixo da previsão de cargas e circuitos fora da divisão (NBR 5410, 9.5.2 e 9.5.3), depois da 'Previsão de cargas'. Seleciona no modelo os elementos de uma pendência.");
 
         var quadros = Application.CreatePanel("Quadros", "Ampere");
 

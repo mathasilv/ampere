@@ -84,6 +84,9 @@ Use um projeto de teste com arquitetura vinculada ou com ambientes (Rooms/Spaces
    - Mude o comprimento de um circuito: a memória deve aparecer como desatualizada. "Selecionar no modelo" deve
      selecionar o circuito.
    - Mude o `AMP_ComprimentoRotaM` do alimentador: ele deve aparecer em "Alimentadores desatualizados".
+   - Depois da 'Previsão de cargas' (passo 4), um quarto sem tomada suficiente deve aparecer em "Cômodos abaixo da
+     previsão de cargas", e "Selecionar no modelo" deve selecionar os pontos dele. Um ambiente novo, sem categoria,
+     aparece como informação.
 11. **Demanda da entrada.** Escolha "Residências". Com um TUE sem aparelho, o diálogo de erro deve oferecer selecionar o
     ponto no modelo. Com tudo classificado, o resumo traz D e as parcelas (a, b1…), e a memória vai para
     `Documentos\Ampere\{projeto}\Demanda`. Confira uma parcela à mão com a tabela da CT 04/18.

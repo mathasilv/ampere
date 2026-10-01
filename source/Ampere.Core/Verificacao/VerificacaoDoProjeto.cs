@@ -3,6 +3,7 @@ using Ampere.Core.Alimentadores;
 using Ampere.Core.Catalogos;
 using Ampere.Core.Dimensionamento;
 using Ampere.Core.Normas;
+using Ampere.Core.Previsao;
 using Ampere.Core.Quadros;
 
 namespace Ampere.Core.Verificacao;
@@ -143,12 +144,19 @@ public static class VerificacaoDoProjeto
     public const string AlimentadoresNaoDimensionados = "Alimentadores não dimensionados";
     public const string AlimentadoresDesatualizados = "Alimentadores desatualizados";
     public const string AlimentadoresSemCalculo = "Alimentadores que o Ampere não dimensiona assim";
+    public const string ComodosAbaixoDaPrevisao = "Cômodos abaixo da previsão de cargas";
+    public const string CircuitosForaDaDivisao = "Circuitos fora da divisão da instalação";
+    public const string ComodosSemCategoria = "Cômodos sem categoria na previsão de cargas";
 
     /// <param name="quadros">Os quadros, para conferir o quadro de cargas de cada um; nulo = não conferir.</param>
     /// <param name="alimentadores">Os alimentadores dos quadros, para conferir cada um (exige <paramref name="quadros" />); nulo = não conferir.</param>
+    /// <param name="previsao">
+    ///     Os cômodos e as categorias da previsão de cargas, para conferir a previsão mínima e a divisão dos circuitos; nulo = não
+    ///     conferir. Projeto sem categoria guardada (a previsão nunca foi feita) também não é conferido.
+    /// </param>
     public static RelatorioDeVerificacao Executar(
         IDocumentoDeVerificacao documento, PerfilNormativo perfil, CatalogosDeProduto catalogos, IDocumentoDeQuadros? quadros = null,
-        IDocumentoDeAlimentadores? alimentadores = null)
+        IDocumentoDeAlimentadores? alimentadores = null, (IDocumentoDePrevisao Documento, NormaDePrevisao Norma)? previsao = null)
     {
         var pendencias = new List<Pendencia>();
         var pontos = documento.LerPontos();
@@ -166,6 +174,7 @@ public static class VerificacaoDoProjeto
             documento.LerResultados(dados.Keys.ToList()), perfil, catalogos, pendencias);
         if (quadros is not null) conferidas &= Quadros(quadros, perfil, pendencias);
         if (quadros is not null && alimentadores is not null) Alimentadores(alimentadores, quadros, perfil, catalogos, pendencias);
+        if (previsao is { } daPrevisao) Previsao(daPrevisao.Documento, daPrevisao.Norma, pendencias);
 
         var ordenadas = pendencias
             .OrderBy(pendencia => pendencia.Gravidade)
@@ -179,8 +188,42 @@ public static class VerificacaoDoProjeto
     [
         PontosSemClassificacao, PontosForaDeCircuito, PontosSemLocal, PontosSemAparelho, CircuitosForaDoAmpere, CircuitosComDadosFaltando,
         CircuitosNaoDimensionados, MemoriasDesatualizadas, ResultadosEditados, QuadrosNaoMontados, QuadrosDesatualizados, AlimentadoresNaoDimensionados,
-        AlimentadoresDesatualizados, AvisosDoDimensionamento, CondicoesNaoGuardadas, CalculoInterrompido, AlimentadoresSemCalculo
+        AlimentadoresDesatualizados, ComodosAbaixoDaPrevisao, CircuitosForaDaDivisao, AvisosDoDimensionamento, CondicoesNaoGuardadas, CalculoInterrompido,
+        AlimentadoresSemCalculo, ComodosSemCategoria
     ];
+
+    // A previsão de cargas (9.5.2 e 9.5.3) com as categorias guardadas pelo comando: cada cômodo que não atende e cada
+    // circuito fora da divisão, com os pontos para selecionar; cômodo novo, sem categoria, como informação.
+    private static void Previsao(IDocumentoDePrevisao documento, NormaDePrevisao norma, List<Pendencia> pendencias)
+    {
+        var categorias = documento.LerCategorias();
+        if (categorias.Count == 0) return;
+
+        var resultado = PrevisaoDeCargas.Avaliar(documento.Ler(), categorias, norma);
+        foreach (var avaliacao in resultado.Comodos.Where(avaliacao => avaliacao.Situacao == SituacaoDoComodo.NaoAtende))
+        {
+            pendencias.Add(new Pendencia(GravidadeDaPendencia.Aviso, ComodosAbaixoDaPrevisao,
+                $"{Identificacao(avaliacao.Comodo)}: {string.Join("; ", avaliacao.Faltas)}", avaliacao.Comodo.Pontos.Select(ponto => ponto.Id).ToList()));
+        }
+
+        foreach (var falta in resultado.Divisao)
+            pendencias.Add(new Pendencia(GravidadeDaPendencia.Aviso, CircuitosForaDaDivisao, $"{falta.Circuito}: {falta.Descricao}", falta.Pontos));
+
+        var semCategoria = resultado.Comodos.Where(avaliacao => avaliacao.Situacao == SituacaoDoComodo.SemCategoria).ToList();
+        if (semCategoria.Count > 0)
+        {
+            var nomes = semCategoria.Select(avaliacao => avaliacao.Comodo.Nome).Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.Ordinal).ToList();
+            pendencias.Add(new Pendencia(GravidadeDaPendencia.Informacao, ComodosSemCategoria,
+                $"{semCategoria.Count} cômodo(s) sem categoria ({string.Join(", ", nomes)}): rode a 'Previsão de cargas' para escolher (ou marque como fora da habitação)",
+                semCategoria.SelectMany(avaliacao => avaliacao.Comodo.Pontos.Select(ponto => ponto.Id)).ToList()));
+        }
+    }
+
+    private static string Identificacao(ComodoDoProjeto comodo)
+    {
+        var detalhes = new[] { comodo.Numero, comodo.Pavimento, comodo.Unidade is "modelo" ? null : comodo.Unidade }.Where(parte => !string.IsNullOrWhiteSpace(parte));
+        return detalhes.Any() ? $"{comodo.Nome} ({string.Join(", ", detalhes)})" : comodo.Nome;
+    }
 
     // Cada quadro de cargas é refeito com os fatores guardados na montagem e comparado com o hash gravado no quadro.
     // Devolve se todos os quadros montados puderam ser conferidos.

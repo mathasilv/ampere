@@ -2,6 +2,7 @@ using Ampere.Core.Cargas;
 using Ampere.Core.Catalogos;
 using Ampere.Core.Dimensionamento;
 using Ampere.Core.Normas;
+using Ampere.Core.Previsao;
 using Ampere.Core.Quadros;
 using Ampere.Core.Verificacao;
 using Ampere.Tests.Core.Catalogos;
@@ -279,6 +280,46 @@ public class VerificacaoDoProjeto_Teste
     }
 
     private static RelatorioDeVerificacao Verificar(DocumentoFalso documento) => VerificacaoDoProjeto.Executar(documento, Ficticio, Catalogos);
+
+    [Test]
+    [Property("Fonte", "NBR 5410:2004, itens 9.5.2 e 9.5.3")]
+    public async Task Previsao_de_cargas_entra_so_com_categorias_guardadas()
+    {
+        var documento = Documento(Circuito(1, "TUG-01", Ponto(11)));
+        documento.GravarMemoriasAtuais();
+        // Quarto de 12 m² sem luz, com uma tomada só; a cozinha e a sala no mesmo circuito; o hall sem categoria.
+        var comodos = new[]
+        {
+            new ComodoDoProjeto("q", "Quarto", "3", "Térreo", 12m, 14m, [new PontoDoComodo(21, TipoDeCarga.TUG, 100m)]),
+            new ComodoDoProjeto("c", "Cozinha", null, "Térreo", 9m, 10m,
+                [new PontoDoComodo(31, TipoDeCarga.Iluminacao, 100m), .. Enumerable.Range(32, 3).Select(id => new PontoDoComodo(id, TipoDeCarga.TUG, 600m, 5))]),
+            new ComodoDoProjeto("s", "Sala", null, "Térreo", 9m, 12m,
+                [new PontoDoComodo(41, TipoDeCarga.Iluminacao, 100m), .. Enumerable.Range(42, 3).Select(id => new PontoDoComodo(id, TipoDeCarga.TUG, 100m, 5))]),
+            new ComodoDoProjeto("h", "Hall", null, "Térreo", 3m, 7m, [new PontoDoComodo(51, TipoDeCarga.Iluminacao, 100m)])
+        };
+        var categorias = new Dictionary<string, string> { ["Quarto"] = "Sala ou dormitório", ["Cozinha"] = "Cozinha, copa, área de serviço ou lavanderia", ["Sala"] = "Sala ou dormitório" };
+
+        var comPrevisao = VerificacaoDoProjeto.Executar(documento, Ficticio, Catalogos, previsao: (new PrevisaoFalsa(comodos, categorias), NormaDePrevisao.NBR5410_2004));
+        var semCategorias = VerificacaoDoProjeto.Executar(documento, Ficticio, Catalogos,
+            previsao: (new PrevisaoFalsa(comodos, new Dictionary<string, string>()), NormaDePrevisao.NBR5410_2004));
+
+        await Assert.That(Grupos(comPrevisao)).IsEqualTo(string.Join("\n",
+            $"Aviso|{VerificacaoDoProjeto.ComodosAbaixoDaPrevisao}|21", $"Aviso|{VerificacaoDoProjeto.CircuitosForaDaDivisao}|42;43;44",
+            $"Informacao|{VerificacaoDoProjeto.ComodosSemCategoria}|51"));
+        await Assert.That(comPrevisao.Pendencias[0].Descricao).StartsWith("Quarto (3, Térreo): 0 pontos de luz, abaixo do mínimo de 1");
+        await Assert.That(semCategorias.Pendencias).IsEmpty();
+    }
+
+    private sealed class PrevisaoFalsa(IReadOnlyList<ComodoDoProjeto> comodos, IReadOnlyDictionary<string, string> categorias) : IDocumentoDePrevisao
+    {
+        public void EmUmaTransacao(string nome, Action acao) => throw new InvalidOperationException("a verificação não grava");
+
+        public LeituraDaPrevisao Ler() => new(comodos, [], new Dictionary<long, string> { [5] = "QD1-TUG-05" });
+
+        public IReadOnlyDictionary<string, string> LerCategorias() => categorias;
+
+        public string? GravarCategorias(IReadOnlyDictionary<string, string> categoriaPorNome) => throw new InvalidOperationException("a verificação não grava");
+    }
 
     private static string Grupos(RelatorioDeVerificacao relatorio) =>
         string.Join("\n", relatorio.Pendencias.Select(pendencia => $"{pendencia.Gravidade}|{pendencia.Grupo}|{string.Join(";", pendencia.Elementos)}"));
