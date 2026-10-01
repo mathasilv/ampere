@@ -32,7 +32,7 @@ public class DimensionamentoDoProjeto_Teste
 
         await Assert.That(resultados.Select(resultado => resultado.Dimensionamento!.Memoria!.Hash()).Distinct().Count()).IsEqualTo(10);
         await Assert.That(documento.Chamadas).IsEquivalentTo(
-            ["ler:10", "transacao:" + DimensionamentoDoProjeto.NomeDaTransacao, "gravar:10"], CollectionOrdering.Matching);
+            ["ler:10", "transacao:" + DimensionamentoDoProjeto.NomeDaTransacao, "gravar:10", "condicoes"], CollectionOrdering.Matching);
     }
 
     [Test]
@@ -73,8 +73,20 @@ public class DimensionamentoDoProjeto_Teste
         await Assert.That(problemas).Contains("ponto 11 sem AMP_PotenciaInstaladaVA");
         await Assert.That(resultado.Memoria).IsNull();
         await Assert.That(documento.Chamadas).IsEquivalentTo(
-            ["ler:1", "transacao:" + DimensionamentoDoProjeto.NomeDaTransacao, "gravar:1"], CollectionOrdering.Matching);
+            ["ler:1", "transacao:" + DimensionamentoDoProjeto.NomeDaTransacao, "gravar:1", "condicoes"], CollectionOrdering.Matching);
         await Assert.That(documento.Gravados.Single().Memoria).IsNull();
+    }
+
+    [Test]
+    public async Task Condicoes_usadas_ficam_no_documento_na_mesma_transacao()
+    {
+        var documento = new DocumentoDeDimensionamentoFalso([Circuito(1, "TUG-01", "TUG", Ponto(11, 1270m))]);
+
+        DimensionamentoDoProjeto.Executar([1], Condicoes, Ficticio, Catalogos, documento);
+
+        await Assert.That(documento.CondicoesGravadas).IsEqualTo(Condicoes);
+        await Assert.That(documento.Chamadas).IsEquivalentTo(
+            ["ler:1", "transacao:" + DimensionamentoDoProjeto.NomeDaTransacao, "gravar:1", "condicoes"], CollectionOrdering.Matching);
     }
 
     [Test]
@@ -267,7 +279,7 @@ public class DimensionamentoDoProjeto_Teste
         await Assert.That(resultados.All(resultado => resultado.Dimensionamento!.Situacao == SituacaoDoDimensionamento.Interrompido)).IsTrue();
         await Assert.That(resultados.All(resultado => resultado.Dimensionamento!.CorrenteDeProjetoA is not null)).IsTrue();
         await Assert.That(documento.Chamadas).IsEquivalentTo(
-            ["ler:10", "transacao:" + DimensionamentoDoProjeto.NomeDaTransacao, "gravar:10"], CollectionOrdering.Matching);
+            ["ler:10", "transacao:" + DimensionamentoDoProjeto.NomeDaTransacao, "gravar:10", "condicoes"], CollectionOrdering.Matching);
     }
 
     private static List<DadosDoCircuito> DezCircuitos()
@@ -310,6 +322,14 @@ public class DimensionamentoDoProjeto_Teste
         {
             Chamadas.Add($"gravar:{resultados.Count}");
             Gravados.AddRange(resultados);
+        }
+
+        public CondicoesDoProjeto? CondicoesGravadas { get; private set; }
+
+        public void GravarCondicoes(CondicoesDoProjeto condicoes)
+        {
+            Chamadas.Add("condicoes");
+            CondicoesGravadas = condicoes;
         }
     }
 }

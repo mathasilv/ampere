@@ -100,6 +100,12 @@ Resolvido (decisões do usuário):
   circuito selecionado, os circuitos que um quadro selecionado alimenta e o circuito de um ponto selecionado). A
   planilha dessa rodada vai para `circuitos-selecao.csv`, sem trocar a do projeto todo (`circuitos.csv`).
 
+- ✅ Condições do projeto no modelo (01/10/2026, decisão do desenvolvedor): temperatura, agrupamento, material e
+  padrões usados na rodada ficam no documento (Extensible Storage, JSON versionado), na mesma transação dos resultados;
+  o diálogo abre com elas. Quem abrir o projeto depois reproduz as mesmas memórias. Modelo compartilhado com o
+  armazenamento emprestado a outro usuário: o dimensionamento segue e o resumo avisa que as condições não foram
+  guardadas.
+
 Comportamento do modelo a validar pelo projetista:
 
 - Resultado que deixou de ser calculado (IDR que deixou de ser exigido, circuito que perdeu um dado, cálculo que parou

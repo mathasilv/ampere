@@ -9,6 +9,7 @@ using Ampere.Revit.Dimensionamento;
 using Ampere.Tests.Revit.Circuitos;
 using Ampere.Tests.Revit.Parametros;
 using Autodesk.Revit.DB.Electrical;
+using Autodesk.Revit.DB.ExtensibleStorage;
 
 namespace Ampere.Tests.Revit.Dimensionamento;
 
@@ -242,6 +243,26 @@ public sealed class DimensionamentoNoRevit_Teste : TesteComProjetoEletrico
     }
 
     [Test]
+    public async Task Condicoes_da_rodada_ficam_guardadas_no_modelo()
+    {
+        MontarIluminacaoETomadas();
+        var ids = Dimensionamento.ListarCircuitos();
+        var armazensAntes = Armazens();
+        var primeiras = Condicoes with { TemperaturaAmbienteC = 35.5m, CircuitosAgrupados = 2, TipoDeEletroduto = "Eletroduto de teste" };
+
+        await Assert.That(Dimensionamento.LerCondicoes()).IsNull();
+        DimensionamentoDoProjeto.Executar(ids, primeiras, PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao, Dimensionamento);
+        await Assert.That(Dimensionamento.LerCondicoes()).IsEqualTo(primeiras);
+        await Assert.That(Armazens()).IsEqualTo(armazensAntes + 1);
+
+        var porta = Dimensionamento;
+        DimensionamentoDoProjeto.Executar(ids, Condicoes, PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao, porta);
+        await Assert.That(porta.CondicoesNaoGravadas).IsNull();
+        await Assert.That(Dimensionamento.LerCondicoes()).IsEqualTo(Condicoes);
+        await Assert.That(Armazens()).IsEqualTo(armazensAntes + 1);
+    }
+
+    [Test]
     public async Task Dimensiona_400_pontos_em_menos_de_5_segundos()
     {
         var tomadas = Cenario.ColocarTomadas(400);
@@ -314,6 +335,8 @@ public sealed class DimensionamentoNoRevit_Teste : TesteComProjetoEletrico
         if (Texto(circuito, "AMP_PerfilNorma") != PerfilNormativo.NBR5410_2004.Nome) yield return $"{resultado.Numero}: perfil '{Texto(circuito, "AMP_PerfilNorma")}'";
         if (Texto(circuito, "AMP_MemoriaCalculoId") != resultado.Memoria!.Hash()) yield return $"{resultado.Numero}: hash '{Texto(circuito, "AMP_MemoriaCalculoId")}'";
     }
+
+    private int Armazens() => new FilteredElementCollector(Cenario.Documento).OfClass(typeof(DataStorage)).GetElementCount();
 
     private Element Elemento(long id) => Cenario.Documento.GetElement(new ElementId(id));
 

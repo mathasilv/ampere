@@ -85,5 +85,9 @@ public class PlanilhaDeCircuitos_Teste
         public void GravarResultados(IReadOnlyList<ResultadoDoCircuito> resultados)
         {
         }
+
+        public void GravarCondicoes(CondicoesDoProjeto condicoes)
+        {
+        }
     }
 }

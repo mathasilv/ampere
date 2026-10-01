@@ -18,8 +18,9 @@ namespace Ampere.Commands;
 ///     Dimensiona os circuitos do Ampere contra o perfil NBR 5410:2004: corrente de projeto, seção, disjuntor, queda de
 ///     tensão, IDR e eletroduto, com memória de cálculo e as decisões do projetista de cada circuito. Com seleção, só os
 ///     circuitos selecionados (ou os dos quadros e pontos selecionados); sem seleção, todos os do projeto. Grava os
-///     resultados nos circuitos (um único desfazer; o que não foi calculado apaga o valor anterior) e salva as memórias em
-///     Documentos\Ampere\{projeto}\Circuitos.
+///     resultados nos circuitos e as condições usadas no modelo (um único desfazer; o que não foi calculado apaga o valor
+///     anterior) e salva as memórias em Documentos\Ampere\{projeto}\Circuitos. O diálogo abre com as condições guardadas no
+///     modelo.
 /// </summary>
 [UsedImplicitly]
 [Transaction(TransactionMode.Manual)]
@@ -28,7 +29,7 @@ public class DimensionarCircuitosCommand : ExternalCommand
     // O Revit 2027 já prefixa o nome do add-in ("Ampere - ").
     private const string TituloDaJanela = "Dimensionar circuitos";
 
-    // Condições da última rodada nesta sessão do Revit: o diálogo volta preenchido.
+    // Condições da última rodada nesta sessão do Revit: o diálogo volta preenchido quando o projeto ainda não tem as suas.
     private static CondicoesDoProjeto? _ultimasCondicoes;
 
     public override void Execute()
@@ -61,7 +62,8 @@ public class DimensionarCircuitosCommand : ExternalCommand
 
         var perfil = PerfilNormativo.NBR5410_2004;
         var catalogos = CatalogosDeProduto.Padrao;
-        var viewModel = new DimensionamentoViewModel(circuitos.Count, daSelecao, perfil.Vocabulario, catalogos.Condutores.Tipos, catalogos.Eletrodutos.Tipos, _ultimasCondicoes);
+        var viewModel = new DimensionamentoViewModel(circuitos.Count, daSelecao, perfil.Vocabulario, catalogos.Condutores.Tipos, catalogos.Eletrodutos.Tipos,
+            porta.LerCondicoes() ?? _ultimasCondicoes);
         var janela = new DimensionamentoView(viewModel);
         _ = new WindowInteropHelper(janela) { Owner = Application.MainWindowHandle };
         if (janela.ShowDialog() != true || viewModel.Condicoes is not { } condicoes)
@@ -86,7 +88,10 @@ public class DimensionarCircuitosCommand : ExternalCommand
         var (pasta, gerados, planilha, errosDeDisco) = RelatoriosDosCircuitos.Gravar(resultados, Path.GetFileNameWithoutExtension(documento.PathName), daSelecao);
         cronometro.Stop();
 
-        TaskDialog.Show(TituloDaJanela, ResumoDoDimensionamento.Texto(resultados, perfil, cronometro.Elapsed, pasta, gerados, planilha, errosDeDisco));
+        var texto = ResumoDoDimensionamento.Texto(resultados, perfil, cronometro.Elapsed, pasta, gerados, planilha, errosDeDisco);
+        if (porta.CondicoesNaoGravadas is { } motivo)
+            texto += $"{Environment.NewLine}{Environment.NewLine}As condições do projeto não foram guardadas no modelo ({motivo}): na próxima vez, o diálogo não as traz preenchidas.";
+        TaskDialog.Show(TituloDaJanela, texto);
     }
 
     private void Cancelar(string mensagem)

@@ -1,5 +1,6 @@
 using Ampere.Core.Dimensionamento;
 using Ampere.Core.Parametros;
+using Ampere.Revit.Armazenamento;
 using Autodesk.Revit.DB.Electrical;
 
 namespace Ampere.Revit.Dimensionamento;
@@ -19,6 +20,8 @@ namespace Ampere.Revit.Dimensionamento;
 ///         <item>Gravação: só os parâmetros de resultado, nunca as entradas (método, isolação, tipo de condutor,
 ///         comprimento e decisões): o padrão do projeto gravado no circuito viraria "decisão do projetista" na rodada seguinte.
 ///         Valor não calculado apaga o anterior (<see cref="ParametrosAmpere.GravarNumeroOuApagar" />).</item>
+///         <item>Condições do projeto: guardadas no documento (<see cref="CondicoesNoDocumento" />), na transação dos
+///         resultados.</item>
 ///         <item>Proteção (seção, IZ, disjuntor, queda, IDR e eletroduto) só é gravada quando a exigência de IDR foi
 ///         avaliada: sem isso, IDR vazio ao lado de um disjuntor seria lido como "sem IDR". Fica a corrente de projeto, os
 ///         fatores e o hash da memória, que mostra onde o cálculo parou.</item>
@@ -27,6 +30,15 @@ namespace Ampere.Revit.Dimensionamento;
 public sealed class DocumentoDeDimensionamentoRevit(Document documento) : IDocumentoDeDimensionamento
 {
     public void EmUmaTransacao(string nome, Action acao) => TransacaoRevit.Executar(documento, nome, acao);
+
+    /// <summary>Por que as condições não foram guardadas na última rodada (nulo = guardadas, ou nada gravado ainda).</summary>
+    public string? CondicoesNaoGravadas { get; private set; }
+
+    /// <summary>Condições da última rodada guardadas no documento; nulas se não há (ou são de formato desconhecido).</summary>
+    public CondicoesDoProjeto? LerCondicoes() => CondicoesEmJson.Ler(CondicoesNoDocumento.Ler(documento));
+
+    public void GravarCondicoes(CondicoesDoProjeto condicoes) =>
+        CondicoesNaoGravadas = CondicoesNoDocumento.Gravar(documento, CondicoesEmJson.Escrever(condicoes));
 
     /// <summary>Todos os parâmetros do catálogo já estão no documento (a injeção é tudo ou nada)?</summary>
     public bool ParametrosInjetados() =>
