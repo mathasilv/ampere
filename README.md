@@ -18,7 +18,7 @@ Desenvolvimento e testes no Revit 2027; compila também para 2025 e 2026.
 | | Verificar projeto | Lista o que falta ou mudou, sem alterar o modelo, e seleciona os elementos de cada pendência |
 | Quadros | Montar quadro de cargas | Demanda por tipo de carga, cargas por fase e distribuição de fases sugerida |
 | | Dimensionar alimentadores | O circuito que alimenta cada quadro, pela demanda e pela queda que sobra do limite total |
-| | Demanda da entrada | Demanda pela norma da distribuidora (hoje a CELG CT 04/18), com memória |
+| | Demanda da entrada | Demanda pela norma da distribuidora (CELG CT 04/18) e padrão de entrada pela carga instalada (Equatorial NT.00001 rev. 09, Tabelas 1 e 2), com memória |
 | | Diagramas unifilares | Um diagrama por quadro numa vista de desenho, com os valores do dimensionamento |
 
 Relatórios em `Documentos\Ampere\{projeto}`. Roteiro de conferência no Revit: [docs/validacao-no-revit.md](docs/validacao-no-revit.md).

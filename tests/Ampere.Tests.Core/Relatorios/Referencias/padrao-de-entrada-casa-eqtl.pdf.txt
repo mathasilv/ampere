@@ -1,0 +1,98 @@
+== página 1 de 2
+56,7 [Titulo 56,7] Memória de cálculo — padrão de entrada (Equatorial
+74,2 [Titulo 56,7] NT.00001.EQTL rev. 09)
+97,6 [Rotulo 56,7] Documento da distribuidora: [Texto 213,8] Equatorial NT.00001.EQTL rev. 09
+108,7 [Rotulo 56,7] Identificador da memória (não gravado no modelo):
+119,7 [Codigo 56,7] sha256:d8bf256f0bb5e60e2bc613ceb2c8b9571ef0fc898de77445893e21041a8b3830
+130,2 [Rotulo 56,7] Esquema do documento: [Texto 191,8] 1
+141,3 [Rotulo 56,7] Situação: [Texto 109,9] cálculo completo (10 passos)
+160,3 [Nota 56,7] Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O
+170,2 [Nota 56,7] documento JSON da memória guarda os valores completos.
+198,1 [TituloDoPasso 56,7] Documento da distribuidora
+212,3 [Rotulo 68,7] Fonte: [Texto 106,3] Equatorial Energia, NT.00001.EQTL – Fornecimento de Energia Elétrica em Baixa Tensão,
+223,4 [Texto 68,7] revisão 09, homologada em 22/05/2025 (PDF anexado pelo usuário, não versionado); transcrito e
+234,5 [Texto 68,7] conferido visualmente em 01/10/2026
+245,5 [Rotulo 68,7] Situação: [Texto 121,9] Opção (c) do usuário (01/10/2026): a demanda continua pela CELG CT 04/18; o padrão
+256,6 [Texto 68,7] de entrada sai daqui, pela carga instalada (Tabelas 1 e 2). Errata da edição: as tabelas citam as
+267,6 [Texto 68,7] notas 23 a 26, mas as notas impressas logo abaixo delas são a 19 a 22 (o texto de cada uma
+278,7 [Texto 68,7] confere com a linha ou a coluna que a cita, com 4 a menos); a premissa dos cálculos é a nota 23
+289,8 [Texto 68,7] impressa. Aqui as notas vão com o número impresso.
+308,8 [TituloDoPasso 56,7] Escolha
+323 [Rotulo 68,7] Tabela: [Texto 111,3] Tabela 1 — 220/380 V
+334,1 [Rotulo 68,7] Fornecimento: [Texto 149,5] trifásico
+345,2 [Secao 56,7] Passos
+367,1 [TituloDoPasso 56,7] 1. Carga instalada
+381,3 [Rotulo 68,7] Referência: [Texto 133] Equatorial NT.00001.EQTL rev. 09, Tabelas 1 e 2 (método de cálculo: carga
+392,4 [Texto 68,7] instalada, em kW)
+403,5 [Rotulo 68,7] Expressão: [Codigo 132,7] C = ΣP / 1000
+414,5 [Rotulo 68,7] Valores: [Texto 115,8] ΣP = 29850 VA
+425,6 [Rotulo 68,7] Resultado: [Texto 129,2] 29,85 kW
+436,6 [Rotulo 68,7] Observação: [Texto 138,3] pontos classificados, sem as reservas; potência instalada em kVA tomada como kW
+447,7 [Texto 68,7] (decisão do usuário, 01/10/2026: a mesma da demanda)
+466,8 [TituloDoPasso 56,7] 2. Tipo de fornecimento
+481 [Rotulo 68,7] Referência: [Texto 133] Equatorial NT.00001.EQTL rev. 09 (homologada em 22/05/2025), Tabela 1 –
+492 [Texto 68,7] Dimensionamento do Ramal de Conexão e Entrada das Instalações em 220/380V
+503,1 [Rotulo 68,7] Expressão: [Codigo 132,7] o primeiro fornecimento da Tabela 1 que vai até C
+514,2 [Rotulo 68,7] Valores: [Texto 115,8] C = 29,85 kW
+525,2 [Rotulo 68,7] Resultado: [Texto 129,2] 3 fases
+536,3 [Rotulo 68,7] Observação: [Texto 138,3] trifásico em 220/380 V; premissas da distribuidora: fator de potência 0,92, fator de
+547,3 [Texto 68,7] demanda 80% e queda de tensão de 2% na medição
+566,4 [TituloDoPasso 56,7] 3. Disjuntor termomagnético
+580,6 [Rotulo 68,7] Referência: [Texto 133] Equatorial NT.00001.EQTL rev. 09 (homologada em 22/05/2025), Tabela 1 –
+591,7 [Texto 68,7] Dimensionamento do Ramal de Conexão e Entrada das Instalações em 220/380V; trifásico, acima
+602,7 [Texto 68,7] de 24 e até 38 kW
+613,8 [Rotulo 68,7] Expressão: [Codigo 132,7] In = tabela (C)
+624,8 [Rotulo 68,7] Valores: [Texto 115,8] C = 29,85 kW
+635,9 [Rotulo 68,7] Resultado: [Texto 129,2] 63 A
+655 [TituloDoPasso 56,7] 4. Condutor do cliente — fase
+669,2 [Rotulo 68,7] Referência: [Texto 133] Equatorial NT.00001.EQTL rev. 09 (homologada em 22/05/2025), Tabela 1 –
+680,2 [Texto 68,7] Dimensionamento do Ramal de Conexão e Entrada das Instalações em 220/380V; trifásico, acima
+691,3 [Texto 68,7] de 24 e até 38 kW
+702,4 [Rotulo 68,7] Expressão: [Codigo 132,7] S = tabela (C)
+713,4 [Rotulo 68,7] Resultado: [Texto 129,2] 10 mm²
+724,5 [Rotulo 68,7] Observação: [Texto 138,3] cobre isolado, mínimo; Nota 22: o condutor do cliente é dimensionado
+735,5 [Texto 68,7] considerando uma isolação de 1 kV e temperatura de serviço de 90 °C; para características de
+746,6 [Texto 68,7] isolação diferentes deve ser verificada qual a seção adequada
+776 [Rodape 110,8] Memória de cálculo — padrão de entrada (Equatorial NT.00001.EQTL rev. 09) · página 1 de 2
+== página 2 de 2
+56,7 [TituloDoPasso 56,7] 5. Condutor do cliente — neutro
+70,9 [Rotulo 68,7] Referência: [Texto 133] Equatorial NT.00001.EQTL rev. 09 (homologada em 22/05/2025), Tabela 1 –
+82 [Texto 68,7] Dimensionamento do Ramal de Conexão e Entrada das Instalações em 220/380V; trifásico, acima
+93 [Texto 68,7] de 24 e até 38 kW
+104,1 [Rotulo 68,7] Expressão: [Codigo 132,7] SN = tabela (C)
+115,2 [Rotulo 68,7] Resultado: [Texto 129,2] 10 mm²
+126,2 [Rotulo 68,7] Observação: [Texto 138,3] cobre isolado, mínimo
+145,3 [TituloDoPasso 56,7] 6. Eletroduto de aço galvanizado
+159,5 [Rotulo 68,7] Referência: [Texto 133] Equatorial NT.00001.EQTL rev. 09 (homologada em 22/05/2025), Tabela 1 –
+170,6 [Texto 68,7] Dimensionamento do Ramal de Conexão e Entrada das Instalações em 220/380V; trifásico, acima
+181,6 [Texto 68,7] de 24 e até 38 kW
+192,7 [Rotulo 68,7] Expressão: [Codigo 132,7] Ø = tabela ("1.1/2")
+203,7 [Rotulo 68,7] Resultado: [Texto 129,2] 1,5 pol
+214,8 [Rotulo 68,7] Observação: [Texto 138,3] diâmetro nominal
+233,8 [TituloDoPasso 56,7] 7. Condutor de aterramento (aço cobreado)
+248,1 [Rotulo 68,7] Referência: [Texto 133] Equatorial NT.00001.EQTL rev. 09 (homologada em 22/05/2025), Tabela 1 –
+259,1 [Texto 68,7] Dimensionamento do Ramal de Conexão e Entrada das Instalações em 220/380V; trifásico, acima
+270,2 [Texto 68,7] de 24 e até 38 kW
+281,2 [Rotulo 68,7] Expressão: [Codigo 132,7] S = tabela (C)
+292,3 [Rotulo 68,7] Resultado: [Texto 129,2] 10 mm²
+311,4 [TituloDoPasso 56,7] 8. Eletroduto do aterramento
+325,6 [Rotulo 68,7] Referência: [Texto 133] Equatorial NT.00001.EQTL rev. 09 (homologada em 22/05/2025), Tabela 1 –
+336,6 [Texto 68,7] Dimensionamento do Ramal de Conexão e Entrada das Instalações em 220/380V; trifásico, acima
+347,7 [Texto 68,7] de 24 e até 38 kW
+358,8 [Rotulo 68,7] Expressão: [Codigo 132,7] Ø = tabela ("1")
+369,8 [Rotulo 68,7] Resultado: [Texto 129,2] 1 pol
+380,9 [Rotulo 68,7] Observação: [Texto 138,3] diâmetro nominal
+399,9 [TituloDoPasso 56,7] 9. Ramal de conexão até 2 km da orla marítima — cobre multiplexado
+414,2 [Rotulo 68,7] Referência: [Texto 133] Equatorial NT.00001.EQTL rev. 09 (homologada em 22/05/2025), Tabela 1 –
+425,2 [Texto 68,7] Dimensionamento do Ramal de Conexão e Entrada das Instalações em 220/380V; trifásico, acima
+436,3 [Texto 68,7] de 24 e até 38 kW
+447,3 [Rotulo 68,7] Expressão: [Codigo 132,7] S = tabela (C)
+458,4 [Rotulo 68,7] Resultado: [Texto 129,2] 16 mm²
+477,5 [TituloDoPasso 56,7] 10. Ramal de conexão a partir de 2 km da orla marítima — alumínio multiplexado
+489,7 [TituloDoPasso 56,7] quadruplex
+503,9 [Rotulo 68,7] Referência: [Texto 133] Equatorial NT.00001.EQTL rev. 09 (homologada em 22/05/2025), Tabela 1 –
+515 [Texto 68,7] Dimensionamento do Ramal de Conexão e Entrada das Instalações em 220/380V; trifásico, acima
+526 [Texto 68,7] de 24 e até 38 kW
+537,1 [Rotulo 68,7] Expressão: [Codigo 132,7] S = tabela (C)
+548,1 [Rotulo 68,7] Resultado: [Texto 129,2] 25 mm²
+776 [Rodape 110,8] Memória de cálculo — padrão de entrada (Equatorial NT.00001.EQTL rev. 09) · página 2 de 2

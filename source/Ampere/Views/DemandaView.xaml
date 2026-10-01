@@ -48,8 +48,26 @@
             </Grid>
         </StackPanel>
 
+        <TextBlock Text="{Binding NormaDoPadrao}" FontWeight="SemiBold" Margin="0,12,0,4" />
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="110" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Text="Tensão" VerticalAlignment="Center" ToolTip="A tabela da distribuidora para a tensão de fornecimento" />
+            <ComboBox Grid.Column="1" Margin="0,2" ItemsSource="{Binding TabelasDoPadrao}" SelectedItem="{Binding TabelaDoPadrao}" />
+            <TextBlock Grid.Row="1" Text="Fornecimento" VerticalAlignment="Center"
+                       ToolTip="Pela carga: o menor tipo que atende. Um tipo acima do necessário usa a primeira faixa dele (a distribuidora cobra a diferença)" />
+            <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,2" IsEnabled="{Binding ComPadrao}" ItemsSource="{Binding Fornecimentos}"
+                      SelectedItem="{Binding Fornecimento}" />
+        </Grid>
+
         <TextBlock Margin="0,10,0,0" TextWrapping="Wrap" Foreground="Gray"
-                   Text="Soma os pontos classificados do modelo (TUE pelo AMP_Aparelho). Nada é gravado: a memória vai para Documentos\Ampere\{projeto}\Demanda." />
+                   Text="Soma os pontos classificados do modelo (TUE pelo AMP_Aparelho). Nada é gravado: as memórias vão para Documentos\Ampere\{projeto}\Demanda." />
         <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" Foreground="Firebrick" Text="{Binding Problemas}" />
 
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">

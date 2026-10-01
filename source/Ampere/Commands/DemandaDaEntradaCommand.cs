@@ -18,8 +18,10 @@ namespace Ampere.Commands;
 
 /// <summary>
 ///     Calcula a demanda da instalação pela norma da distribuidora (hoje a CELG CT 04/18), com todos os pontos classificados
-///     do modelo, sem gravar nada nele. Pede a edificação e, com motores, a regra deles; salva a memória (JSON, Markdown e
-///     PDF) em Documentos\Ampere\{projeto}\Demanda. Ponto que impede o cálculo pode ser selecionado no modelo.
+///     do modelo, sem gravar nada nele, e o padrão de entrada pela carga instalada (Equatorial NT.00001 rev. 09, Tabelas 1 e
+///     2 — opção (c) do usuário). Pede a edificação, com motores a regra deles, e a tensão e o fornecimento do padrão; salva
+///     as memórias (JSON, Markdown e PDF) em Documentos\Ampere\{projeto}\Demanda. Ponto que impede o cálculo pode ser
+///     selecionado no modelo.
 /// </summary>
 [UsedImplicitly]
 [Transaction(TransactionMode.ReadOnly)]
@@ -31,6 +33,8 @@ public class DemandaDaEntradaCommand : ExternalCommand
 
     // As escolhas da última rodada, para abrir o diálogo com elas na mesma sessão do Revit.
     private static OpcoesDaDemanda? _ultimas;
+    private static EscolhaDoPadrao? _ultimoPadrao;
+    private static bool _semPadrao;
 
     public override void Execute()
     {
@@ -52,7 +56,8 @@ public class DemandaDaEntradaCommand : ExternalCommand
         var pontos = new DocumentoDeDemandaRevit(documento).LerPontos();
         var motores = pontos.Count(ponto => CodigosDeTipoDeCarga.TryLer(ponto.TipoDeCarga, out var tipo) && tipo == TipoDeCarga.Motor);
 
-        var viewModel = new DemandaViewModel(perfil, motores, _ultimas);
+        var padrao = NormaDoPadraoDeEntrada.EquatorialNt00001Rev09;
+        var viewModel = new DemandaViewModel(perfil, motores, _ultimas, padrao, _ultimoPadrao, _semPadrao);
         var janela = new DemandaView(viewModel);
         _ = new WindowInteropHelper(janela) { Owner = Application.MainWindowHandle };
         if (janela.ShowDialog() != true || viewModel.Opcoes is not { } opcoes)
@@ -62,6 +67,8 @@ public class DemandaDaEntradaCommand : ExternalCommand
         }
 
         _ultimas = opcoes;
+        _semPadrao = viewModel.Padrao is null;
+        _ultimoPadrao = viewModel.Padrao ?? _ultimoPadrao;
         var resultado = DemandaDaEntrada.Calcular(pontos, opcoes, perfil);
         if (resultado.Memoria is null)
         {
@@ -69,8 +76,9 @@ public class DemandaDaEntradaCommand : ExternalCommand
             return;
         }
 
-        var (pasta, erros) = Gravar(resultado, perfil, Path.GetFileNameWithoutExtension(documento.PathName));
-        TaskDialog.Show(TituloDaJanela, ResumoDaDemanda.Texto(resultado, perfil, opcoes, pasta, erros));
+        var doPadrao = viewModel.Padrao is { } escolha ? PadraoDeEntrada.Calcular(resultado.PotenciaInstaladaVA, escolha, padrao) : null;
+        var (pasta, erros) = Gravar(resultado, perfil, doPadrao, padrao, Path.GetFileNameWithoutExtension(documento.PathName));
+        TaskDialog.Show(TituloDaJanela, ResumoDaDemanda.Texto(resultado, perfil, opcoes, doPadrao, padrao, pasta, erros));
     }
 
     // O que impediu, e a opção de selecionar no modelo os pontos responsáveis.
@@ -95,19 +103,30 @@ public class DemandaDaEntradaCommand : ExternalCommand
     }
 
     // Falha de disco não impede mostrar o resultado: o resumo diz o que não foi salvo.
-    private static (string? Pasta, IReadOnlyList<string> Erros) Gravar(ResultadoDaDemanda resultado, PerfilDeDemanda perfil, string nomeDoProjeto)
+    private static (string? Pasta, IReadOnlyList<string> Erros) Gravar(
+        ResultadoDaDemanda resultado, PerfilDeDemanda perfil, ResultadoDoPadrao? doPadrao, NormaDoPadraoDeEntrada padrao, string nomeDoProjeto)
     {
         var erros = new List<string>();
         var pasta = PastaDeRelatorios.Caminho(nomeDoProjeto, Subpasta);
         var hash = resultado.Memoria!.Hash();
         var baseNome = $"demanda-{PastaDeRelatorios.Prefixo(hash)}";
         var pdf = RelatorioEmPdf.Gerar(() => RelatorioDeMemoria.PdfDaDemanda(resultado, perfil), erros);
+        var memoriaDoPadrao = doPadrao?.Memoria;
+        var baseDoPadrao = memoriaDoPadrao is null ? null : $"padrao-de-entrada-{PastaDeRelatorios.Prefixo(memoriaDoPadrao.Hash())}";
+        var pdfDoPadrao = memoriaDoPadrao is null ? null : RelatorioEmPdf.Gerar(() => RelatorioDeMemoria.PdfDoPadrao(doPadrao!, padrao), erros);
         try
         {
             Directory.CreateDirectory(pasta);
             File.WriteAllText(Path.Combine(pasta, baseNome + ".json"), resultado.Memoria.JsonCanonico(), new UTF8Encoding(false));
             File.WriteAllText(Path.Combine(pasta, baseNome + ".md"), RelatorioDeMemoria.MarkdownDaDemanda(resultado, perfil), new UTF8Encoding(false));
             if (pdf is not null) File.WriteAllBytes(Path.Combine(pasta, baseNome + ".pdf"), pdf);
+            if (memoriaDoPadrao is not null)
+            {
+                File.WriteAllText(Path.Combine(pasta, baseDoPadrao + ".json"), memoriaDoPadrao.JsonCanonico(), new UTF8Encoding(false));
+                File.WriteAllText(Path.Combine(pasta, baseDoPadrao + ".md"), RelatorioDeMemoria.MarkdownDoPadrao(doPadrao!, padrao), new UTF8Encoding(false));
+                if (pdfDoPadrao is not null) File.WriteAllBytes(Path.Combine(pasta, baseDoPadrao + ".pdf"), pdfDoPadrao);
+            }
+
             return (pasta, erros);
         }
         catch (Exception excecao) when (excecao is IOException or UnauthorizedAccessException or System.Security.SecurityException)

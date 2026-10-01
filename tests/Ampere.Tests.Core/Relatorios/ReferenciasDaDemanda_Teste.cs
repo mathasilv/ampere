@@ -33,6 +33,19 @@ public class ReferenciasDaDemanda_Teste
             await File.WriteAllBytesAsync(Path.Combine(pasta, $"{Cenario}.pdf"), RelatorioDeMemoria.PdfDaDemanda(resultado, perfil));
     }
 
+    [Test]
+    [Property("Fonte", "Equatorial NT.00001.EQTL rev. 09, Tabela 1")]
+    public async Task Memoria_e_relatorio_do_padrao_de_entrada_iguais_aos_de_referencia()
+    {
+        const string Cenario = "padrao-de-entrada-casa-eqtl";
+        var norma = NormaDoPadraoDeEntrada.EquatorialNt00001Rev09;
+        var resultado = PadraoDeEntrada.Calcular(DemandaDaEntrada_Teste.DaCasa().PotenciaInstaladaVA, new EscolhaDoPadrao("Tabela 1"), norma);
+
+        await Conferir($"{Cenario}.json", resultado.Memoria!.JsonCanonico());
+        await Conferir($"{Cenario}.md", RelatorioDeMemoria.MarkdownDoPadrao(resultado, norma));
+        await Conferir($"{Cenario}.pdf.txt", PdfDoRelatorio.Roteiro(ConteudoDoRelatorio.DePadrao(resultado, norma)));
+    }
+
     private static async Task Conferir(string arquivo, string atual)
     {
         var caminho = Path.Combine(PastaDasReferencias(), arquivo);

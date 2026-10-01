@@ -87,6 +87,10 @@ Use um projeto de teste com arquitetura vinculada ou com ambientes (Rooms/Spaces
 11. **Demanda da entrada.** Escolha "Residências". Com um TUE sem aparelho, o diálogo de erro deve oferecer selecionar o
     ponto no modelo. Com tudo classificado, o resumo traz D e as parcelas (a, b1…), e a memória vai para
     `Documentos\Ampere\{projeto}\Demanda`. Confira uma parcela à mão com a tabela da CT 04/18.
+    - Padrão de entrada: com "Tabela 1 — 220/380 V" e "Pela carga", o resumo deve trazer o fornecimento, o disjuntor, o
+      condutor do cliente, o eletroduto, o aterramento e o ramal da linha da carga instalada (ex.: 29,85 kW → trifásico,
+      63 A). Escolha "trifásico" para uma casa de menos de 12 kW: deve sair a primeira faixa (20 A) com a Nota 19 na
+      memória. A memória `padrao-de-entrada-….md` fica na mesma pasta da demanda. Reabra o diálogo: a escolha deve voltar.
 12. **Diagramas unifilares.** Deve sair uma vista de desenho por quadro, com os valores do dimensionamento.
 
 ## 3. O que conferir com a norma (pendências do usuário)

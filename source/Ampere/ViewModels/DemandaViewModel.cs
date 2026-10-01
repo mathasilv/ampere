@@ -7,7 +7,8 @@ namespace Ampere.ViewModels;
 
 /// <summary>
 ///     Diálogo "Demanda da entrada": a edificação (linha da tabela de iluminação e tomadas) e, com motores no modelo, a regra
-///     deles — a do documento ou o fator do projetista com a justificativa. A validação do cálculo é do Core.
+///     deles — a do documento ou o fator do projetista com a justificativa; e o padrão de entrada pela carga instalada (a
+///     tabela da tensão de fornecimento e o tipo de fornecimento, ou o menor que atende). A validação do cálculo é do Core.
 /// </summary>
 public sealed class DemandaViewModel : ObservableObject
 {
@@ -16,9 +17,26 @@ public sealed class DemandaViewModel : ObservableObject
     private string _fatorDosMotores;
     private string _justificativa;
     private string _problemas = string.Empty;
+    private readonly NormaDoPadraoDeEntrada _padrao;
+    private string _tabelaDoPadrao;
+    private string _fornecimento = PelaCarga;
 
-    public DemandaViewModel(PerfilDeDemanda perfil, int motores, OpcoesDaDemanda? anteriores)
+    /// <summary>Opção do tipo de fornecimento: o menor que atende a carga instalada.</summary>
+    public const string PelaCarga = "Pela carga (o menor que atende)";
+
+    /// <summary>Opção da tabela do padrão: não dimensionar o padrão de entrada.</summary>
+    public const string SemPadrao = "Não dimensionar";
+
+    public DemandaViewModel(PerfilDeDemanda perfil, int motores, OpcoesDaDemanda? anteriores, NormaDoPadraoDeEntrada padrao, EscolhaDoPadrao? padraoAnterior,
+        bool padraoDesligado)
     {
+        _padrao = padrao;
+        NormaDoPadrao = $"Padrão de entrada pela carga instalada ({padrao.Nome})";
+        TabelasDoPadrao = [.. padrao.Tabelas.Select(tabela => tabela.Descricao), SemPadrao];
+        var tabelaAnterior = padraoAnterior is null ? null : padrao.Tabelas.FirstOrDefault(tabela => tabela.Nome == padraoAnterior.Tabela);
+        _tabelaDoPadrao = padraoDesligado ? SemPadrao : (tabelaAnterior ?? padrao.Tabelas[0]).Descricao;
+        if (padraoAnterior?.Fornecimento is { } fornecimento && Fornecimentos.Contains(fornecimento, StringComparer.Ordinal)) _fornecimento = fornecimento;
+
         Titulo = $"Demanda pela {perfil.Nome}";
         Situacao = perfil.Situacao;
         Edificacoes = perfil.Edificacoes.Select(edificacao => edificacao.Nome).ToList();
@@ -78,6 +96,41 @@ public sealed class DemandaViewModel : ObservableObject
         get => _justificativa;
         set => SetProperty(ref _justificativa, value);
     }
+
+    public string NormaDoPadrao { get; }
+
+    /// <summary>Uma tabela por tensão de fornecimento, e a opção de não dimensionar o padrão.</summary>
+    public IReadOnlyList<string> TabelasDoPadrao { get; }
+
+    public string TabelaDoPadrao
+    {
+        get => _tabelaDoPadrao;
+        set
+        {
+            if (!SetProperty(ref _tabelaDoPadrao, value)) return;
+            OnPropertyChanged(nameof(Fornecimentos));
+            OnPropertyChanged(nameof(ComPadrao));
+            if (!Fornecimentos.Contains(_fornecimento, StringComparer.Ordinal)) Fornecimento = PelaCarga;
+        }
+    }
+
+    public bool ComPadrao => _tabelaDoPadrao != SemPadrao;
+
+    /// <summary>Os tipos de fornecimento da tabela escolhida, depois do "pela carga".</summary>
+    public IReadOnlyList<string> Fornecimentos =>
+        [PelaCarga, .. _padrao.Tabelas.FirstOrDefault(tabela => tabela.Descricao == _tabelaDoPadrao)?.Fornecimentos.Select(fornecimento => fornecimento.Nome) ?? []];
+
+    public string Fornecimento
+    {
+        get => _fornecimento;
+        set => SetProperty(ref _fornecimento, value);
+    }
+
+    /// <summary>A escolha do padrão de entrada depois de <see cref="Confirmar" />; nula = não dimensionar.</summary>
+    public EscolhaDoPadrao? Padrao =>
+        _padrao.Tabelas.FirstOrDefault(tabela => tabela.Descricao == _tabelaDoPadrao) is { } tabela
+            ? new EscolhaDoPadrao(tabela.Nome, _fornecimento == PelaCarga ? null : _fornecimento)
+            : null;
 
     public string Problemas
     {

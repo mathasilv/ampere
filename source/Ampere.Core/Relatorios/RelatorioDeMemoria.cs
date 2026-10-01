@@ -42,6 +42,16 @@ public static class RelatorioDeMemoria
     public static byte[] PdfDaDemanda(Demanda.ResultadoDaDemanda demanda, Demanda.PerfilDeDemanda perfil) =>
         PdfDoRelatorio.Gerar(ConteudoDoRelatorio.DeDemanda(demanda, perfil), demanda.Memoria!.Hash());
 
+    /// <summary>O relatório do padrão de entrada: documento da distribuidora e escolha antes dos passos da memória.</summary>
+    /// <exception cref="InvalidOperationException">Padrão que não saiu não gera relatório.</exception>
+    public static string MarkdownDoPadrao(Demanda.ResultadoDoPadrao padrao, Demanda.NormaDoPadraoDeEntrada norma) =>
+        Renderizar(ConteudoDoRelatorio.DePadrao(padrao, norma));
+
+    /// <summary>O padrão de entrada em PDF, com o identificador da memória como Assunto.</summary>
+    /// <exception cref="InvalidOperationException">Padrão que não saiu não gera relatório.</exception>
+    public static byte[] PdfDoPadrao(Demanda.ResultadoDoPadrao padrao, Demanda.NormaDoPadraoDeEntrada norma) =>
+        PdfDoRelatorio.Gerar(ConteudoDoRelatorio.DePadrao(padrao, norma), padrao.Memoria!.Hash());
+
     private static string Renderizar(ConteudoDoRelatorio conteudo)
     {
         var texto = new StringBuilder();

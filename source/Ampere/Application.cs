@@ -72,7 +72,7 @@ public class Application : ExternalApplication
         quadros.AddPushButton<DemandaDaEntradaCommand>("Demanda da\nentrada")
             .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
             .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
-            .SetToolTip("Calcula a demanda da instalação pela norma da distribuidora (CELG CT 04/18, vigência a conferir), com todos os pontos classificados — TUE pelo aparelho —, e salva a memória de cálculo. Não grava nada no modelo.");
+            .SetToolTip("Calcula a demanda da instalação pela norma da distribuidora (CELG CT 04/18, vigência a conferir), com todos os pontos classificados — TUE pelo aparelho —, e o padrão de entrada pela carga instalada (Equatorial NT.00001 rev. 09: disjuntor, ramal, eletroduto, condutor do cliente e aterramento); salva as memórias. Não grava nada no modelo.");
 
         quadros.AddPushButton<DiagramasUnifilaresCommand>("Diagramas\nunifilares")
             .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")

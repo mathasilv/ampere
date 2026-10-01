@@ -77,6 +77,22 @@ internal sealed record ConteudoDoRelatorio(
             "Documento da distribuidora", "Identificador da memória (não gravado no modelo)");
     }
 
+    /// <summary>Relatório do padrão de entrada: o documento da distribuidora e a linha da tabela antes dos passos da memória.</summary>
+    /// <exception cref="InvalidOperationException">Padrão que não saiu (sem memória) não gera relatório.</exception>
+    public static ConteudoDoRelatorio DePadrao(Demanda.ResultadoDoPadrao padrao, Demanda.NormaDoPadraoDeEntrada norma)
+    {
+        if (padrao.Memoria is not { } memoria)
+            throw new InvalidOperationException("O padrão de entrada não saiu (veja os problemas): relatório só de padrão dimensionado.");
+
+        var abertura = new List<SecaoDePasso>
+        {
+            new("Documento da distribuidora", [new Campo("Fonte", norma.Fonte), new Campo("Situação", norma.Situacao)]),
+            new("Escolha", [new Campo("Tabela", padrao.Tabela!.Descricao), new Campo("Fornecimento", padrao.Fornecimento!.Nome)])
+        };
+        return Montar(memoria, null, $"Memória de cálculo — padrão de entrada ({norma.Nome})", abertura,
+            "Documento da distribuidora", "Identificador da memória (não gravado no modelo)");
+    }
+
     // Memória que não vai para o modelo (ex.: a demanda) não tem AMP_MemoriaCalculoId: os rótulos dizem o que ela é.
     private static ConteudoDoRelatorio Montar(
         MemoriaDeCalculo memoria, string? identificadorGravado, string titulo, IReadOnlyList<SecaoDePasso> abertura,

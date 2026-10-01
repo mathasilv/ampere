@@ -1,0 +1,373 @@
+{
+  "$meta": {
+    "fonte": "Equatorial Energia, NT.00001.EQTL – Fornecimento de Energia Elétrica em Baixa Tensão, revisão 09, homologada em 22/05/2025 (PDF anexado pelo usuário, não versionado); transcrito e conferido visualmente em 01/10/2026",
+    "versao": "09",
+    "data": "2026-10-01",
+    "ficticio": false,
+    "situacao": "Opção (c) do usuário (01/10/2026): a demanda continua pela CELG CT 04/18; o padrão de entrada sai daqui, pela carga instalada (Tabelas 1 e 2). Errata da edição: as tabelas citam as notas 23 a 26, mas as notas impressas logo abaixo delas são a 19 a 22 (o texto de cada uma confere com a linha ou a coluna que a cita, com 4 a menos); a premissa dos cálculos é a nota 23 impressa. Aqui as notas vão com o número impresso."
+  },
+  "nome": "Equatorial NT.00001.EQTL rev. 09",
+  "carga": {
+    "ref": "Equatorial NT.00001.EQTL rev. 09, Tabelas 1 e 2 (método de cálculo: carga instalada, em kW)",
+    "decisao": "potência instalada em kVA tomada como kW (decisão do usuário, 01/10/2026: a mesma da demanda)"
+  },
+  "condutor_do_cliente": "Nota 22: o condutor do cliente é dimensionado considerando uma isolação de 1 kV e temperatura de serviço de 90 °C; para características de isolação diferentes deve ser verificada qual a seção adequada",
+  "notas": {
+    "Nota 19": "nos casos em que a unidade consumidora possuir carga instalada de até 12 kW e o consumidor optar pela conexão trifásica, será cobrado do consumidor a diferença de preço do sistema de medição e dos custos de adaptação da rede",
+    "Nota 20": "nos casos em que a unidade consumidora possuir carga instalada de até 10 kW e o consumidor optar pela conexão bifásica, será cobrado do consumidor a diferença de preço do sistema de medição e os custos de adaptação da rede",
+    "Nota 21": "nos casos em que a unidade consumidora possuir carga instalada de até 15 kW e o consumidor optar pela conexão trifásica, será cobrado do consumidor a diferença de preço do sistema de medição e os custos de adaptação da rede"
+  },
+  "tabelas": [
+    {
+      "tabela": "Tabela 1",
+      "tensao": "220/380 V",
+      "ref": "Equatorial NT.00001.EQTL rev. 09 (homologada em 22/05/2025), Tabela 1 – Dimensionamento do Ramal de Conexão e Entrada das Instalações em 220/380V",
+      "fornecimentos": [
+        {
+          "fornecimento": "monofásico",
+          "fases": 1,
+          "premissas": "fator de potência 1, fator de demanda 80% e queda de tensão de 2% na medição",
+          "linhas": [
+            {
+              "ate_kw": 5,
+              "disjuntor_a": 25,
+              "ramal_cobre_concentrico_mm2": 4,
+              "ramal_cobre_multiplexado_mm2": 6,
+              "ramal_aluminio_mm2": 10,
+              "ramal_aluminio_cabo": "duplex",
+              "eletroduto_aco_galvanizado_pol": "3/4",
+              "condutor_fase_mm2": 4,
+              "condutor_neutro_mm2": 4,
+              "aterramento_aco_cobreado_mm2": 4,
+              "eletroduto_aterramento_pol": "1/2"
+            },
+            {
+              "ate_kw": 8,
+              "disjuntor_a": 40,
+              "ramal_cobre_concentrico_mm2": 6,
+              "ramal_cobre_multiplexado_mm2": 6,
+              "ramal_aluminio_mm2": 10,
+              "ramal_aluminio_cabo": "duplex",
+              "eletroduto_aco_galvanizado_pol": "3/4",
+              "condutor_fase_mm2": 6,
+              "condutor_neutro_mm2": 6,
+              "aterramento_aco_cobreado_mm2": 6,
+              "eletroduto_aterramento_pol": "1/2"
+            },
+            {
+              "ate_kw": 12,
+              "disjuntor_a": 63,
+              "ramal_cobre_concentrico_mm2": 10,
+              "ramal_cobre_multiplexado_mm2": 10,
+              "ramal_aluminio_mm2": 10,
+              "ramal_aluminio_cabo": "duplex",
+              "eletroduto_aco_galvanizado_pol": "3/4",
+              "condutor_fase_mm2": 10,
+              "condutor_neutro_mm2": 10,
+              "aterramento_aco_cobreado_mm2": 6,
+              "eletroduto_aterramento_pol": "1/2"
+            }
+          ]
+        },
+        {
+          "fornecimento": "trifásico",
+          "fases": 3,
+          "premissas": "fator de potência 0,92, fator de demanda 80% e queda de tensão de 2% na medição",
+          "linhas": [
+            {
+              "ate_kw": 12,
+              "disjuntor_a": 20,
+              "ramal_cobre_concentrico_mm2": null,
+              "ramal_cobre_multiplexado_mm2": 6,
+              "ramal_aluminio_mm2": 10,
+              "ramal_aluminio_cabo": "quadruplex",
+              "eletroduto_aco_galvanizado_pol": "1.1/2",
+              "condutor_fase_mm2": 6,
+              "condutor_neutro_mm2": 6,
+              "aterramento_aco_cobreado_mm2": 6,
+              "eletroduto_aterramento_pol": "1/2",
+              "nota": "Nota 19"
+            },
+            {
+              "ate_kw": 24,
+              "disjuntor_a": 40,
+              "ramal_cobre_concentrico_mm2": null,
+              "ramal_cobre_multiplexado_mm2": 6,
+              "ramal_aluminio_mm2": 10,
+              "ramal_aluminio_cabo": "quadruplex",
+              "eletroduto_aco_galvanizado_pol": "1.1/2",
+              "condutor_fase_mm2": 6,
+              "condutor_neutro_mm2": 6,
+              "aterramento_aco_cobreado_mm2": 6,
+              "eletroduto_aterramento_pol": "1/2"
+            },
+            {
+              "ate_kw": 38,
+              "disjuntor_a": 63,
+              "ramal_cobre_concentrico_mm2": null,
+              "ramal_cobre_multiplexado_mm2": 16,
+              "ramal_aluminio_mm2": 25,
+              "ramal_aluminio_cabo": "quadruplex",
+              "eletroduto_aco_galvanizado_pol": "1.1/2",
+              "condutor_fase_mm2": 10,
+              "condutor_neutro_mm2": 10,
+              "aterramento_aco_cobreado_mm2": 10,
+              "eletroduto_aterramento_pol": "1"
+            },
+            {
+              "ate_kw": 48,
+              "disjuntor_a": 80,
+              "ramal_cobre_concentrico_mm2": null,
+              "ramal_cobre_multiplexado_mm2": 25,
+              "ramal_aluminio_mm2": 35,
+              "ramal_aluminio_cabo": "quadruplex",
+              "eletroduto_aco_galvanizado_pol": "2",
+              "condutor_fase_mm2": 16,
+              "condutor_neutro_mm2": 16,
+              "aterramento_aco_cobreado_mm2": 16,
+              "eletroduto_aterramento_pol": "1"
+            },
+            {
+              "ate_kw": 60,
+              "disjuntor_a": 100,
+              "ramal_cobre_concentrico_mm2": null,
+              "ramal_cobre_multiplexado_mm2": 25,
+              "ramal_aluminio_mm2": 50,
+              "ramal_aluminio_cabo": "quadruplex",
+              "eletroduto_aco_galvanizado_pol": "2",
+              "condutor_fase_mm2": 25,
+              "condutor_neutro_mm2": 25,
+              "aterramento_aco_cobreado_mm2": 25,
+              "eletroduto_aterramento_pol": "1"
+            },
+            {
+              "ate_kw": 75,
+              "disjuntor_a": 125,
+              "ramal_cobre_concentrico_mm2": null,
+              "ramal_cobre_multiplexado_mm2": 35,
+              "ramal_aluminio_mm2": 70,
+              "ramal_aluminio_cabo": "quadruplex",
+              "eletroduto_aco_galvanizado_pol": "2.1/2",
+              "condutor_fase_mm2": 35,
+              "condutor_neutro_mm2": 35,
+              "aterramento_aco_cobreado_mm2": 35,
+              "eletroduto_aterramento_pol": "1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tabela": "Tabela 2",
+      "tensao": "127/220 V",
+      "ref": "Equatorial NT.00001.EQTL rev. 09 (homologada em 22/05/2025), Tabela 2 – Dimensionamento do Ramal de Conexão e Entrada das Instalações em 127/220V",
+      "fornecimentos": [
+        {
+          "fornecimento": "monofásico",
+          "fases": 1,
+          "premissas": "fator de potência 1, fator de demanda 80% e queda de tensão de 2% na medição",
+          "linhas": [
+            {
+              "ate_kw": 3.5,
+              "disjuntor_a": 32,
+              "ramal_cobre_concentrico_mm2": 6,
+              "ramal_cobre_multiplexado_mm2": 6,
+              "ramal_aluminio_mm2": 10,
+              "ramal_aluminio_cabo": "duplex",
+              "eletroduto_aco_galvanizado_pol": "3/4",
+              "condutor_fase_mm2": 6,
+              "condutor_neutro_mm2": 6,
+              "aterramento_aco_cobreado_mm2": 6,
+              "eletroduto_aterramento_pol": "1/2"
+            },
+            {
+              "ate_kw": 7,
+              "disjuntor_a": 63,
+              "ramal_cobre_concentrico_mm2": 10,
+              "ramal_cobre_multiplexado_mm2": 10,
+              "ramal_aluminio_mm2": 10,
+              "ramal_aluminio_cabo": "duplex",
+              "eletroduto_aco_galvanizado_pol": "3/4",
+              "condutor_fase_mm2": 10,
+              "condutor_neutro_mm2": 10,
+              "aterramento_aco_cobreado_mm2": 10,
+              "eletroduto_aterramento_pol": "1/2"
+            },
+            {
+              "ate_kw": 10,
+              "disjuntor_a": 80,
+              "ramal_cobre_concentrico_mm2": null,
+              "ramal_cobre_multiplexado_mm2": 10,
+              "ramal_aluminio_mm2": 16,
+              "ramal_aluminio_cabo": "duplex",
+              "eletroduto_aco_galvanizado_pol": "3/4",
+              "condutor_fase_mm2": 10,
+              "condutor_neutro_mm2": 10,
+              "aterramento_aco_cobreado_mm2": 10,
+              "eletroduto_aterramento_pol": "1/2"
+            }
+          ]
+        },
+        {
+          "fornecimento": "bifásico",
+          "fases": 2,
+          "premissas": "fator de potência 1, fator de demanda 80% e queda de tensão de 2% na medição",
+          "linhas": [
+            {
+              "ate_kw": 10,
+              "disjuntor_a": 50,
+              "ramal_cobre_concentrico_mm2": null,
+              "ramal_cobre_multiplexado_mm2": 6,
+              "ramal_aluminio_mm2": 10,
+              "ramal_aluminio_cabo": "triplex",
+              "eletroduto_aco_galvanizado_pol": "1",
+              "condutor_fase_mm2": 10,
+              "condutor_neutro_mm2": 10,
+              "aterramento_aco_cobreado_mm2": 10,
+              "eletroduto_aterramento_pol": "1/2",
+              "nota": "Nota 20"
+            },
+            {
+              "ate_kw": 12,
+              "disjuntor_a": 63,
+              "ramal_cobre_concentrico_mm2": null,
+              "ramal_cobre_multiplexado_mm2": 10,
+              "ramal_aluminio_mm2": 16,
+              "ramal_aluminio_cabo": "triplex",
+              "eletroduto_aco_galvanizado_pol": "1",
+              "condutor_fase_mm2": 10,
+              "condutor_neutro_mm2": 10,
+              "aterramento_aco_cobreado_mm2": 10,
+              "eletroduto_aterramento_pol": "1/2"
+            },
+            {
+              "ate_kw": 15,
+              "disjuntor_a": 70,
+              "ramal_cobre_concentrico_mm2": null,
+              "ramal_cobre_multiplexado_mm2": 10,
+              "ramal_aluminio_mm2": 16,
+              "ramal_aluminio_cabo": "triplex",
+              "eletroduto_aco_galvanizado_pol": "1",
+              "condutor_fase_mm2": 10,
+              "condutor_neutro_mm2": 10,
+              "aterramento_aco_cobreado_mm2": 10,
+              "eletroduto_aterramento_pol": "1/2"
+            }
+          ]
+        },
+        {
+          "fornecimento": "trifásico",
+          "fases": 3,
+          "premissas": "fator de potência 0,92, fator de demanda 80% e queda de tensão de 2% na medição",
+          "linhas": [
+            {
+              "ate_kw": 15,
+              "disjuntor_a": 40,
+              "ramal_cobre_concentrico_mm2": null,
+              "ramal_cobre_multiplexado_mm2": 6,
+              "ramal_aluminio_mm2": 10,
+              "ramal_aluminio_cabo": "quadruplex",
+              "eletroduto_aco_galvanizado_pol": "1.1/2",
+              "condutor_fase_mm2": 6,
+              "condutor_neutro_mm2": 6,
+              "aterramento_aco_cobreado_mm2": 6,
+              "eletroduto_aterramento_pol": "1/2",
+              "nota": "Nota 21"
+            },
+            {
+              "ate_kw": 17,
+              "disjuntor_a": 50,
+              "ramal_cobre_concentrico_mm2": null,
+              "ramal_cobre_multiplexado_mm2": 10,
+              "ramal_aluminio_mm2": 16,
+              "ramal_aluminio_cabo": "quadruplex",
+              "eletroduto_aco_galvanizado_pol": "1.1/2",
+              "condutor_fase_mm2": 10,
+              "condutor_neutro_mm2": 10,
+              "aterramento_aco_cobreado_mm2": 6,
+              "eletroduto_aterramento_pol": "1/2"
+            },
+            {
+              "ate_kw": 24,
+              "disjuntor_a": 70,
+              "ramal_cobre_concentrico_mm2": null,
+              "ramal_cobre_multiplexado_mm2": 16,
+              "ramal_aluminio_mm2": 25,
+              "ramal_aluminio_cabo": "quadruplex",
+              "eletroduto_aco_galvanizado_pol": "2",
+              "condutor_fase_mm2": 16,
+              "condutor_neutro_mm2": 16,
+              "aterramento_aco_cobreado_mm2": 16,
+              "eletroduto_aterramento_pol": "1"
+            },
+            {
+              "ate_kw": 35,
+              "disjuntor_a": 100,
+              "ramal_cobre_concentrico_mm2": null,
+              "ramal_cobre_multiplexado_mm2": 25,
+              "ramal_aluminio_mm2": 50,
+              "ramal_aluminio_cabo": "quadruplex",
+              "eletroduto_aco_galvanizado_pol": "2",
+              "condutor_fase_mm2": 25,
+              "condutor_neutro_mm2": 25,
+              "aterramento_aco_cobreado_mm2": 25,
+              "eletroduto_aterramento_pol": "1"
+            },
+            {
+              "ate_kw": 44,
+              "disjuntor_a": 125,
+              "ramal_cobre_concentrico_mm2": null,
+              "ramal_cobre_multiplexado_mm2": 35,
+              "ramal_aluminio_mm2": 70,
+              "ramal_aluminio_cabo": "quadruplex",
+              "eletroduto_aco_galvanizado_pol": "2.1/2",
+              "condutor_fase_mm2": 35,
+              "condutor_neutro_mm2": 25,
+              "aterramento_aco_cobreado_mm2": 25,
+              "eletroduto_aterramento_pol": "1"
+            },
+            {
+              "ate_kw": 52,
+              "disjuntor_a": 150,
+              "ramal_cobre_concentrico_mm2": null,
+              "ramal_cobre_multiplexado_mm2": 50,
+              "ramal_aluminio_mm2": 70,
+              "ramal_aluminio_cabo": "quadruplex",
+              "eletroduto_aco_galvanizado_pol": "3",
+              "condutor_fase_mm2": 50,
+              "condutor_neutro_mm2": 25,
+              "aterramento_aco_cobreado_mm2": 25,
+              "eletroduto_aterramento_pol": "1"
+            },
+            {
+              "ate_kw": 61,
+              "disjuntor_a": 175,
+              "ramal_cobre_concentrico_mm2": null,
+              "ramal_cobre_multiplexado_mm2": 70,
+              "ramal_aluminio_mm2": 95,
+              "ramal_aluminio_cabo": "quadruplex",
+              "eletroduto_aco_galvanizado_pol": "3",
+              "condutor_fase_mm2": 70,
+              "condutor_neutro_mm2": 35,
+              "aterramento_aco_cobreado_mm2": 35,
+              "eletroduto_aterramento_pol": "1"
+            },
+            {
+              "ate_kw": 75,
+              "disjuntor_a": 200,
+              "ramal_cobre_concentrico_mm2": null,
+              "ramal_cobre_multiplexado_mm2": 70,
+              "ramal_aluminio_mm2": 120,
+              "ramal_aluminio_cabo": "quadruplex",
+              "eletroduto_aco_galvanizado_pol": "3",
+              "condutor_fase_mm2": 70,
+              "condutor_neutro_mm2": 35,
+              "aterramento_aco_cobreado_mm2": 35,
+              "eletroduto_aterramento_pol": "1"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
