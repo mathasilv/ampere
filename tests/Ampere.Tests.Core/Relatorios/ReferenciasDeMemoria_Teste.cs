@@ -61,7 +61,7 @@ public class ReferenciasDeMemoria_Teste
         "perfil-oficial-completo" => DimensionamentoDeCircuito.Dimensionar(
             Entrada("IL-01", TipoDeCarga.Iluminacao, 200m, "F+N", 127m, 8m, ["Demais locais internos"]), PerfilNormativo.NBR5410_2004, CatalogosDeTeste),
         "parado-catalogo-vazio" => DimensionamentoDeCircuito.Dimensionar(
-            Entrada("TUG-03", TipoDeCarga.TUG, 1270m, "F+N", 127m, 10m, ["LOCAL-SECO"]), Ficticio, CatalogosDeProduto.Padrao),
+            Entrada("TUG-03", TipoDeCarga.TUG, 1270m, "F+N", 127m, 10m, ["LOCAL-SECO"]), Ficticio, CatalogosFicticios.Vazios),
         "decisoes-do-projetista" => DimensionamentoDeCircuito.Dimensionar(ComDecisoesDoProjetista(), Ficticio, CatalogosDeTeste),
         "alimentador-3fn" => new CenarioDeAlimentador().Executar().Single().Circuito!.Dimensionamento!,
         _ => throw new ArgumentOutOfRangeException(nameof(cenario), cenario, "cenário sem definição")

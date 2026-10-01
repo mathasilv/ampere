@@ -94,7 +94,8 @@ public sealed class DimensionamentoNoRevit_Teste : TesteComProjetoEletrico
         var resultados = Dimensionar(ids);
 
         await Assert.That(resultados.All(resultado => resultado.Dimensionamento?.Situacao == SituacaoDoDimensionamento.Interrompido)).IsTrue();
-        await Assert.That(resultados.All(resultado => resultado.Dimensionamento!.Problemas.Single().Contains("TODO_CATALOGO"))).IsTrue();
+        // Condições sem tipo de condutor: o cálculo para no diâmetro do condutor, depois da proteção.
+        await Assert.That(resultados.All(resultado => resultado.Dimensionamento!.Problemas.Single().Contains("tipo de condutor não informado"))).IsTrue();
         var problemas = new List<string>();
         foreach (var resultado in resultados) problemas.AddRange(ConferirGravados(resultado));
         await Assert.That(problemas).IsEmpty();

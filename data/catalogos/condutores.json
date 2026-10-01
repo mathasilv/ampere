@@ -1,12 +1,59 @@
 {
   "$meta": {
-    "fonte": "catálogo de fabricante ainda não escolhido (data/DATA_GAPS.md, GAP-004)",
-    "versao": "0",
-    "data": "2026-09-29",
+    "fonte": "Prysmian Brasil, fichas técnicas Superastic Flex 450/750 V (BW_005_02_PT) e Sintenax Flex 0,6/1 kV (LV_006_01_PT), br.prysmian.com; transcritas pelo usuário e conferidas contra os PDFs em 01/10/2026",
+    "versao": "1",
+    "data": "2026-10-01",
     "ficticio": false,
-    "situacao": "Vazio: diâmetros externos só entram com o catálogo (fabricante e edição) em 'ref'; o carregador recusa valor sem fonte."
+    "situacao": "Diâmetro nominal externo por seção (a ficha não dá tolerância). Sintenax só unipolar: o motor conta condutores isolados no eletroduto, não cabo multipolar. As fichas não trazem data nem revisão impressas; o código é o do rodapé."
   },
   "catalogo": "condutores",
-  "ref": "TODO_CATALOGO",
-  "tipos": []
+  "ref": "Prysmian Brasil, fichas técnicas (a ref de cada tipo diz qual)",
+  "tipos": [
+    {
+      "tipo": "Prysmian Superastic Flex 450/750 V",
+      "ref": "Prysmian, ficha técnica Superastic Flex 450/750 V (rodapé BW_005_02_PT), p. 4: diâmetro nominal externo",
+      "isolacao": "PVC",
+      "diametro_externo_mm_por_secao_mm2": {
+        "1": 2.5,
+        "1.5": 2.9,
+        "2.5": 3.5,
+        "4": 4,
+        "6": 4.6,
+        "10": 5.9,
+        "16": 7.5,
+        "25": 8.6,
+        "35": 10.6,
+        "50": 12,
+        "70": 13.7,
+        "95": 15.8,
+        "120": 17.3,
+        "150": 19.6,
+        "185": 21.5,
+        "240": 24.4,
+        "300": 29.2
+      }
+    },
+    {
+      "tipo": "Prysmian Sintenax Flex 0,6/1 kV unipolar",
+      "ref": "Prysmian, ficha técnica Sintenax Flex 0,6/1 kV (rodapé LV_006_01_PT), p. 4: diâmetro nominal externo do unipolar",
+      "isolacao": "PVC",
+      "diametro_externo_mm_por_secao_mm2": {
+        "1.5": 5,
+        "2.5": 5.4,
+        "4": 6.5,
+        "6": 7.1,
+        "10": 8,
+        "16": 9.6,
+        "25": 11,
+        "35": 13.1,
+        "50": 14.7,
+        "70": 16.4,
+        "95": 18.7,
+        "120": 21.1,
+        "150": 22.7,
+        "185": 24.8,
+        "240": 29.1
+      }
+    }
+  ]
 }

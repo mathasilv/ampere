@@ -17,7 +17,7 @@ namespace Ampere.Tests.Revit.Alimentadores;
 
 /// <summary>
 ///     Alimentadores contra o Revit real: QD1 (tomadas F+N 120 V) ligado a um QGBT por um circuito do Revit. O perfil oficial
-///     com os catálogos vazios para no diâmetro do condutor, depois da proteção — que é gravada no alimentador.
+///     sem tipo de condutor nas condições para no diâmetro do condutor, depois da proteção — que é gravada no alimentador.
 /// </summary>
 [Property("Fonte", "TODO_NORMA")]
 [DependsOn(typeof(DesempenhoDaInjecao_Teste), ProceedOnFailure = true)]

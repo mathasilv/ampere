@@ -20,6 +20,14 @@ internal static class CatalogosFicticios
         }
         """;
 
+    /// <summary>Catálogos sem dados (TODO_CATALOGO), como os oficiais antes da escolha do fabricante.</summary>
+    public static readonly Ampere.Core.Catalogos.CatalogosDeProduto Vazios = new(
+        Ampere.Core.Catalogos.CatalogoDeCondutores.Carregar(Vazio("condutores")),
+        Ampere.Core.Catalogos.CatalogoDeEletrodutos.Carregar(Vazio("eletrodutos")));
+
+    private static string Vazio(string catalogo) =>
+        $$"""{ "$meta": { "fonte": "sem dados", "versao": "0", "data": "2026-09-29", "ficticio": false }, "catalogo": "{{catalogo}}", "ref": "TODO_CATALOGO", "tipos": [] }""";
+
     public const string Eletrodutos = """
         {
           "$meta": { "fonte": "fictício, só para testes", "versao": "0", "data": "2026-09-29", "ficticio": true },

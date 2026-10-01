@@ -8,13 +8,18 @@ public class CatalogoDeCondutores_Teste
     private static readonly CatalogoDeCondutores Ficticio = CatalogoDeCondutores.Carregar(CatalogosFicticios.Condutores);
 
     [Test]
-    public async Task Catalogo_oficial_esta_vazio_ate_a_escolha_do_fabricante()
+    [Property("Fonte", "Prysmian BW_005_02_PT e LV_006_01_PT")]
+    public async Task Catalogo_oficial_tem_os_cabos_Prysmian_com_a_ficha_de_cada_um()
     {
-        var diametro = CatalogoDeCondutores.Padrao.DiametroExternoMm("Fio 750V PVC", 2.5m);
+        var superastic = CatalogoDeCondutores.Padrao.DiametroExternoMm("Prysmian Superastic Flex 450/750 V", 2.5m);
+        var sintenax = CatalogoDeCondutores.Padrao.DiametroExternoMm("Prysmian Sintenax Flex 0,6/1 kV unipolar", 2.5m);
 
         await Assert.That(CatalogoDeCondutores.Padrao.Ficticio).IsFalse();
-        await Assert.That(diametro.Disponivel).IsFalse();
-        await Assert.That(diametro.Referencia).IsEqualTo("TODO_CATALOGO");
+        await Assert.That(superastic.Valor).IsEqualTo(3.5m);
+        await Assert.That(superastic.Referencia).StartsWith("Prysmian, ficha técnica Superastic Flex 450/750 V (rodapé BW_005_02_PT)");
+        await Assert.That(sintenax.Valor).IsEqualTo(5.4m);
+        await Assert.That(sintenax.Referencia).StartsWith("Prysmian, ficha técnica Sintenax Flex 0,6/1 kV (rodapé LV_006_01_PT)");
+        await Assert.That(CatalogoDeCondutores.Padrao.Isolacao("Prysmian Superastic Flex 450/750 V")!.Value.Isolacao).IsEqualTo("PVC");
     }
 
     [Test]
@@ -22,8 +27,7 @@ public class CatalogoDeCondutores_Teste
     {
         await Assert.That(Ficticio.Tipos).IsEquivalentTo([CatalogosFicticios.TipoDeCondutor]);
         await Assert.That(CatalogoDeEletrodutos.Carregar(CatalogosFicticios.Eletrodutos).Tipos).IsEquivalentTo([CatalogosFicticios.TipoDeEletroduto]);
-        await Assert.That(CatalogoDeCondutores.Padrao.Tipos).IsEmpty();
-        await Assert.That(CatalogoDeEletrodutos.Padrao.Tipos).IsEmpty();
+        await Assert.That(string.Join("|", CatalogoDeCondutores.Padrao.Tipos)).IsEqualTo("Prysmian Superastic Flex 450/750 V|Prysmian Sintenax Flex 0,6/1 kV unipolar");
     }
 
     [Test]

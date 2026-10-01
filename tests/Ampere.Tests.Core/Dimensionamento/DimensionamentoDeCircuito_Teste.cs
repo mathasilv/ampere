@@ -405,9 +405,9 @@ public class DimensionamentoDeCircuito_Teste
     }
 
     [Test]
-    public async Task Catalogo_oficial_vazio_para_no_diametro_do_condutor()
+    public async Task Catalogo_sem_dados_para_no_diametro_do_condutor()
     {
-        var resultado = DimensionamentoDeCircuito.Dimensionar(Entrada(), Ficticio, CatalogosDeProduto.Padrao);
+        var resultado = DimensionamentoDeCircuito.Dimensionar(Entrada(), Ficticio, CatalogosFicticios.Vazios);
 
         await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
         await Assert.That(resultado.SecaoMm2).IsEqualTo(2.5m);
