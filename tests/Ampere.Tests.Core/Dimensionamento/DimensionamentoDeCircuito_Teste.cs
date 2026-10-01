@@ -162,7 +162,7 @@ public class DimensionamentoDeCircuito_Teste
         await Assert.That(PassoDe(resultado, "Seção mínima do projetista").Resultado).IsEqualTo(4m);
         await Assert.That(PassoDe(resultado, "Seção mínima do projetista").Observacao)
             .IsEqualTo("decisão do projetista (justificativa: padrão da obra); o cálculo pode adotar seção maior, nunca menor");
-        await Assert.That(PassoDe(resultado, "Seção pela capacidade de condução").Valores[0].Valor).IsEqualTo(4m);
+        await Assert.That(PassoDe(resultado, "Seção pela capacidade de condução").Valores[0]).IsEqualTo(new ValorDoPasso("Spiso", 4m, "mm²"));
         await Assert.That(resultado.Avisos).IsEmpty();
     }
 
@@ -254,6 +254,45 @@ public class DimensionamentoDeCircuito_Teste
         await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.EntradaInvalida);
         await Assert.That(resultado.Problemas).IsEquivalentTo(
             ["seção mínima do projetista deve ser positiva", "disjuntor do projetista deve ser positivo"]);
+    }
+
+    [Test]
+    public async Task Disjuntor_do_projetista_volta_a_elevar_a_secao_se_uma_secao_maior_tem_IZ_menor()
+    {
+        // Tabela não monotônica (fictícia): a queda leva de 6 para 10 mm², que tem IZ abaixo do In do projetista.
+        var naoMonotonica = PerfilNormativo.Carregar(PerfilFicticio.Json.Replace("\"6\": 40, \"10\": 60", "\"6\": 40, \"10\": 20"));
+
+        var resultado = DimensionamentoDeCircuito.Dimensionar(Entrada(comprimentoM: 100m) with { DisjuntorDoProjetistaA = 25m }, naoMonotonica, CatalogosFicticiosCarregados);
+
+        await Assert.That(resultado.SecaoMm2).IsEqualTo(16m);
+        await Assert.That(resultado.DisjuntorA).IsEqualTo(25m);
+        await Assert.That(Observacoes(resultado)).Contains("seção elevada de 10 para 16 mm²: IZ = 20 A abaixo do In = 25 A do disjuntor do projetista");
+    }
+
+    [Test]
+    public async Task IDn_do_projetista_fora_das_sensibilidades_nominais_para_com_explicacao()
+    {
+        var resultado = Dimensionar(Entrada(locais: ["LOCAL-MOLHADO"], idr: DecisaoDeIdr.Exigido(25m)));
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
+        await Assert.That(resultado.IdrAvaliado).IsFalse();
+        await Assert.That(resultado.IdrNominalA).IsNull();
+        await Assert.That(resultado.Problemas).IsEquivalentTo(["IΔn = 25 mA do projetista fora das sensibilidades nominais do perfil (10; 30; 300)"]);
+    }
+
+    [Test]
+    public async Task Agrupamento_entre_chaves_usa_a_faixa_e_a_memoria_mostra_qual()
+    {
+        var comFaixas = PerfilNormativo.Carregar(PerfilFicticio.Json.Replace("\"3\": 0.7 }", "\"3\": 0.7, \"5\": 0.6 }"));
+
+        var quatro = DimensionamentoDeCircuito.Dimensionar(Entrada(circuitosAgrupados: 4), comFaixas, CatalogosFicticiosCarregados);
+        var sete = DimensionamentoDeCircuito.Dimensionar(Entrada(circuitosAgrupados: 7), comFaixas, CatalogosFicticiosCarregados);
+
+        await Assert.That(quatro.FCA).IsEqualTo(0.7m);
+        await Assert.That(PassoDe(quatro, "Fator de correção de agrupamento").Expressao).IsEqualTo("FCA = tabela (4 circuitos: faixa de 3 a 4)");
+        await Assert.That(sete.FCA).IsEqualTo(0.6m);
+        await Assert.That(PassoDe(sete, "Fator de correção de agrupamento").Expressao).IsEqualTo("FCA = tabela (7 circuitos: faixa de 5 ou mais)");
+        await Assert.That(PassoDe(Dimensionar(Entrada(circuitosAgrupados: 2)), "Fator de correção de agrupamento").Expressao).IsEqualTo("FCA = tabela (2 circuitos)");
     }
 
     [Test]

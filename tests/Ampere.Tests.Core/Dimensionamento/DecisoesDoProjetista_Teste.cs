@@ -107,6 +107,18 @@ public class DecisoesDoProjetista_Teste
             ["AMP_CircuitosAgrupados deve ser um número inteiro de circuitos, pelo menos 1 ('-1'; 0 = o do projeto)"]);
     }
 
+    [Test]
+    public async Task Problema_de_leitura_do_adapter_e_problema_de_dados_do_circuito()
+    {
+        var dados = new DadosDoCircuito(1, "TUG-01", "TUG", 10m, "B1", "PVC", [new DadosDoPonto(11, 1270m, 127m, "F+N", "LOCAL-SECO", "TUG")],
+            ProblemasDeLeitura: ["AMP_DisjuntorProjetistaA fora da faixa (1E+300): corrija o valor"]);
+
+        var montada = EntradaDoCircuito.Montar(dados, Condicoes);
+
+        await Assert.That(montada.Entrada).IsNull();
+        await Assert.That(montada.Problemas).IsEquivalentTo(["AMP_DisjuntorProjetistaA fora da faixa (1E+300): corrija o valor"]);
+    }
+
     private static EntradaMontada Montar(DecisoesDoProjetista? decisoes) =>
         EntradaDoCircuito.Montar(
             new DadosDoCircuito(1, "TUG-01", "TUG", 10m, "B1", "PVC", [new DadosDoPonto(11, 1270m, 127m, "F+N", "LOCAL-SECO", "TUG")], Decisoes: decisoes),

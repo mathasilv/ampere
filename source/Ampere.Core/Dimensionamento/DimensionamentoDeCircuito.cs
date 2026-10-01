@@ -89,7 +89,7 @@ public static class DimensionamentoDeCircuito
                 $"FCT = tabela ({entrada.Isolacao}; {Numero(entrada.TemperaturaAmbienteC)} °C)", [new ValorDoPasso("θ", entrada.TemperaturaAmbienteC, "°C")], string.Empty,
                 entrada.OrigemDaTemperatura is { Length: > 0 } origemDaTemperatura ? $"θ: {origemDaTemperatura}" : null);
             _fca = Consultar(perfil.FatorDeAgrupamento(entrada.CircuitosAgrupados), "Fator de correção de agrupamento",
-                $"FCA = tabela ({Contagem(entrada.CircuitosAgrupados, "circuito", "circuitos")})", [new ValorDoPasso("circuitos", entrada.CircuitosAgrupados, string.Empty)], string.Empty,
+                $"FCA = tabela ({LinhaDoAgrupamento(entrada.CircuitosAgrupados)})", [new ValorDoPasso("circuitos", entrada.CircuitosAgrupados, string.Empty)], string.Empty,
                 entrada.OrigemDoAgrupamento is { Length: > 0 } origemDoAgrupamento ? $"circuitos: {origemDoAgrupamento}" : null);
 
             var tipoDeCircuito = entrada.Tipo == TipoDeCarga.Iluminacao ? "Iluminacao" : "Forca";
@@ -257,6 +257,14 @@ public static class DimensionamentoDeCircuito
 
             Passo(referencia, "Exigência de IDR", "n = todos os pontos (IDR exigido pelo projetista)", valores, total, "pontos", observacao);
             var sensibilidade = decisao.SensibilidadeMa!.Value;
+            var dadoDaSerie = perfil.SensibilidadesNominaisDeIdrMa();
+            var serie = Exigir(dadoDaSerie, "Sensibilidades nominais de IDR", "IΔn ∈ sensibilidades nominais", "mA");
+            if (!serie.Contains(sensibilidade))
+            {
+                Parar(dadoDaSerie.Referencia, "Sensibilidade do IDR", "IΔn = informada pelo projetista", "mA",
+                    $"IΔn = {Numero(sensibilidade)} mA do projetista fora das sensibilidades nominais do perfil ({string.Join("; ", serie.Select(Numero))})");
+            }
+
             string? alerta = null;
             if (avaliacao.SensibilidadeExigida is { } exigida && sensibilidade > exigida)
             {
@@ -264,7 +272,8 @@ public static class DimensionamentoDeCircuito
                 _avisos.Add(alerta);
             }
 
-            Passo(referencia, "Sensibilidade do IDR", "IΔn = informada pelo projetista", [], sensibilidade, "mA", alerta);
+            Passo(referencia, "Sensibilidade do IDR", "IΔn = informada pelo projetista", [], sensibilidade, "mA",
+                string.Join("; ", new[] { alerta, $"sensibilidades nominais: {dadoDaSerie.Referencia}" }.OfType<string>()));
             return sensibilidade;
         }
 
@@ -368,9 +377,11 @@ public static class DimensionamentoDeCircuito
         {
             // Com disjuntor do projetista, a seção precisa de IZ ≥ In (e In ≥ IB já foi verificado).
             var alvo = disjuntorDoProjetista ?? ib;
+            // Com seção do projetista, o piso não é mais a Smín da tabela: outro nome, para a memória não confundir.
+            var piso = entrada.SecaoMinimaDoProjetistaMm2 is null ? "Smín" : "Spiso";
             var (expressao, nome) = disjuntorDoProjetista is null
-                ? ("menor S ≥ Smín com IZ₀(S) · FCA · FCT ≥ IB", "IB")
-                : ("menor S ≥ Smín com IZ₀(S) · FCA · FCT ≥ In do projetista", "In");
+                ? ($"menor S ≥ {piso} com IZ₀(S) · FCA · FCT ≥ IB", "IB")
+                : ($"menor S ≥ {piso} com IZ₀(S) · FCA · FCT ≥ In do projetista", "In");
             var referencia = PerfilNormativo.TodoNorma;
             for (var indice = 0; indice < candidatas.Count; indice++)
             {
@@ -379,7 +390,7 @@ public static class DimensionamentoDeCircuito
                 if (capacidade < alvo) continue;
 
                 Passo(referencia, "Seção pela capacidade de condução", expressao,
-                    [new ValorDoPasso("Smín", secaoMinima, "mm²"), new ValorDoPasso(nome, alvo, "A"), new ValorDoPasso("FCA", _fca!.Value, string.Empty), new ValorDoPasso("FCT", _fct!.Value, string.Empty)],
+                    [new ValorDoPasso(piso, secaoMinima, "mm²"), new ValorDoPasso(nome, alvo, "A"), new ValorDoPasso("FCA", _fca!.Value, string.Empty), new ValorDoPasso("FCT", _fct!.Value, string.Empty)],
                     candidatas[indice], "mm²", $"seções nominais: {perfil.SecoesNominaisMm2().Referencia}");
                 return indice;
             }
@@ -387,6 +398,18 @@ public static class DimensionamentoDeCircuito
             var maior = candidatas.Count > 0 ? candidatas[^1] : (secoes.Count > 0 ? secoes[^1] : 0m);
             return Parar<int>(referencia, "Seção pela capacidade de condução", expressao, "mm²",
                 $"nenhuma seção do perfil atende {nome} = {Numero(alvo)} A (maior seção: {Numero(maior)} mm²)");
+        }
+
+        // Faixa da tabela quando ela cobre mais de um número de circuitos (ex.: "13 circuitos: faixa de 12 a 15").
+        private string LinhaDoAgrupamento(int circuitos)
+        {
+            var contagem = Contagem(circuitos, "circuito", "circuitos");
+            return perfil.FaixaDeAgrupamento(circuitos) switch
+            {
+                { Fim: null } faixa => $"{contagem}: faixa de {faixa.Inicio} ou mais",
+                { } faixa when faixa.Fim > faixa.Inicio => $"{contagem}: faixa de {faixa.Inicio} a {faixa.Fim}",
+                _ => contagem
+            };
         }
 
         private string Justificativa() =>

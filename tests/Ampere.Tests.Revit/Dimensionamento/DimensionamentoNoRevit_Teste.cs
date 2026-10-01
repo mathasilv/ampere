@@ -194,7 +194,7 @@ public sealed class DimensionamentoNoRevit_Teste : TesteComProjetoEletrico
         var circuito = Elemento(ids[1]);
         Transacionar(() =>
         {
-            Parametro(circuito, "AMP_SecaoMinimaProjetistaMm2").Set(4d);
+            Parametro(circuito, "AMP_SecaoMinimaProjetistaMm2").Set(6d);
             Parametro(circuito, "AMP_DisjuntorProjetistaA").Set(20d);
             Parametro(circuito, "AMP_IDR_DecisaoProjetista").Set("Dispensar");
             Parametro(circuito, "AMP_JustificativaProjetista").Set("decisão de teste");
@@ -205,10 +205,12 @@ public sealed class DimensionamentoNoRevit_Teste : TesteComProjetoEletrico
         var lidas = Dimensionamento.LerCircuitos(ids)[1].Decisoes;
         var resultados = Dimensionar(ids);
 
-        await Assert.That(lidas).IsEqualTo(new DecisoesDoProjetista(4m, 20m, "Dispensar", null, "decisão de teste", 35m, 2m));
+        await Assert.That(lidas).IsEqualTo(new DecisoesDoProjetista(6m, 20m, "Dispensar", null, "decisão de teste", 35m, 2m));
         await Assert.That(Dimensionamento.LerCircuitos(ids)[0].Decisoes).IsEqualTo(new DecisoesDoProjetista());
         var calculo = resultados[1].Dimensionamento!;
-        await Assert.That(calculo.SecaoMm2 ?? -1m).IsGreaterThanOrEqualTo(4m);
+        // 6 mm² só pelo piso do projetista: o disjuntor de 20 A pediria 4 mm² (IZ = 32 · 0,8 · 0,94 = 24,06 A).
+        await Assert.That(calculo.SecaoMm2).IsEqualTo(6m);
+        await Assert.That(resultados[1].Memoria!.Passos.Single(passo => passo.Descricao == "Seção mínima do projetista").Resultado).IsEqualTo(6m);
         await Assert.That(calculo.DisjuntorA).IsEqualTo(20m);
         await Assert.That(calculo.IdrAvaliado).IsTrue();
         await Assert.That(calculo.IdrSensibilidadeMa).IsNull();
@@ -220,7 +222,8 @@ public sealed class DimensionamentoNoRevit_Teste : TesteComProjetoEletrico
         await Assert.That(Parametro(circuito, "AMP_IDR_SensibilidadeMa").HasValue).IsFalse();
 
         // As decisões continuam como o projetista deixou: o dimensionamento nunca as escreve.
-        await Assert.That(Parametro(circuito, "AMP_SecaoMinimaProjetistaMm2").AsDouble()).IsEqualTo(4d);
+        await Assert.That(Parametro(circuito, "AMP_SecaoMinimaProjetistaMm2").AsDouble()).IsEqualTo(6d);
+        await Assert.That(Parametro(circuito, "AMP_BitolaCondutorMm2").AsDouble()).IsEqualTo(6d);
         await Assert.That(Parametro(circuito, "AMP_DisjuntorProjetistaA").AsDouble()).IsEqualTo(20d);
         await Assert.That(Texto(circuito, "AMP_IDR_DecisaoProjetista")).IsEqualTo("Dispensar");
         await Assert.That(Parametro(circuito, "AMP_IDR_SensibilidadeProjetistaMa").HasValue).IsFalse();

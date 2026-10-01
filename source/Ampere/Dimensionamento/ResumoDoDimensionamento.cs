@@ -41,6 +41,8 @@ internal static class ResumoDoDimensionamento
                 texto.AppendLine($"Lista de materiais: {Path.GetFileName(materiais.Caminho)} ({materiais.Itens} itens"
                                  + (materiais.CircuitosFora > 0 ? $"; {materiais.CircuitosFora} circuito(s) fora da lista, com o motivo no fim da planilha)" : ")"));
             }
+            if (gravacao.DaSelecao)
+                texto.AppendLine($"Rodada só da seleção: {RelatoriosDosCircuitos.NomeDaPlanilha} e {RelatoriosDosCircuitos.NomeDosMateriais} (projeto todo) não foram refeitos.");
             texto.AppendLine(pasta);
         }
 

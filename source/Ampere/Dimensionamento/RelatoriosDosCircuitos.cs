@@ -25,7 +25,7 @@ internal static class RelatoriosDosCircuitos
     {
         var nomeDaPlanilha = daSelecao ? NomeDaPlanilhaDaSelecao : NomeDaPlanilha;
         var nomeDosMateriais = daSelecao ? NomeDosMateriaisDaSelecao : NomeDosMateriais;
-        if (resultados.Count == 0) return new GravacaoDosRelatorios(null, 0, null, null, []);
+        if (resultados.Count == 0) return new GravacaoDosRelatorios(null, 0, null, null, [], daSelecao);
 
         var pasta = PastaDeRelatorios.Caminho(nomeDoProjeto, Subpasta);
         try
@@ -34,7 +34,7 @@ internal static class RelatoriosDosCircuitos
         }
         catch (Exception excecao) when (excecao is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
-            return new GravacaoDosRelatorios(null, 0, null, null, [$"não foi possível criar a pasta {pasta}: {excecao.Message}"]);
+            return new GravacaoDosRelatorios(null, 0, null, null, [$"não foi possível criar a pasta {pasta}: {excecao.Message}"], daSelecao);
         }
 
         var erros = new List<string>();
@@ -67,7 +67,7 @@ internal static class RelatoriosDosCircuitos
         }
 
         return new GravacaoDosRelatorios(gerados > 0 || planilha is not null || materiais is not null ? pasta : null, gerados, planilha,
-            materiais is null ? null : new ArquivoDeMateriais(materiais, lista.Itens.Count, lista.ForaDaLista.Count), erros);
+            materiais is null ? null : new ArquivoDeMateriais(materiais, lista.Itens.Count, lista.ForaDaLista.Count), erros, daSelecao);
     }
 
     // Com BOM: o Excel só reconhece os acentos de um CSV em UTF-8 se ele começar com a marca.
@@ -90,5 +90,9 @@ internal static class RelatoriosDosCircuitos
 /// <summary>A lista de materiais gravada: o arquivo, quantos itens e quantos circuitos ficaram fora.</summary>
 internal sealed record ArquivoDeMateriais(string Caminho, int Itens, int CircuitosFora);
 
-/// <summary>O que foi gravado em disco: a pasta (nula se nada foi gravado), as memórias, as planilhas (nulas se não gravadas) e os erros.</summary>
-internal sealed record GravacaoDosRelatorios(string? Pasta, int Gerados, string? Planilha, ArquivoDeMateriais? Materiais, IReadOnlyList<string> Erros);
+/// <summary>
+///     O que foi gravado em disco: a pasta (nula se nada foi gravado), as memórias, as planilhas (nulas se não gravadas), os
+///     erros e se a rodada foi só da seleção (as planilhas do projeto todo não foram refeitas).
+/// </summary>
+internal sealed record GravacaoDosRelatorios(
+    string? Pasta, int Gerados, string? Planilha, ArquivoDeMateriais? Materiais, IReadOnlyList<string> Erros, bool DaSelecao);

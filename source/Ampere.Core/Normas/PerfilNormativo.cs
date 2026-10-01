@@ -45,6 +45,7 @@ public sealed class PerfilNormativo
     private readonly Tabela<IReadOnlyDictionary<string, decimal>> _resistividade;
     private readonly Tabela<IReadOnlyDictionary<int, decimal>> _ocupacao;
     private readonly Tabela<IReadOnlyList<decimal>> _idr;
+    private readonly Tabela<IReadOnlyList<decimal>> _sensibilidadesDeIdr;
     private readonly Tabela<IReadOnlyDictionary<string, ProtecaoDiferencialDoLocal>> _protecaoDiferencial;
     private readonly Tabela<IReadOnlyDictionary<string, decimal>> _fatorDeDemanda;
 
@@ -71,6 +72,7 @@ public sealed class PerfilNormativo
         _resistividade = leitor.PorTexto("resistividade_ohm_mm2_por_m", tabelas.ResistividadeOhmMm2PorM);
         _ocupacao = leitor.PorInteiro("ocupacao_maxima_eletroduto_pct", tabelas.OcupacaoMaximaEletrodutoPct);
         _idr = leitor.Lista("correntes_nominais_idr_a", tabelas.CorrentesNominaisIdrA);
+        _sensibilidadesDeIdr = leitor.Lista("sensibilidades_nominais_idr_ma", tabelas.SensibilidadesNominaisIdrMa);
         _protecaoDiferencial = leitor.Ler<List<LinhaDeProtecaoDiferencialJson>, IReadOnlyDictionary<string, ProtecaoDiferencialDoLocal>>(
             "protecao_diferencial_por_local", tabelas.ProtecaoDiferencialPorLocal, valores => valores.Count == 0, leitor.ProtecaoDiferencial);
         _fatorDeDemanda = leitor.Ler<Dictionary<string, decimal>, IReadOnlyDictionary<string, decimal>>(
@@ -186,13 +188,29 @@ public sealed class PerfilNormativo
             : DadoNormativo<decimal>.Ausente(_temperatura.Referencia, $"temperatura {NumeroEmTexto.Formatar(temperaturaC)} °C não tabelada para {isolacao}");
     }
 
-    /// <summary>Fator de agrupamento; acima da maior faixa tabelada vale a maior (ex.: "19" = dezenove ou mais).</summary>
+    /// <summary>
+    ///     Fator de agrupamento. As chaves da tabela são o início de cada faixa (ex.: "9" = 9 a 11, até a próxima chave; a
+    ///     última vale dali em diante): vale a maior faixa que não passa do número de circuitos.
+    /// </summary>
     public DadoNormativo<decimal> FatorDeAgrupamento(int circuitos)
     {
         if (_agrupamento.Pendente) return Pendente<decimal>("fator_de_agrupamento");
         if (circuitos < 1) return DadoNormativo<decimal>.Ausente(_agrupamento.Referencia, $"número de circuitos inválido ({circuitos})");
 
-        return PorChave(_agrupamento, "fator_de_agrupamento", Math.Min(circuitos, _agrupamento.Valores.Keys.Max()), $"sem fator para {circuitos} circuitos agrupados");
+        return FaixaDeAgrupamento(circuitos) is { } faixa
+            ? PorChave(_agrupamento, "fator_de_agrupamento", faixa.Inicio, $"sem fator para {circuitos} circuitos agrupados")
+            : DadoNormativo<decimal>.Ausente(_agrupamento.Referencia, $"sem fator para {circuitos} circuitos agrupados");
+    }
+
+    /// <summary>Faixa da tabela de agrupamento que vale para o número de circuitos (fim nulo = "ou mais"); nula sem tabela ou sem faixa.</summary>
+    public (int Inicio, int? Fim)? FaixaDeAgrupamento(int circuitos)
+    {
+        if (_agrupamento.Pendente || circuitos < 1) return null;
+
+        var inicios = _agrupamento.Valores.Keys.Order().ToList();
+        var indice = inicios.FindLastIndex(inicio => inicio <= circuitos);
+        if (indice < 0) return null;
+        return (inicios[indice], indice + 1 < inicios.Count ? inicios[indice + 1] - 1 : null);
     }
 
     public DadoNormativo<decimal> QuedaDeTensaoMaximaPct(string aplicacao) =>
@@ -215,6 +233,9 @@ public sealed class PerfilNormativo
         _ocupacao.Pendente || condutores < 1 ? null : Math.Min(condutores, _ocupacao.Valores.Keys.Max());
 
     public DadoNormativo<IReadOnlyList<decimal>> CorrentesNominaisDeIdrA() => Inteira(_idr, "correntes_nominais_idr_a");
+
+    /// <summary>Sensibilidades nominais (IΔn) de IDR, em mA: a do projetista precisa ser uma delas.</summary>
+    public DadoNormativo<IReadOnlyList<decimal>> SensibilidadesNominaisDeIdrMa() => Inteira(_sensibilidadesDeIdr, "sensibilidades_nominais_idr_ma");
 
     /// <summary>Tabela inteira de proteção diferencial, por nome de local.</summary>
     public DadoNormativo<IReadOnlyDictionary<string, ProtecaoDiferencialDoLocal>> ProtecaoDiferencialPorLocal() =>

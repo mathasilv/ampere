@@ -1,7 +1,7 @@
 # Memória de cálculo — circuito TUG-04
 
 - **Perfil normativo:** FICTICIO-TESTE
-- **Identificador (AMP_MemoriaCalculoId):** `sha256:1462506db6993ce3de3b427e55d3b51a4b08f44df403fa187a1ce2735571eabe`
+- **Identificador (AMP_MemoriaCalculoId):** `sha256:6871e0a85c7aa40463877523e19289e71451dfa70e4bd3c9f86577a497f86ba0`
 - **Esquema do documento:** 1
 - **Situação:** cálculo completo (21 passos)
 - **Atenção:** perfil fictício, só para testes
@@ -63,8 +63,8 @@
 ### 8. Seção pela capacidade de condução
 
 - **Referência:** FICTÍCIO: capacidade de condução
-- **Expressão:** `menor S ≥ Smín com IZ₀(S) · FCA · FCT ≥ In do projetista`
-- **Valores:** Smín = 4 mm²; In = 25 A; FCA = 0,8; FCT = 0,8
+- **Expressão:** `menor S ≥ Spiso com IZ₀(S) · FCA · FCT ≥ In do projetista`
+- **Valores:** Spiso = 4 mm²; In = 25 A; FCA = 0,8; FCT = 0,8
 - **Resultado:** 6 mm²
 - **Observação:** seções nominais: FICTÍCIO: seções
 
@@ -116,6 +116,7 @@
 - **Referência:** FICTÍCIO: IDR por local
 - **Expressão:** `IΔn = informada pelo projetista`
 - **Resultado:** 30 mA
+- **Observação:** sensibilidades nominais: FICTÍCIO: sensibilidades de IDR
 
 ### 16. Corrente nominal do IDR
 

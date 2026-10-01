@@ -24,6 +24,7 @@ public sealed record ComprimentoDoRevit(decimal Metros, string Caminho);
 /// <param name="Decisoes">Decisões do projetista no circuito (AMP_* de entrada), se houver.</param>
 /// <param name="ComprimentoNoRevit">Comprimento calculado pelo Revit, usado quando AMP_ComprimentoRotaM está vazio.</param>
 /// <param name="Quadro">AMP_Quadro do circuito (só para identificar o circuito nos relatórios e no resumo).</param>
+/// <param name="ProblemasDeLeitura">Valores que o adapter não conseguiu ler (ex.: número fora da faixa): problemas de dados do circuito.</param>
 public sealed record DadosDoCircuito(
     long Id,
     string? Numero,
@@ -35,7 +36,8 @@ public sealed record DadosDoCircuito(
     string? TipoDeCondutor = null,
     DecisoesDoProjetista? Decisoes = null,
     ComprimentoDoRevit? ComprimentoNoRevit = null,
-    string? Quadro = null);
+    string? Quadro = null,
+    IReadOnlyList<string>? ProblemasDeLeitura = null);
 
 /// <summary>
 ///     Decisões do projetista no circuito, como o adapter as lê: parâmetros AMP_* de entrada, que o dimensionamento
@@ -102,7 +104,7 @@ public static class EntradaDoCircuito
 {
     public static EntradaMontada Montar(DadosDoCircuito dados, CondicoesDoProjeto condicoes)
     {
-        var problemas = new List<string>();
+        var problemas = new List<string>(dados.ProblemasDeLeitura ?? []);
         if (string.IsNullOrWhiteSpace(dados.Numero)) problemas.Add("sem AMP_NumeroCircuito (rode 'Criar circuitos')");
         if (!CodigosDeTipoDeCarga.TryLer(dados.TipoDeCarga, out var tipo)) problemas.Add($"AMP_TipoCarga vazio ou desconhecido ('{dados.TipoDeCarga}')");
         var (comprimento, origemDoComprimento) = Comprimento(dados, problemas);

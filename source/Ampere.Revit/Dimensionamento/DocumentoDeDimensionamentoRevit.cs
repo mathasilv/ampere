@@ -85,6 +85,7 @@ public sealed class DocumentoDeDimensionamentoRevit(Document documento) : IDocum
         ids.Select(id =>
             {
                 var sistema = Sistema(id);
+                var problemas = new List<string>();
                 return new DadosDoCircuito(
                     id,
                     Texto(sistema, ParametrosAmpere.NumeroCircuito),
@@ -94,9 +95,10 @@ public sealed class DocumentoDeDimensionamentoRevit(Document documento) : IDocum
                     Texto(sistema, ParametrosAmpere.MaterialIsolacao),
                     sistema.Elements.Cast<Element>().Select(LerPonto).ToList(),
                     TipoDeCondutor: Texto(sistema, ParametrosAmpere.TipoCondutor),
-                    Decisoes: Decisoes(sistema),
+                    Decisoes: Decisoes(sistema, problemas),
                     ComprimentoNoRevit: ComprimentoNoRevit(sistema),
-                    Quadro: Texto(sistema, ParametrosAmpere.Quadro));
+                    Quadro: Texto(sistema, ParametrosAmpere.Quadro),
+                    ProblemasDeLeitura: problemas);
             })
             .ToList();
 
@@ -138,25 +140,26 @@ public sealed class DocumentoDeDimensionamentoRevit(Document documento) : IDocum
             Texto(ponto, ParametrosAmpere.Local),
             Texto(ponto, ParametrosAmpere.TipoCarga));
 
-    private static DecisoesDoProjetista Decisoes(ElectricalSystem sistema) =>
-        new(NumeroLido(sistema, ParametrosAmpere.SecaoMinimaProjetistaMm2),
-            NumeroLido(sistema, ParametrosAmpere.DisjuntorProjetistaA),
+    private static DecisoesDoProjetista Decisoes(ElectricalSystem sistema, List<string> problemas) =>
+        new(NumeroLido(sistema, ParametrosAmpere.SecaoMinimaProjetistaMm2, problemas),
+            NumeroLido(sistema, ParametrosAmpere.DisjuntorProjetistaA, problemas),
             Texto(sistema, ParametrosAmpere.IdrDecisaoProjetista),
-            NumeroLido(sistema, ParametrosAmpere.IdrSensibilidadeProjetistaMa),
+            NumeroLido(sistema, ParametrosAmpere.IdrSensibilidadeProjetistaMa, problemas),
             Texto(sistema, ParametrosAmpere.JustificativaProjetista),
-            NumeroLido(sistema, ParametrosAmpere.TemperaturaAmbienteC),
-            NumeroLido(sistema, ParametrosAmpere.CircuitosAgrupados));
+            NumeroLido(sistema, ParametrosAmpere.TemperaturaAmbienteC, problemas),
+            NumeroLido(sistema, ParametrosAmpere.CircuitosAgrupados, problemas));
 
-    // Parâmetros NUMBER (sem unidade): o valor interno é o digitado. Fora da faixa do decimal (só por digitação
-    // absurda) é recusado com o nome do parâmetro, em vez de um OverflowException sem contexto.
-    private static decimal? NumeroLido(Element elemento, DefinicaoDeParametro definicao)
+    // Parâmetros NUMBER (sem unidade): o valor interno é o digitado. Fora da faixa do decimal (só por digitação absurda)
+    // vira problema de dados deste circuito, em vez de um OverflowException que derrubaria a rodada inteira.
+    private static decimal? NumeroLido(Element elemento, DefinicaoDeParametro definicao, List<string> problemas)
     {
         if (ParametrosAmpere.Ler(elemento, definicao) is not { HasValue: true } parametro) return null;
 
         var valor = parametro.AsDouble();
-        return double.IsFinite(valor) && Math.Abs(valor) < 1e15
-            ? (decimal)valor
-            : throw new InvalidOperationException($"{definicao.Nome} do circuito {elemento.Id.Value} fora da faixa ({valor}): corrija o valor.");
+        if (double.IsFinite(valor) && Math.Abs(valor) < 1e15) return (decimal)valor;
+
+        problemas.Add($"{definicao.Nome} fora da faixa ({valor.ToString(System.Globalization.CultureInfo.InvariantCulture)}): corrija o valor");
+        return null;
     }
 
     private static decimal? ComprimentoInformadoM(ElectricalSystem sistema) =>

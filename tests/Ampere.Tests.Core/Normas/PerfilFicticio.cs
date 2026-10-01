@@ -41,6 +41,7 @@ internal static class PerfilFicticio
             "resistividade_ohm_mm2_por_m": { "ref": "FICTÍCIO: resistividade", "valores": { "Cobre": 0.02 } },
             "ocupacao_maxima_eletroduto_pct": { "ref": "FICTÍCIO: ocupação", "valores": { "1": 50, "2": 30, "3": 40 } },
             "correntes_nominais_idr_a": { "ref": "FICTÍCIO: correntes de IDR", "valores": [25, 40, 63] },
+            "sensibilidades_nominais_idr_ma": { "ref": "FICTÍCIO: sensibilidades de IDR", "valores": [10, 30, 300] },
             "fator_de_demanda_por_tipo": { "ref": "FICTÍCIO: fatores de demanda", "valores": { "Iluminacao": 0.8, "TUG": 0.5, "TUE": 1, "ArCondicionado": 1, "Motor": 1, "Reserva": 1 } },
             "protecao_diferencial_por_local": {
               "ref": "FICTÍCIO: IDR por local",

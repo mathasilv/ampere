@@ -34,8 +34,46 @@ public class PerfilNormativo_Teste
         await Assert.That(oficial.FatorDeAgrupamento(25).Valor).IsEqualTo(0.38m);
         await Assert.That(oficial.OcupacaoMaximaDeEletrodutoPct(3).Valor).IsEqualTo(40m);
         await Assert.That(oficial.CorrentesNominaisDeIdrA().Valor!.Count).IsEqualTo(5);
+        await Assert.That(oficial.SensibilidadesNominaisDeIdrMa().Valor).IsEquivalentTo([6m, 10m, 30m, 100m, 300m, 500m]);
         await Assert.That(oficial.ProtecaoDiferencialPorLocal().Valor!.Count).IsEqualTo(4);
         await Assert.That(oficial.ProtecaoDiferencialPorLocal().Valor!["Local com banheira ou chuveiro"].SensibilidadeMaximaMa).IsEqualTo(30m);
+    }
+
+    [Test]
+    [Arguments(8, 0.52)]
+    [Arguments(9, 0.50)]
+    [Arguments(11, 0.50)]
+    [Arguments(12, 0.45)]
+    [Arguments(15, 0.45)]
+    [Arguments(16, 0.41)]
+    [Arguments(19, 0.41)]
+    [Arguments(20, 0.38)]
+    [Arguments(40, 0.38)]
+    public async Task Fator_de_agrupamento_oficial_pela_faixa_de_circuitos(int circuitos, decimal fator)
+    {
+        await Assert.That(PerfilNormativo.NBR5410_2004.FatorDeAgrupamento(circuitos).Valor).IsEqualTo(fator);
+    }
+
+    [Test]
+    public async Task Faixa_de_agrupamento_vai_do_inicio_ate_a_proxima_chave_e_a_ultima_nao_tem_fim()
+    {
+        var oficial = PerfilNormativo.NBR5410_2004;
+
+        await Assert.That(oficial.FaixaDeAgrupamento(5)).IsEqualTo((5, (int?)5));
+        await Assert.That(oficial.FaixaDeAgrupamento(13)).IsEqualTo((12, (int?)15));
+        await Assert.That(oficial.FaixaDeAgrupamento(25)).IsEqualTo((20, (int?)null));
+        await Assert.That(oficial.FaixaDeAgrupamento(0)).IsNull();
+    }
+
+    [Test]
+    public async Task Tabela_sem_a_faixa_do_inicio_nao_da_fator()
+    {
+        var aPartirDe2 = PerfilNormativo.Carregar(PerfilFicticio.Json.Replace("\"valores\": { \"1\": 1, \"2\": 0.8, \"3\": 0.7 }", "\"valores\": { \"2\": 0.8, \"3\": 0.7 }"));
+
+        var fator = aPartirDe2.FatorDeAgrupamento(1);
+
+        await Assert.That(fator.Disponivel).IsFalse();
+        await Assert.That(fator.Ausencia).IsEqualTo("sem fator para 1 circuitos agrupados");
     }
 
     [Test]
@@ -60,6 +98,7 @@ public class PerfilNormativo_Teste
         await Assert.That(Ficticio.QuedaDeTensaoMaximaPct("circuito_terminal").Valor).IsEqualTo(5m);
         await Assert.That(Ficticio.ResistividadeOhmMm2PorM("Cobre").Valor).IsEqualTo(0.02m);
         await Assert.That(Ficticio.CorrentesNominaisDeIdrA().Valor).IsEquivalentTo([25m, 40m, 63m]);
+        await Assert.That(Ficticio.SensibilidadesNominaisDeIdrMa().Valor).IsEquivalentTo([10m, 30m, 300m]);
         await Assert.That(Ficticio.ProtecaoDiferencialPorLocal().Valor.Count).IsEqualTo(4);
     }
 

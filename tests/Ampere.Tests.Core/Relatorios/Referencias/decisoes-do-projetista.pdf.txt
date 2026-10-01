@@ -2,7 +2,7 @@
 56,7 [Titulo 56,7] Memória de cálculo — circuito TUG-04
 80,2 [Rotulo 56,7] Perfil normativo: [Texto 150,4] FICTICIO-TESTE
 91,2 [Rotulo 56,7] Identificador (AMP_MemoriaCalculoId):
-102,3 [Codigo 56,7] sha256:1462506db6993ce3de3b427e55d3b51a4b08f44df403fa187a1ce2735571eabe
+102,3 [Codigo 56,7] sha256:6871e0a85c7aa40463877523e19289e71451dfa70e4bd3c9f86577a497f86ba0
 112,8 [Rotulo 56,7] Esquema do documento: [Texto 191,8] 1
 123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo completo (21 passos)
 134,9 [Rotulo 56,7] Atenção: [Texto 107,2] perfil fictício, só para testes
@@ -53,8 +53,8 @@
 == página 2 de 3
 56,7 [TituloDoPasso 56,7] 8. Seção pela capacidade de condução
 70,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: capacidade de condução
-82 [Rotulo 68,7] Expressão: [Codigo 132,7] menor S ≥ Smín com IZ₀(S) · FCA · FCT ≥ In do projetista
-93 [Rotulo 68,7] Valores: [Texto 115,8] Smín = 4 mm²; In = 25 A; FCA = 0,8; FCT = 0,8
+82 [Rotulo 68,7] Expressão: [Codigo 132,7] menor S ≥ Spiso com IZ₀(S) · FCA · FCT ≥ In do projetista
+93 [Rotulo 68,7] Valores: [Texto 115,8] Spiso = 4 mm²; In = 25 A; FCA = 0,8; FCT = 0,8
 104,1 [Rotulo 68,7] Resultado: [Texto 129,2] 6 mm²
 115,2 [Rotulo 68,7] Observação: [Texto 138,3] seções nominais: FICTÍCIO: seções
 134,2 [TituloDoPasso 56,7] 9. Resistividade do condutor
@@ -95,12 +95,13 @@
 591,4 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: IDR por local
 602,5 [Rotulo 68,7] Expressão: [Codigo 132,7] IΔn = informada pelo projetista
 613,5 [Rotulo 68,7] Resultado: [Texto 129,2] 30 mA
-632,6 [TituloDoPasso 56,7] 16. Corrente nominal do IDR
-646,8 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra IDR x disjuntor
-657,9 [Rotulo 68,7] Expressão: [Codigo 132,7] menor In(IDR) ≥ In(disjuntor)
-668,9 [Rotulo 68,7] Valores: [Texto 115,8] In = 25 A
-680 [Rotulo 68,7] Resultado: [Texto 129,2] 25 A
-691 [Rotulo 68,7] Observação: [Texto 138,3] correntes nominais de IDR: FICTÍCIO: correntes de IDR
+624,6 [Rotulo 68,7] Observação: [Texto 138,3] sensibilidades nominais: FICTÍCIO: sensibilidades de IDR
+643,6 [TituloDoPasso 56,7] 16. Corrente nominal do IDR
+657,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra IDR x disjuntor
+668,9 [Rotulo 68,7] Expressão: [Codigo 132,7] menor In(IDR) ≥ In(disjuntor)
+680 [Rotulo 68,7] Valores: [Texto 115,8] In = 25 A
+691 [Rotulo 68,7] Resultado: [Texto 129,2] 25 A
+702,1 [Rotulo 68,7] Observação: [Texto 138,3] correntes nominais de IDR: FICTÍCIO: correntes de IDR
 776 [Rodape 189,5] Memória de cálculo — circuito TUG-04 · página 2 de 3
 == página 3 de 3
 56,7 [TituloDoPasso 56,7] 17. Condutores no eletroduto

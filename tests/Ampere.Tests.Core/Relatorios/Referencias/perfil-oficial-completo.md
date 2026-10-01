@@ -1,7 +1,7 @@
 # Memória de cálculo — circuito IL-01
 
 - **Perfil normativo:** NBR5410:2004
-- **Identificador (AMP_MemoriaCalculoId):** `sha256:40a4343b50db3437472a33ff61f4dc7ed2bfd94c44c45a8e14c085f121597d23`
+- **Identificador (AMP_MemoriaCalculoId):** `sha256:069428fac5d4c175548b6a53b824cbb11d06113047866cab1180fd357fe8ddaf`
 - **Esquema do documento:** 1
 - **Situação:** cálculo completo (17 passos)
 - **Referências pendentes (TODO_NORMA ou TODO_CATALOGO):** 1 passo (13), sem fonte oficial
@@ -32,7 +32,7 @@
 
 ### 4. Fator de correção de agrupamento
 
-- **Referência:** NBR 5410:2004, Tabela 42, linha 1 (em feixe); faixas por limite superior
+- **Referência:** NBR 5410:2004, Tabela 42, linha 1 (em feixe); chave = início da faixa (9 a 11, 12 a 15, 16 a 19, 20 ou mais)
 - **Expressão:** `FCA = tabela (1 circuito)`
 - **Valores:** circuitos = 1
 - **Resultado:** 1
