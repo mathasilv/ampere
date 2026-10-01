@@ -12,6 +12,7 @@ namespace Ampere.Core.Previsao;
 /// <param name="Alinea">Alínea do item da norma (ex.: "b").</param>
 /// <param name="SeiscentosVa">Cômodo em que os primeiros pontos de tomada recebem a potência maior (banheiros, cozinhas…).</param>
 /// <param name="Nota">O que a norma pede e o modelo não permite conferir (ex.: tomadas acima da bancada).</param>
+/// <param name="CircuitoExclusivo">As tomadas do cômodo vão em circuitos só de tomadas desses cômodos.</param>
 public sealed record RegraDoComodo(
     string Comodo,
     string Alinea,
@@ -19,7 +20,8 @@ public sealed record RegraDoComodo(
     decimal? PerimetroPorPontoM,
     decimal? PerimetroAcimaDeM2,
     bool SeiscentosVa,
-    string? Nota)
+    string? Nota,
+    bool CircuitoExclusivo = false)
 {
     /// <summary>Pontos de tomada mínimos para a área e o perímetro do cômodo.</summary>
     public int PontosMinimos(decimal areaM2, decimal perimetroM)
@@ -69,6 +71,8 @@ public sealed class NormaDePrevisao
         ACadaM2 = iluminacao.ACadaM2!.Value;
         AcrescimoVA = iluminacao.AcrescimoVa!.Value;
         ReferenciaDasTomadas = arquivo.Tomadas!.Ref!;
+        ReferenciaDaDivisao = arquivo.Divisao!.Ref!;
+        CorrenteIndependenteAcimaDeA = arquivo.Divisao.CorrenteIndependenteAcimaDeA!.Value;
         Comodos = comodos;
         var potencia = arquivo.PotenciaDasTomadas!;
         ReferenciaDaPotencia = potencia.Ref!;
@@ -105,6 +109,12 @@ public sealed class NormaDePrevisao
     public IReadOnlyList<RegraDoComodo> Comodos { get; }
 
     public string ReferenciaDaPotencia { get; }
+
+    /// <summary>Referência da divisão da instalação em circuitos (9.5.3).</summary>
+    public string ReferenciaDaDivisao { get; }
+
+    /// <summary>Acima desta corrente nominal, o ponto de um equipamento constitui circuito independente.</summary>
+    public decimal CorrenteIndependenteAcimaDeA { get; }
 
     /// <summary>Potência mínima dos primeiros pontos de tomada dos cômodos <see cref="RegraDoComodo.SeiscentosVa" />.</summary>
     public decimal SeiscentosVA { get; }
@@ -184,10 +194,17 @@ public sealed class NormaDePrevisao
                 if (comodo.PerimetroPorPontoM is not null) Positivo($"tomadas: '{nome}'.perimetro_por_ponto_m", comodo.PerimetroPorPontoM);
                 if (comodo.PerimetroAcimaDeM2 is not null) Positivo($"tomadas: '{nome}'.perimetro_acima_de_m2", comodo.PerimetroAcimaDeM2);
                 regras.Add(new RegraDoComodo(nome, comodo.Alinea?.Trim() ?? string.Empty, comodo.Minimo, comodo.PerimetroPorPontoM, comodo.PerimetroAcimaDeM2,
-                    comodo.SeiscentosVa ?? false, string.IsNullOrWhiteSpace(comodo.Nota) ? null : comodo.Nota.Trim()));
+                    comodo.SeiscentosVa ?? false, string.IsNullOrWhiteSpace(comodo.Nota) ? null : comodo.Nota.Trim(), comodo.CircuitoExclusivo ?? false));
             }
 
             if (regras.Count == 0) problemas.Add("tomadas: nenhum cômodo");
+        }
+
+        if (arquivo.Divisao is not { } divisao) problemas.Add("divisao ausente");
+        else
+        {
+            Ref("divisao", divisao.Ref);
+            Positivo("divisao.corrente_independente_acima_de_a", divisao.CorrenteIndependenteAcimaDeA);
         }
 
         if (arquivo.PotenciaDasTomadas is not { } potencia) problemas.Add("potencia_das_tomadas ausente");
@@ -233,6 +250,7 @@ internal sealed record ArquivoDePrevisao(
     string? Perfil,
     IluminacaoJson? Iluminacao,
     TomadasJson? Tomadas,
+    DivisaoJson? Divisao,
     PotenciaDasTomadasJson? PotenciaDasTomadas);
 
 internal sealed record MetaDaPrevisao(string? Fonte, string? Versao, string? Data, bool? Ficticio, string? Situacao);
@@ -242,7 +260,9 @@ internal sealed record IluminacaoJson(string? Ref, int? PontosMinimos, decimal? 
 internal sealed record TomadasJson(string? Ref, List<ComodoJson>? Comodos);
 
 internal sealed record ComodoJson(
-    string? Comodo, string? Alinea, int? Minimo, decimal? PerimetroPorPontoM, decimal? PerimetroAcimaDeM2, bool? SeiscentosVa, string? Nota);
+    string? Comodo, string? Alinea, int? Minimo, decimal? PerimetroPorPontoM, decimal? PerimetroAcimaDeM2, bool? SeiscentosVa, string? Nota, bool? CircuitoExclusivo);
+
+internal sealed record DivisaoJson(string? Ref, decimal? CorrenteIndependenteAcimaDeA);
 
 internal sealed record PotenciaDasTomadasJson(
     string? Ref, decimal? SeiscentosVa, int? PontosDeSeiscentos, int? PontosDeSeiscentosNaAlternativa, int? ConjuntoAcimaDePontos, decimal? DemaisVa);

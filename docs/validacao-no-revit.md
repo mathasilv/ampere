@@ -37,7 +37,10 @@ Use um projeto de teste com arquitetura vinculada ou com ambientes (Rooms/Spaces
    e "Banheiro" para o banheiro. O resumo deve dizer quantos cômodos atendem; um quarto de 12 m² com uma luminária de
    100 VA deve aparecer com "iluminação de 100 VA, abaixo dos 160 VA mínimos". Rode de novo: o diálogo deve abrir com
    as categorias escolhidas (guardadas no projeto), também depois de fechar e reabrir. Em `Documentos\Ampere\{projeto}\Previsao`
-   devem sair `previsao.md` e `previsao.csv`. Com a arquitetura em vínculo, os Rooms do vínculo devem aparecer.
+   devem sair `previsao.md` e `previsao.csv`. Com a arquitetura em vínculo, os Rooms do vínculo devem aparecer. Depois
+   do 'Criar circuitos' (passo 5), ponha uma tomada da cozinha e uma da sala no mesmo circuito e rode de novo: o resumo
+   deve apontar a divisão dos circuitos ("tomadas de cozinha ou área de serviço com 1 ponto de outro tipo ou de outro
+   cômodo").
 5. **Criar circuitos.** Os circuitos devem ser numerados no quadro escolhido.
 6. **Dimensionar circuitos** (sem seleção).
    - O diálogo abre vazio na primeira vez. Nas vezes seguintes, abre com as condições guardadas no modelo; feche e

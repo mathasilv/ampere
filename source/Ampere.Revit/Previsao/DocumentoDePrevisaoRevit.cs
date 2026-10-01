@@ -1,8 +1,10 @@
 using Ampere.Core.Cargas;
+using Ampere.Core.Parametros;
 using Ampere.Core.Previsao;
 using Ampere.Revit.Armazenamento;
 using Ampere.Revit.Locais;
 using Ampere.Revit.Parametros;
+using Autodesk.Revit.DB.Electrical;
 
 namespace Ampere.Revit.Previsao;
 
@@ -16,7 +18,9 @@ namespace Ampere.Revit.Previsao;
 ///         apartamento-tipo repetido conta em cada posição); sem nenhum Room, os Spaces do modelo. Nunca os dois juntos —
 ///         o mesmo cômodo contaria duas vezes.</item>
 ///         <item>Pontos: os de <see cref="PontosDeCarga" /> com AMP_TipoCarga, no cômodo achado pela mesma busca dos "Locais
-///         pelos ambientes" (<see cref="BuscaDeAmbiente" />), mas só entre os cômodos listados.</item>
+///         pelos ambientes" (<see cref="BuscaDeAmbiente" />), mas só entre os cômodos listados; os outros vão como fora dos
+///         cômodos. Circuito do ponto: o circuito de força de que ele é membro (o de menor Id, se houver mais de um), com o
+///         nome "quadro-número" do Ampere ou, fora do Ampere, o do Revit.</item>
 ///         <item>Área em m² com 4 casas e perímetro em m com 3: o resíduo da conversão de pés não pode virar um ponto de
 ///         tomada a mais ("a cada 5 m, ou fração").</item>
 ///     </list>
@@ -34,7 +38,7 @@ public sealed class DocumentoDePrevisaoRevit(Document documento) : IDocumentoDeP
     public string? GravarCategorias(IReadOnlyDictionary<string, string> categoriaPorNome) =>
         Esquema.GravarNoProjeto(documento, CategoriasEmJson.Escrever(categoriaPorNome));
 
-    public IReadOnlyList<ComodoDoProjeto> LerComodos()
+    public LeituraDaPrevisao Ler()
     {
         var vinculos = BuscaDeAmbiente.Vinculos(documento);
         var ambientes = Ambientes(documento, 0, BuiltInCategory.OST_Rooms)
@@ -45,23 +49,53 @@ public sealed class DocumentoDePrevisaoRevit(Document documento) : IDocumentoDeP
         var listados = ambientes.Select(ambiente => ambiente.Chave).ToHashSet(StringComparer.Ordinal);
 
         var pontos = new Dictionary<string, List<PontoDoComodo>>(StringComparer.Ordinal);
+        var fora = new List<PontoDoComodo>();
+        var circuitos = new Dictionary<long, string>();
         foreach (var instancia in PontosDeCarga.Instancias(documento))
         {
             if (!CodigosDeTipoDeCarga.TryLer(ParametrosAmpere.LerTexto(instancia, ParametrosAmpere.TipoCarga), out var tipo)) continue;
-            if (Chave(instancia, espacos, vinculos, listados) is not { } chave) continue;
 
-            var potencia = ParametrosAmpere.Ler(instancia, ParametrosAmpere.PotenciaInstaladaVA) is { HasValue: true } parametro
-                ? Math.Round((decimal)UnitUtils.ConvertFromInternalUnits(parametro.AsDouble(), UnitTypeId.VoltAmperes), 6, MidpointRounding.AwayFromZero)
-                : (decimal?)null;
+            var circuito = Circuito(instancia);
+            if (circuito is not null && !circuitos.ContainsKey(circuito.Id.Value)) circuitos[circuito.Id.Value] = Nome(circuito);
+            var ponto = new PontoDoComodo(instancia.Id.Value, tipo,
+                ParametrosAmpere.Ler(instancia, ParametrosAmpere.PotenciaInstaladaVA) is { HasValue: true } potencia
+                    ? Math.Round((decimal)UnitUtils.ConvertFromInternalUnits(potencia.AsDouble(), UnitTypeId.VoltAmperes), 6, MidpointRounding.AwayFromZero)
+                    : null,
+                circuito?.Id.Value,
+                ParametrosAmpere.Ler(instancia, ParametrosAmpere.TensaoCircuitoV) is { HasValue: true } tensao ? (decimal)tensao.AsDouble() : null,
+                Texto(instancia, ParametrosAmpere.Fases));
+
+            if (Chave(instancia, espacos, vinculos, listados) is not { } chave)
+            {
+                fora.Add(ponto);
+                continue;
+            }
+
             if (!pontos.TryGetValue(chave, out var doComodo)) pontos[chave] = doComodo = [];
-            doComodo.Add(new PontoDoComodo(instancia.Id.Value, tipo, potencia));
+            doComodo.Add(ponto);
         }
 
-        return ambientes
+        var comodos = ambientes
             .Select(ambiente => new ComodoDoProjeto(ambiente.Chave, ambiente.Nome, ambiente.Numero, ambiente.Pavimento, ambiente.AreaM2, ambiente.PerimetroM,
                 pontos.TryGetValue(ambiente.Chave, out var doComodo) ? doComodo.OrderBy(ponto => ponto.Id).ToList() : []))
             .ToList();
+        return new LeituraDaPrevisao(comodos, fora.OrderBy(ponto => ponto.Id).ToList(), circuitos);
     }
+
+    // O circuito de força de que o ponto é membro; o de menor Id, se ele tiver mais de um conector ligado.
+    private static ElectricalSystem? Circuito(FamilyInstance ponto) =>
+        ponto.MEPModel?.GetElectricalSystems()?
+            .Where(sistema => sistema.SystemType == ElectricalSystemType.PowerCircuit)
+            .OrderBy(sistema => sistema.Id.Value)
+            .FirstOrDefault();
+
+    private static string Nome(ElectricalSystem circuito) =>
+        ParametrosAmpere.LerTexto(circuito, ParametrosAmpere.NumeroCircuito) is { Length: > 0 } numero
+            ? string.IsNullOrWhiteSpace(circuito.PanelName) ? numero : $"{circuito.PanelName}-{numero}"
+            : $"{circuito.PanelName} {circuito.CircuitNumber}".Trim();
+
+    private static string? Texto(Element elemento, DefinicaoDeParametro definicao) =>
+        ParametrosAmpere.LerTexto(elemento, definicao) is { Length: > 0 } texto ? texto : null;
 
     // O cômodo do ponto, entre os listados: o do próprio elemento, os pontos deslocados no modelo e, sem eles, nos vínculos.
     private string? Chave(FamilyInstance ponto, bool espacos, IReadOnlyList<VinculoDeAmbientes> vinculos, HashSet<string> listados)

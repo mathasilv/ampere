@@ -2,9 +2,12 @@ using Ampere.Core.Cargas;
 
 namespace Ampere.Core.Previsao;
 
-/// <summary>Ponto de carga classificado dentro de um cômodo.</summary>
+/// <summary>Ponto de carga classificado (num cômodo ou fora deles).</summary>
 /// <param name="PotenciaVA">AMP_PotenciaInstaladaVA (nulo = vazio).</param>
-public sealed record PontoDoComodo(long Id, TipoDeCarga Tipo, decimal? PotenciaVA);
+/// <param name="Circuito">Circuito de força de que o ponto é membro (nulo = fora de circuito).</param>
+/// <param name="TensaoV">AMP_TensaoCircuitoV (nulo = vazio), para a corrente do ponto.</param>
+/// <param name="Fases">AMP_Fases (nulo = vazio), para a corrente do ponto.</param>
+public sealed record PontoDoComodo(long Id, TipoDeCarga Tipo, decimal? PotenciaVA, long? Circuito = null, decimal? TensaoV = null, string? Fases = null);
 
 /// <summary>Um cômodo do modelo (Room ou Space, inclusive de vínculo), com a geometria e os pontos que estão nele.</summary>
 /// <param name="Chave">Identifica o cômodo no documento (o mesmo cômodo de um vínculo repetido aparece uma vez por instância).</param>
@@ -19,11 +22,24 @@ public sealed record ComodoDoProjeto(
     decimal PerimetroM,
     IReadOnlyList<PontoDoComodo> Pontos);
 
+/// <summary>O que a previsão lê do documento.</summary>
+/// <param name="Comodos">Rooms do modelo e dos vínculos ou, sem nenhum, Spaces, com os pontos classificados de cada um.</param>
+/// <param name="PontosForaDosComodos">Pontos classificados que não estão em nenhum cômodo (contam na divisão dos circuitos).</param>
+/// <param name="Circuitos">Nome de cada circuito de força dos pontos, para o relatório (ex.: "QD1-TUG-03").</param>
+public sealed record LeituraDaPrevisao(
+    IReadOnlyList<ComodoDoProjeto> Comodos,
+    IReadOnlyList<PontoDoComodo> PontosForaDosComodos,
+    IReadOnlyDictionary<long, string> Circuitos);
+
+/// <summary>Circuito que não atende à divisão da instalação (9.5.3), com os pontos que causam a falta.</summary>
+/// <param name="Regra">"equipamento acima do limite" ou "tomadas de cozinha", para o relatório.</param>
+public sealed record FaltaDeDivisao(string Regra, string Circuito, string Descricao, IReadOnlyList<long> Pontos);
+
 /// <summary>Porta para os cômodos e as categorias guardadas num documento (implementada pelo adapter Revit).</summary>
 public interface IDocumentoDePrevisao : IDocumentoTransacional
 {
-    /// <summary>Cômodos do projeto (Rooms do modelo e dos vínculos ou, sem nenhum, Spaces), com os pontos classificados de cada um.</summary>
-    IReadOnlyList<ComodoDoProjeto> LerComodos();
+    /// <summary>Cômodos, pontos fora deles e nomes dos circuitos.</summary>
+    LeituraDaPrevisao Ler();
 
     /// <summary>Categoria guardada para cada nome de ambiente (vazio se o projeto não tem).</summary>
     IReadOnlyDictionary<string, string> LerCategorias();
@@ -74,9 +90,10 @@ public sealed record AvaliacaoDoComodo(
     IReadOnlyList<string> Faltas,
     IReadOnlyList<string> Observacoes);
 
-/// <summary>Resultado da previsão: um item por cômodo, na ordem do relatório.</summary>
+/// <summary>Resultado da previsão: um item por cômodo, na ordem do relatório, e as faltas na divisão dos circuitos.</summary>
 /// <param name="PontosNoConjunto">Pontos de tomada de uso geral no conjunto dos cômodos da potência maior (banheiros, cozinhas…).</param>
-public sealed record ResultadoDaPrevisao(IReadOnlyList<AvaliacaoDoComodo> Comodos, int PontosNoConjunto, NormaDePrevisao Norma)
+/// <param name="Divisao">Circuitos dos cômodos de habitação que não atendem à divisão da instalação, na ordem dos nomes.</param>
+public sealed record ResultadoDaPrevisao(IReadOnlyList<AvaliacaoDoComodo> Comodos, int PontosNoConjunto, NormaDePrevisao Norma, IReadOnlyList<FaltaDeDivisao> Divisao)
 {
     public int Contar(SituacaoDoComodo situacao) => Comodos.Count(comodo => comodo.Situacao == situacao);
 }
@@ -95,6 +112,11 @@ public sealed record ResultadoDaPrevisao(IReadOnlyList<AvaliacaoDoComodo> Comodo
 ///         menor; a alternativa da norma (menos pontos com a potência maior) só vale quando o conjunto desses cômodos passa do
 ///         limite — o conjunto avaliado é o do projeto todo, então o relatório pede que o projetista confira o da unidade.</item>
 ///         <item>Ponto sem potência é falta: o cômodo não é dado como atendido com dado faltando.</item>
+///         <item>Divisão (9.5.3), só para pontos em cômodos de habitação: equipamento acima do limite de corrente (TUE, ar
+///         condicionado e motor — critério do Ampere para "equipamento", a TUG e a iluminação não são de um equipamento)
+///         num circuito com outros pontos; tomada TUG de cozinha ou área de serviço num circuito com ponto que não é TUG
+///         desses cômodos (inclusive ponto fora de cômodo). Corrente do ponto: P / V, ou P / (√3 · V) no trifásico; sem
+///         potência ou tensão, o ponto não entra.</item>
 ///     </list>
 /// </remarks>
 public static class PrevisaoDeCargas
@@ -114,7 +136,7 @@ public static class PrevisaoDeCargas
     /// </summary>
     /// <param name="escolhas">Categoria escolhida no diálogo para cada nome de ambiente; vazia = sem categoria.</param>
     public static ExecucaoDaPrevisao Executar(
-        IReadOnlyList<ComodoDoProjeto> comodos, IReadOnlyDictionary<string, string?> escolhas, NormaDePrevisao norma, IDocumentoDePrevisao documento)
+        LeituraDaPrevisao leitura, IReadOnlyDictionary<string, string?> escolhas, NormaDePrevisao norma, IDocumentoDePrevisao documento)
     {
         var validas = Categorias(norma);
         var problemas = escolhas
@@ -133,12 +155,13 @@ public static class PrevisaoDeCargas
 
         string? motivo = null;
         documento.EmUmaTransacao(NomeDaTransacao, () => motivo = documento.GravarCategorias(categorias));
-        return new ExecucaoDaPrevisao(Avaliar(comodos, categorias, norma), [], motivo);
+        return new ExecucaoDaPrevisao(Avaliar(leitura, categorias, norma), [], motivo);
     }
 
     /// <param name="categoriaPorNome">Categoria escolhida para cada nome de ambiente (sem diferença de maiúsculas).</param>
-    public static ResultadoDaPrevisao Avaliar(IReadOnlyList<ComodoDoProjeto> comodos, IReadOnlyDictionary<string, string> categoriaPorNome, NormaDePrevisao norma)
+    public static ResultadoDaPrevisao Avaliar(LeituraDaPrevisao leitura, IReadOnlyDictionary<string, string> categoriaPorNome, NormaDePrevisao norma)
     {
+        var comodos = leitura.Comodos;
         var categorias = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (nome, categoria) in categoriaPorNome)
         {
@@ -158,8 +181,65 @@ public static class PrevisaoDeCargas
             .ThenBy(comodo => comodo.Chave, StringComparer.Ordinal)
             .Select(comodo => Avaliar(comodo, Categoria(comodo), conjunto, norma))
             .ToList();
-        return new ResultadoDaPrevisao(avaliacoes, conjunto, norma);
+        // Um ponto fica num cômodo só (o adapter acha um); se vier repetido, vale o primeiro, sem exceção.
+        var regraDoPonto = new Dictionary<long, RegraDoComodo>();
+        foreach (var comodo in comodos.Where(comodo => comodo.AreaM2 > 0m))
+        {
+            if (norma.Regra(Categoria(comodo)) is not { } regra) continue;
+            foreach (var ponto in comodo.Pontos) regraDoPonto.TryAdd(ponto.Id, regra);
+        }
+        return new ResultadoDaPrevisao(avaliacoes, conjunto, norma, Divisao(leitura, regraDoPonto, norma));
     }
+
+    private static readonly TipoDeCarga[] Equipamentos = [TipoDeCarga.TUE, TipoDeCarga.ArCondicionado, TipoDeCarga.Motor];
+
+    private static List<FaltaDeDivisao> Divisao(LeituraDaPrevisao leitura, IReadOnlyDictionary<long, RegraDoComodo> regraDoPonto, NormaDePrevisao norma)
+    {
+        var faltas = new List<FaltaDeDivisao>();
+        var porCircuito = leitura.Comodos.SelectMany(comodo => comodo.Pontos).Concat(leitura.PontosForaDosComodos)
+            .Where(ponto => ponto.Circuito is not null)
+            .GroupBy(ponto => ponto.Circuito!.Value)
+            .Select(grupo => (Nome: leitura.Circuitos.GetValueOrDefault(grupo.Key) ?? $"circuito {grupo.Key}", Pontos: grupo.OrderBy(ponto => ponto.Id).ToList()))
+            .OrderBy(circuito => circuito.Nome, StringComparer.Ordinal);
+        bool NaHabitacao(PontoDoComodo ponto) => regraDoPonto.ContainsKey(ponto.Id);
+        bool DeCozinha(PontoDoComodo ponto) => ponto.Tipo == TipoDeCarga.TUG && regraDoPonto.GetValueOrDefault(ponto.Id) is { CircuitoExclusivo: true };
+
+        foreach (var (nome, pontos) in porCircuito)
+        {
+            var acimaDoLimite = pontos
+                .Where(ponto => NaHabitacao(ponto) && Equipamentos.Contains(ponto.Tipo))
+                .Select(ponto => (Ponto: ponto, Corrente: Corrente(ponto)))
+                .Where(par => par.Corrente > norma.CorrenteIndependenteAcimaDeA)
+                .ToList();
+            if (acimaDoLimite.Count > 0 && pontos.Count > 1)
+            {
+                var correntes = string.Join(", ", acimaDoLimite.Select(par => $"{N(Math.Round(par.Corrente!.Value, 2, MidpointRounding.AwayFromZero))} A"));
+                faltas.Add(new FaltaDeDivisao("equipamento acima do limite", nome,
+                    $"{Contagem(acimaDoLimite.Count, "equipamento", "equipamentos")} acima de {N(norma.CorrenteIndependenteAcimaDeA)} A ({correntes}) num circuito de " +
+                    $"{pontos.Count} pontos: cada um precisa de circuito independente",
+                    acimaDoLimite.Select(par => par.Ponto.Id).ToList()));
+            }
+
+            if (pontos.Any(DeCozinha) && pontos.Where(ponto => !DeCozinha(ponto)).ToList() is { Count: > 0 } outros)
+            {
+                faltas.Add(new FaltaDeDivisao("tomadas de cozinha", nome,
+                    $"tomadas de cozinha ou área de serviço com {Contagem(outros.Count, "ponto", "pontos")} de outro tipo ou de outro cômodo: " +
+                    "essas tomadas vão em circuitos só delas",
+                    outros.Select(ponto => ponto.Id).ToList()));
+            }
+        }
+
+        return faltas;
+    }
+
+    private static decimal? Corrente(PontoDoComodo ponto)
+    {
+        if (ponto.PotenciaVA is not { } potencia || ponto.TensaoV is not > 0m) return null;
+        var trifasico = ponto.Fases is { } fases && fases.StartsWith("3F", StringComparison.Ordinal);
+        return potencia / (ponto.TensaoV.Value * (trifasico ? Raiz3 : 1m));
+    }
+
+    private const decimal Raiz3 = 1.7320508075688772935274463415m;
 
     private static AvaliacaoDoComodo Avaliar(ComodoDoProjeto comodo, string? categoria, int conjunto, NormaDePrevisao norma)
     {

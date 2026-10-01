@@ -128,7 +128,7 @@ public class PrevisaoDeCargas_Teste
     [Test]
     public async Task Ponto_sem_potencia_e_falta()
     {
-        var banheiro = Comodo("Banho", 3m, 7m, Luz(100m), new PontoDoComodo(9, TipoDeCarga.TUG, null));
+        var banheiro = Comodo("Banho", 3m, 7m, Luz(100m), Tug(600m) with { PotenciaVA = null });
 
         var avaliacao = Avaliar([banheiro], ("Banho", "Banheiro")).Comodos.Single();
 
@@ -150,12 +150,60 @@ public class PrevisaoDeCargas_Teste
     }
 
     [Test]
+    [Property("Fonte", "NBR 5410:2004, item 9.5.3")]
+    public async Task Equipamento_acima_de_10_A_num_circuito_com_outros_pontos_e_falta()
+    {
+        // Chuveiro 5400 VA / 220 V = 24,55 A, no circuito 2 com uma torneira de 1000 VA; o forno trifásico no 3 está sozinho.
+        var banheiro = Comodo("Banho", 3m, 7m, Luz(100m), Tug(600m),
+            new PontoDoComodo(50, TipoDeCarga.TUE, 5400m, 2, 220m, "2F"), new PontoDoComodo(51, TipoDeCarga.TUE, 1000m, 2, 220m, "2F"),
+            new PontoDoComodo(52, TipoDeCarga.TUE, 9000m, 3, 220m, "3F"));
+
+        var resultado = Avaliar(Leitura([banheiro]), ("Banho", "Banheiro"));
+
+        var falta = resultado.Divisao.Single();
+        await Assert.That(falta.Circuito).IsEqualTo("QD1-TUE-01");
+        await Assert.That(falta.Descricao).IsEqualTo("1 equipamento acima de 10 A (24,55 A) num circuito de 2 pontos: cada um precisa de circuito independente");
+        await Assert.That(falta.Pontos).IsEquivalentTo([50L]);
+        await Assert.That(RelatorioDaPrevisao.Resumo(resultado)).EndsWith(". Divisão dos circuitos: 1 falta(s) em 1 circuito(s)");
+        await Assert.That(RelatorioDaPrevisao.Markdown(resultado)).Contains("- **QD1-TUE-01** (equipamento acima do limite): 1 equipamento acima de 10 A");
+    }
+
+    [Test]
+    [Property("Fonte", "NBR 5410:2004, item 9.5.3")]
+    public async Task Tomada_de_cozinha_com_tomada_da_sala_ou_fora_de_comodo_e_falta()
+    {
+        var cozinha = Comodo("Cozinha", 9m, 10m, new PontoDoComodo(60, TipoDeCarga.TUG, 600m, 1));
+        var sala = Comodo("Sala", 15m, 16m, new PontoDoComodo(61, TipoDeCarga.TUG, 100m, 1));
+        var foraDeComodo = new PontoDoComodo(62, TipoDeCarga.TUG, 100m, 1);
+
+        var mesmaCategoria = Avaliar(Leitura([cozinha, Comodo("Copa", 4m, 8m, new PontoDoComodo(63, TipoDeCarga.TUG, 600m, 1))]),
+            ("Cozinha", Cozinha), ("Copa", Cozinha));
+        var comSala = Avaliar(Leitura([cozinha, sala], foraDeComodo), ("Cozinha", Cozinha), ("Sala", "Sala ou dormitório"));
+
+        await Assert.That(mesmaCategoria.Divisao).IsEmpty();
+        var falta = comSala.Divisao.Single();
+        await Assert.That(falta.Regra).IsEqualTo("tomadas de cozinha");
+        await Assert.That(falta.Descricao).StartsWith("tomadas de cozinha ou área de serviço com 2 pontos de outro tipo ou de outro cômodo");
+        await Assert.That(falta.Pontos).IsEquivalentTo([61L, 62L]);
+    }
+
+    [Test]
+    public async Task Divisao_so_olha_os_comodos_de_habitacao()
+    {
+        // O mesmo chuveiro com a torneira, mas num cômodo fora da habitação: a 9.5.3 não se aplica.
+        var loja = Comodo("Loja", 30m, 22m, new PontoDoComodo(70, TipoDeCarga.TUE, 5400m, 2, 220m, "2F"), new PontoDoComodo(71, TipoDeCarga.TUE, 1000m, 2, 220m, "2F"));
+
+        await Assert.That(Avaliar([loja], ("Loja", PrevisaoDeCargas.ForaDaHabitacao)).Divisao).IsEmpty();
+        await Assert.That(Avaliar([loja]).Divisao).IsEmpty();
+    }
+
+    [Test]
     public async Task Executar_guarda_as_escolhas_com_as_do_projeto_e_avalia()
     {
         var documento = new DocumentoFalso(new Dictionary<string, string> { ["Banho"] = "Banheiro", ["Varanda"] = "Varanda" });
         var comodos = new[] { Comodo("Banho", 3m, 7m, Luz(100m), Tug(600m)), Comodo("Sala", 15m, 16m) };
 
-        var execucao = PrevisaoDeCargas.Executar(comodos, new Dictionary<string, string?> { ["Sala"] = "Sala ou dormitório", ["Varanda"] = "" }, Norma, documento);
+        var execucao = PrevisaoDeCargas.Executar(Leitura(comodos), new Dictionary<string, string?> { ["Sala"] = "Sala ou dormitório", ["Varanda"] = "" }, Norma, documento);
 
         await Assert.That(execucao.Problemas).IsEmpty();
         await Assert.That(documento.Transacoes).IsEqualTo(1);
@@ -170,7 +218,7 @@ public class PrevisaoDeCargas_Teste
     {
         var documento = new DocumentoFalso(new Dictionary<string, string>());
 
-        var execucao = PrevisaoDeCargas.Executar([Comodo("Sala", 15m, 16m)], new Dictionary<string, string?> { ["Sala"] = "Escritório" }, Norma, documento);
+        var execucao = PrevisaoDeCargas.Executar(Leitura([Comodo("Sala", 15m, 16m)]), new Dictionary<string, string?> { ["Sala"] = "Escritório" }, Norma, documento);
 
         await Assert.That(execucao.Resultado).IsNull();
         await Assert.That(execucao.Problemas.Single()).IsEqualTo("Sala: categoria 'Escritório' fora da previsão de cargas da norma");
@@ -194,9 +242,16 @@ public class PrevisaoDeCargas_Teste
     }
 
     private static ResultadoDaPrevisao Avaliar(IReadOnlyList<ComodoDoProjeto> comodos, params (string Nome, string Categoria)[] categorias) =>
-        PrevisaoDeCargas.Avaliar(comodos, categorias.ToDictionary(par => par.Nome, par => par.Categoria), Norma);
+        Avaliar(Leitura(comodos), categorias);
 
-    private static long _proximo;
+    private static ResultadoDaPrevisao Avaliar(LeituraDaPrevisao leitura, params (string Nome, string Categoria)[] categorias) =>
+        PrevisaoDeCargas.Avaliar(leitura, categorias.ToDictionary(par => par.Nome, par => par.Categoria), Norma);
+
+    private static LeituraDaPrevisao Leitura(IReadOnlyList<ComodoDoProjeto> comodos, params PontoDoComodo[] fora) =>
+        new(comodos, fora, new Dictionary<long, string> { [1] = "QD1-TUG-01", [2] = "QD1-TUE-01" });
+
+    // Ids gerados a partir de 1000: os testes da divisão usam Ids fixos abaixo disso.
+    private static long _proximo = 1000;
 
     private static ComodoDoProjeto Comodo(string nome, decimal areaM2, decimal perimetroM, params PontoDoComodo[] pontos) =>
         new(nome, nome, null, null, areaM2, perimetroM, pontos);
@@ -219,7 +274,7 @@ public class PrevisaoDeCargas_Teste
             acao();
         }
 
-        public IReadOnlyList<ComodoDoProjeto> LerComodos() => [];
+        public LeituraDaPrevisao Ler() => new([], [], new Dictionary<long, string>());
 
         public IReadOnlyDictionary<string, string> LerCategorias() => guardadas;
 

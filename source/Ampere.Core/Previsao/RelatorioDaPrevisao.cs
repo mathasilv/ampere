@@ -37,6 +37,9 @@ public static class RelatorioDaPrevisao
 
         texto.Append($"- **Potência das tomadas** ({norma.ReferenciaDaPotencia}). Pontos de tomada de uso geral no conjunto dos cômodos da potência maior: " +
                      $"{resultado.PontosNoConjunto}.\n");
+        texto.Append($"- **Divisão em circuitos** ({norma.ReferenciaDaDivisao}): equipamento (TUE, ar condicionado ou motor) acima de " +
+                     $"{N(norma.CorrenteIndependenteAcimaDeA)} A em circuito próprio; tomadas das categorias com circuito exclusivo " +
+                     $"({string.Join(", ", norma.Comodos.Where(regra => regra.CircuitoExclusivo).Select(regra => regra.Comodo))}) em circuitos só delas.\n");
         texto.Append("- Só os pontos TUG contam como tomadas; a TUE atende a um aparelho. A alternativa da ABNT NBR 5413 para a iluminação não é avaliada.\n\n");
 
         texto.Append("## Cômodos\n\n");
@@ -52,6 +55,10 @@ public static class RelatorioDaPrevisao
                          $"{Situacao(avaliacao.Situacao)} | {Celula(string.Join("; ", notas))} |\n");
         }
 
+        texto.Append("\n## Divisão dos circuitos\n\n");
+        if (resultado.Divisao.Count == 0) texto.Append("Os circuitos dos cômodos de habitação atendem à divisão da instalação.\n");
+        foreach (var falta in resultado.Divisao)
+            texto.Append($"- **{falta.Circuito}** ({falta.Regra}): {falta.Descricao} (pontos: {string.Join(", ", falta.Pontos)}).\n");
         return texto.ToString();
     }
 
@@ -88,7 +95,10 @@ public static class RelatorioDaPrevisao
         if (resultado.Contar(SituacaoDoComodo.SemCategoria) is > 0 and var semCategoria) partes.Add($"{semCategoria} sem categoria");
         if (resultado.Contar(SituacaoDoComodo.ForaDaHabitacao) is > 0 and var fora) partes.Add($"{fora} fora da habitação");
         if (resultado.Contar(SituacaoDoComodo.SemArea) is > 0 and var semArea) partes.Add($"{semArea} sem área");
-        return string.Join("; ", partes);
+        var resumo = string.Join("; ", partes);
+        return resultado.Divisao.Count > 0
+            ? $"{resumo}. Divisão dos circuitos: {resultado.Divisao.Count} falta(s) em {resultado.Divisao.Select(falta => falta.Circuito).Distinct().Count()} circuito(s)"
+            : resumo;
     }
 
     public static string Situacao(SituacaoDoComodo situacao) => situacao switch

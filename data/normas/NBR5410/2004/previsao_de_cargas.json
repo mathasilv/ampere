@@ -1,10 +1,10 @@
 {
   "$meta": {
-    "fonte": "ABNT NBR 5410:2004 Versão Corrigida 17.03.2008, item 9.5.2 (texto oficial anexado pelo usuário na conversa, não versionado; só os valores transcritos, com o item)",
+    "fonte": "ABNT NBR 5410:2004 Versão Corrigida 17.03.2008, itens 9.5.2 e 9.5.3 (texto oficial anexado pelo usuário na conversa, não versionado; só os valores transcritos, com o item)",
     "versao": "2004",
     "data": "2026-10-01",
     "ficticio": false,
-    "situacao": "Previsão mínima de cargas dos locais de habitação (9.5.1): iluminação (9.5.2.1), número de pontos de tomada (9.5.2.2.1) e potência mínima de cada ponto (9.5.2.2.2). Fora daqui: a alternativa da ABNT NBR 5413 para a iluminação e as duas tomadas acima da bancada da pia (posição, não conferível pelo modelo)."
+    "situacao": "Previsão mínima de cargas dos locais de habitação (9.5.1): iluminação (9.5.2.1), número de pontos de tomada (9.5.2.2.1), potência mínima de cada ponto (9.5.2.2.2) e divisão em circuitos (9.5.3.1 e 9.5.3.2). Fora daqui: a alternativa da ABNT NBR 5413 para a iluminação e as duas tomadas acima da bancada da pia (posição, não conferível pelo modelo)."
   },
   "perfil": "NBR5410:2004",
   "iluminacao": {
@@ -29,6 +29,7 @@
         "alinea": "b",
         "perimetro_por_ponto_m": 3.5,
         "seiscentos_va": true,
+        "circuito_exclusivo": true,
         "nota": "acima da bancada da pia, no mínimo duas tomadas, no mesmo ponto ou em pontos distintos (conferir no projeto)"
       },
       {
@@ -49,6 +50,10 @@
         "perimetro_acima_de_m2": 6
       }
     ]
+  },
+  "divisao": {
+    "ref": "NBR 5410:2004, item 9.5.3 (9.5.3.1: ponto que alimenta equipamento com corrente nominal acima de 10 A constitui circuito independente; 9.5.3.2: tomadas de cozinhas, copas, áreas de serviço, lavanderias e locais análogos em circuitos exclusivos delas)",
+    "corrente_independente_acima_de_a": 10
   },
   "potencia_das_tomadas": {
     "ref": "NBR 5410:2004, item 9.5.2.2.2 (alínea a: 600 VA por ponto até três pontos e 100 VA nos excedentes, cada cômodo separado; com mais de seis pontos no conjunto desses cômodos, admite-se 600 VA até dois pontos; alínea b: 100 VA por ponto)",

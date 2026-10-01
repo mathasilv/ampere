@@ -42,15 +42,15 @@ public class PrevisaoDeCargasCommand : ExternalCommand
         }
 
         var porta = new DocumentoDePrevisaoRevit(documento);
-        var comodos = porta.LerComodos();
-        if (comodos.Count == 0)
+        var leitura = porta.Ler();
+        if (leitura.Comodos.Count == 0)
         {
             Cancelar("Nenhum ambiente (Room do modelo ou dos vínculos, ou Space) colocado no projeto: a previsão é feita por cômodo.");
             return;
         }
 
         var norma = NormaDePrevisao.NBR5410_2004;
-        var viewModel = new PrevisaoViewModel(comodos, PrevisaoDeCargas.Categorias(norma), porta.LerCategorias());
+        var viewModel = new PrevisaoViewModel(leitura.Comodos, PrevisaoDeCargas.Categorias(norma), porta.LerCategorias());
         var janela = new PrevisaoView(viewModel);
         _ = new WindowInteropHelper(janela) { Owner = Application.MainWindowHandle };
         if (janela.ShowDialog() != true || viewModel.Escolhas is not { } escolhas)
@@ -62,7 +62,7 @@ public class PrevisaoDeCargasCommand : ExternalCommand
         ExecucaoDaPrevisao execucao;
         try
         {
-            execucao = PrevisaoDeCargas.Executar(comodos, escolhas, norma, porta);
+            execucao = PrevisaoDeCargas.Executar(leitura, escolhas, norma, porta);
         }
         catch (Exception excecao) when (excecao is InvalidOperationException or Autodesk.Revit.Exceptions.ApplicationException)
         {
@@ -81,6 +81,8 @@ public class PrevisaoDeCargasCommand : ExternalCommand
         foreach (var avaliacao in resultado.Comodos.Where(avaliacao => avaliacao.Situacao == SituacaoDoComodo.NaoAtende).Take(8))
             texto.Append($"{Environment.NewLine}• {avaliacao.Comodo.Nome}{(avaliacao.Comodo.Pavimento is { } pavimento ? $" ({pavimento})" : string.Empty)}: {string.Join("; ", avaliacao.Faltas)}");
         if (resultado.Contar(SituacaoDoComodo.NaoAtende) > 8) texto.Append($"{Environment.NewLine}• … e outros (ver o relatório)");
+        foreach (var falta in resultado.Divisao.Take(8)) texto.Append($"{Environment.NewLine}• {falta.Circuito}: {falta.Descricao}");
+        if (resultado.Divisao.Count > 8) texto.Append($"{Environment.NewLine}• … e outras faltas de divisão (ver o relatório)");
         if (execucao.CategoriasNaoGravadas is { } motivo) texto.Append($"{Environment.NewLine}{Environment.NewLine}As categorias não ficaram no modelo: {motivo}.");
         texto.Append(pasta is null ? string.Empty : $"{Environment.NewLine}{Environment.NewLine}Relatório: {pasta}");
         foreach (var erro in erros) texto.Append($"{Environment.NewLine}Não salvo: {erro}");

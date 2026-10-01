@@ -20,7 +20,8 @@ public sealed class PrevisaoNoRevit_Teste : TesteComProjetoEletrico
         var (cozinha, sala) = Cenario.CriarDoisAmbientes();
         var tomadas = ClassificarTomadas(3);
 
-        var comodos = new DocumentoDePrevisaoRevit(Cenario.Documento).LerComodos();
+        var leitura = new DocumentoDePrevisaoRevit(Cenario.Documento).Ler();
+        var comodos = leitura.Comodos;
 
         await Assert.That(string.Join("|", comodos.Select(comodo => comodo.Nome).Order())).IsEqualTo("Cozinha|Sala");
         foreach (var (comodo, room) in new[] { (comodos.Single(item => item.Nome == "Cozinha"), cozinha), (comodos.Single(item => item.Nome == "Sala"), sala) })
@@ -36,7 +37,8 @@ public sealed class PrevisaoNoRevit_Teste : TesteComProjetoEletrico
         var comPontos = comodos.Where(comodo => comodo.Pontos.Count > 0).ToList();
         await Assert.That(comPontos.Count).IsEqualTo(1);
         await Assert.That(comPontos[0].Pontos.Select(ponto => ponto.Id).Order()).IsEquivalentTo(tomadas.Order());
-        await Assert.That(comPontos[0].Pontos.All(ponto => ponto is { Tipo: TipoDeCarga.TUG, PotenciaVA: 180m })).IsTrue();
+        await Assert.That(comPontos[0].Pontos.All(ponto => ponto is { Tipo: TipoDeCarga.TUG, PotenciaVA: 180m, Circuito: null })).IsTrue();
+        await Assert.That(leitura.PontosForaDosComodos).IsEmpty();
     }
 
     [Test]
@@ -44,9 +46,9 @@ public sealed class PrevisaoNoRevit_Teste : TesteComProjetoEletrico
     {
         Cenario.CriarDoisAmbientes();
         var porta = new DocumentoDePrevisaoRevit(Cenario.Documento);
-        var comodos = porta.LerComodos();
+        var leitura = porta.Ler();
 
-        var execucao = PrevisaoDeCargas.Executar(comodos, new Dictionary<string, string?> { ["Cozinha"] = "Cozinha, copa, área de serviço ou lavanderia", ["Sala"] = "Sala ou dormitório" },
+        var execucao = PrevisaoDeCargas.Executar(leitura, new Dictionary<string, string?> { ["Cozinha"] = "Cozinha, copa, área de serviço ou lavanderia", ["Sala"] = "Sala ou dormitório" },
             NormaDePrevisao.NBR5410_2004, porta);
 
         await Assert.That(execucao.Problemas).IsEmpty();
