@@ -23,6 +23,8 @@
                           LogicalName="Ampere.Core.Catalogos.condutores.json"/>
         <EmbeddedResource Include="..\..\data\catalogos\eletrodutos.json"
                           LogicalName="Ampere.Core.Catalogos.eletrodutos.json"/>
+        <EmbeddedResource Include="..\..\data\distribuidoras\CELG\CT-04-2018\demanda.json"
+                          LogicalName="Ampere.Core.Demanda.CELG_CT-04-2018.demanda.json"/>
     </ItemGroup>
 
     <!--
