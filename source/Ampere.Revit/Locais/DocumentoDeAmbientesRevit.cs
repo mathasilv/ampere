@@ -10,16 +10,12 @@ namespace Ampere.Revit.Locais;
 /// </summary>
 /// <remarks>
 ///     Ordem de busca do ambiente, parando no primeiro que achar: Room e Space do próprio elemento (o Revit usa o ponto
-///     de cálculo da família); depois um ponto 10 cm para dentro do ambiente, na normal da face hospedeira (tomada na
-///     parede, luminária no forro) ou na frente da família (hospedada em parede sem ser por face), e 10 cm abaixo do ponto
-///     (luminária acima do limite do ambiente); por fim os Rooms dos
+///     de cálculo da família); depois os pontos deslocados de <see cref="BuscaDeAmbiente" />; por fim os Rooms dos
 ///     modelos vinculados (arquitetura em vínculo, o caso comum), com o ponto levado para as coordenadas do vínculo.
 ///     O nome é o parâmetro "Nome" do ambiente, sem o número.
 /// </remarks>
 public sealed class DocumentoDeAmbientesRevit(Document documento) : IDocumentoDeAmbientes
 {
-    private static readonly double Deslocamento = UnitUtils.ConvertToInternalUnits(0.10, UnitTypeId.Meters);
-
     private static readonly BuiltInCategory[] CategoriasDosPontos = CatalogoDeParametros.Padrao.Parametros
         .Single(parametro => parametro.Nome == ParametrosAmpere.Local.Nome).Categorias
         .Select(MapeamentoRevit.Categoria)
@@ -36,7 +32,7 @@ public sealed class DocumentoDeAmbientesRevit(Document documento) : IDocumentoDe
                 .WhereElementIsNotElementType()
                 .OfType<FamilyInstance>();
 
-        var vinculos = Vinculos();
+        var vinculos = BuscaDeAmbiente.Vinculos(documento);
         return elementos
             .Where(ponto => CodigosDeTipoDeCarga.TryLer(ParametrosAmpere.LerTexto(ponto, ParametrosAmpere.TipoCarga), out _))
             .Where(ponto => ParametrosAmpere.Ler(ponto, ParametrosAmpere.Local) is not null)
@@ -58,40 +54,25 @@ public sealed class DocumentoDeAmbientesRevit(Document documento) : IDocumentoDe
         }
     }
 
-    private string? Ambiente(FamilyInstance ponto, IReadOnlyList<(Document Documento, Transform Inversa)> vinculos)
+    private string? Ambiente(FamilyInstance ponto, IReadOnlyList<VinculoDeAmbientes> vinculos)
     {
         if ((Nome(ponto.Room) ?? Nome(ponto.Space)) is { } direto) return direto;
-        if (ponto.Location is not LocationPoint { Point: var origem }) return null;
+        if (BuscaDeAmbiente.Origem(ponto) is not { } origem) return null;
 
-        // Normal da face (família baseada em face), frente da família (hospedada em parede sem ser por face) e abaixo.
-        XYZ[] candidatos =
-        [
-            origem + ponto.GetTotalTransform().BasisZ * Deslocamento,
-            origem + ponto.FacingOrientation * Deslocamento,
-            origem - XYZ.BasisZ * Deslocamento
-        ];
+        var candidatos = BuscaDeAmbiente.Candidatos(ponto);
         foreach (var candidato in candidatos)
         {
             if ((Nome(documento.GetRoomAtPoint(candidato)) ?? Nome(documento.GetSpaceAtPoint(candidato))) is { } proximo) return proximo;
         }
 
-        foreach (var (vinculado, inversa) in vinculos)
+        foreach (var vinculo in vinculos)
         foreach (var candidato in candidatos.Prepend(origem))
         {
-            if (Nome(vinculado.GetRoomAtPoint(inversa.OfPoint(candidato))) is { } doVinculo) return doVinculo;
+            if (Nome(vinculo.Documento.GetRoomAtPoint(vinculo.Inversa.OfPoint(candidato))) is { } doVinculo) return doVinculo;
         }
 
         return null;
     }
-
-    private List<(Document Documento, Transform Inversa)> Vinculos() =>
-        new FilteredElementCollector(documento)
-            .OfCategory(BuiltInCategory.OST_RvtLinks)
-            .OfClass(typeof(RevitLinkInstance))
-            .Cast<RevitLinkInstance>()
-            .Select(vinculo => (Documento: vinculo.GetLinkDocument(), Inversa: vinculo.GetTotalTransform().Inverse))
-            .Where(par => par.Documento is not null)
-            .ToList();
 
     private static string? Nome(Element? ambiente) =>
         ambiente?.get_Parameter(BuiltInParameter.ROOM_NAME)?.AsString() is { } nome && !string.IsNullOrWhiteSpace(nome) ? nome.Trim() : null;

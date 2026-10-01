@@ -1,0 +1,61 @@
+{
+  "$meta": {
+    "fonte": "ABNT NBR 5410:2004 Versão Corrigida 17.03.2008, item 9.5.2 (texto oficial anexado pelo usuário na conversa, não versionado; só os valores transcritos, com o item)",
+    "versao": "2004",
+    "data": "2026-10-01",
+    "ficticio": false,
+    "situacao": "Previsão mínima de cargas dos locais de habitação (9.5.1): iluminação (9.5.2.1), número de pontos de tomada (9.5.2.2.1) e potência mínima de cada ponto (9.5.2.2.2). Fora daqui: a alternativa da ABNT NBR 5413 para a iluminação e as duas tomadas acima da bancada da pia (posição, não conferível pelo modelo)."
+  },
+  "perfil": "NBR5410:2004",
+  "iluminacao": {
+    "ref": "NBR 5410:2004, itens 9.5.2.1.1 (pelo menos um ponto de luz fixo no teto) e 9.5.2.1.2 (100 VA até 6 m²; acima, 100 VA mais 60 VA a cada 4 m² inteiros)",
+    "pontos_minimos": 1,
+    "area_inicial_m2": 6,
+    "potencia_inicial_va": 100,
+    "a_cada_m2": 4,
+    "acrescimo_va": 60
+  },
+  "tomadas": {
+    "ref": "NBR 5410:2004, item 9.5.2.2.1 (número de pontos de tomada; perímetro \"para cada X m, ou fração\")",
+    "comodos": [
+      {
+        "comodo": "Banheiro",
+        "alinea": "a",
+        "minimo": 1,
+        "seiscentos_va": true
+      },
+      {
+        "comodo": "Cozinha, copa, área de serviço ou lavanderia",
+        "alinea": "b",
+        "perimetro_por_ponto_m": 3.5,
+        "seiscentos_va": true,
+        "nota": "acima da bancada da pia, no mínimo duas tomadas, no mesmo ponto ou em pontos distintos (conferir no projeto)"
+      },
+      {
+        "comodo": "Varanda",
+        "alinea": "c",
+        "minimo": 1
+      },
+      {
+        "comodo": "Sala ou dormitório",
+        "alinea": "d",
+        "perimetro_por_ponto_m": 5
+      },
+      {
+        "comodo": "Demais cômodos",
+        "alinea": "e",
+        "minimo": 1,
+        "perimetro_por_ponto_m": 5,
+        "perimetro_acima_de_m2": 6
+      }
+    ]
+  },
+  "potencia_das_tomadas": {
+    "ref": "NBR 5410:2004, item 9.5.2.2.2 (alínea a: 600 VA por ponto até três pontos e 100 VA nos excedentes, cada cômodo separado; com mais de seis pontos no conjunto desses cômodos, admite-se 600 VA até dois pontos; alínea b: 100 VA por ponto)",
+    "seiscentos_va": 600,
+    "pontos_de_seiscentos": 3,
+    "pontos_de_seiscentos_na_alternativa": 2,
+    "conjunto_acima_de_pontos": 6,
+    "demais_va": 100
+  }
+}

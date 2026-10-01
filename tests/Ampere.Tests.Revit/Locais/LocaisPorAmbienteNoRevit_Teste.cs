@@ -34,7 +34,7 @@ public sealed class LocaisPorAmbienteNoRevit_Teste : TesteComProjetoEletrico
     [Test]
     public async Task Le_o_ambiente_de_cada_ponto_e_grava_o_local_escolhido()
     {
-        CriarDoisAmbientes();
+        Cenario.CriarDoisAmbientes();
         var tomadas = ClassificarTomadas(3);
         var porta = new DocumentoDeAmbientesRevit(Cenario.Documento);
 
@@ -73,25 +73,6 @@ public sealed class LocaisPorAmbienteNoRevit_Teste : TesteComProjetoEletrico
         if (resultado.Classificados != quantidade) throw new InvalidOperationException("Classificação do cenário incompleta.");
         return tomadas;
     }
-
-    /// <summary>Fecha um retângulo em volta da parede do cenário e põe um Room de cada lado.</summary>
-    private void CriarDoisAmbientes()
-    {
-        var documento = Cenario.Documento;
-        using var transacao = new Transaction(documento, "Ambientes do teste");
-        transacao.Start();
-        var nivel = documento.GetElement(Cenario.Parede.LevelId) as Level ?? throw new InvalidOperationException("Parede sem nível.");
-        XYZ[] cantos = [new(-100, -20, 0), new(100, -20, 0), new(100, 20, 0), new(-100, 20, 0)];
-        for (var indice = 0; indice < cantos.Length; indice++)
-            Wall.Create(documento, Line.CreateBound(cantos[indice], cantos[(indice + 1) % cantos.Length]), nivel.Id, false);
-        documento.Regenerate();
-
-        Nomear(documento.Create.NewRoom(nivel, new UV(0, -10)), "Cozinha");
-        Nomear(documento.Create.NewRoom(nivel, new UV(0, 10)), "Sala");
-        transacao.Commit();
-    }
-
-    private static void Nomear(Element ambiente, string nome) => ambiente.get_Parameter(BuiltInParameter.ROOM_NAME).Set(nome);
 
     private static Guid Guid(string nome) => CatalogoDeParametros.Padrao.Parametros.Single(parametro => parametro.Nome == nome).Guid;
 }

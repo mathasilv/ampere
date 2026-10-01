@@ -81,6 +81,27 @@ internal sealed class CenarioEletrico
         return quadro;
     }
 
+    /// <summary>
+    ///     Fecha um retângulo em volta da parede do cenário e põe um Room de cada lado, "Cozinha" (y negativo) e "Sala". As
+    ///     tomadas vão numa das faces da parede — qual, depende do lado externo dela —, então caem todas no mesmo ambiente.
+    /// </summary>
+    public (Element Cozinha, Element Sala) CriarDoisAmbientes()
+    {
+        using var transacao = new Transaction(Documento, "Ambientes do teste");
+        transacao.Start();
+        XYZ[] cantos = [new(-100, -20, 0), new(100, -20, 0), new(100, 20, 0), new(-100, 20, 0)];
+        for (var indice = 0; indice < cantos.Length; indice++)
+            Wall.Create(Documento, Line.CreateBound(cantos[indice], cantos[(indice + 1) % cantos.Length]), _nivel.Id, false);
+        Documento.Regenerate();
+
+        var cozinha = Documento.Create.NewRoom(_nivel, new UV(0, -10));
+        cozinha.get_Parameter(BuiltInParameter.ROOM_NAME).Set("Cozinha");
+        var sala = Documento.Create.NewRoom(_nivel, new UV(0, 10));
+        sala.get_Parameter(BuiltInParameter.ROOM_NAME).Set("Sala");
+        transacao.Commit();
+        return (cozinha, sala);
+    }
+
     public List<long> ColocarLuminarias(int quantidade) =>
         ColocarVarias(quantidade, BuiltInCategory.OST_LightingFixtures, simbolo => simbolo.Name == "600x600 - 120", altura: 8);
 

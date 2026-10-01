@@ -47,8 +47,8 @@ quebre R2025/R2026: perguntar antes de aposentar essas configurações.
   (cópia do `10_Parametros_Compartilhados_Ampere.json`), guardada por `GuidsCongelados_Teste`.
   Nunca alterar, nunca usar GUIDs de terceiros.
 - Extensible Storage: esquemas `AmpereCondicoesDoProjeto` (`CondicoesEmJson.GuidDoEsquema`; nos circuitos e num
-  DataStorage) e `AmpereFatoresDoQuadro` (`FatoresEmJson.GuidDoEsquema`; nos quadros) também **congelados** e guardados
-  por teste — os projetos guardam dados presos a eles. Formato novo = `versao` nova no JSON ou esquema novo com leitura
+  DataStorage), `AmpereFatoresDoQuadro` (`FatoresEmJson.GuidDoEsquema`; nos quadros) e `AmpereCategoriasDosComodos`
+  (`CategoriasEmJson.GuidDoEsquema`; num DataStorage) também **congelados** e guardados por teste — os projetos guardam dados presos a eles. Formato novo = `versao` nova no JSON ou esquema novo com leitura
   do antigo. Acesso de leitura e escrita público (`EsquemaJson`).
 
 ## Regras de domínio

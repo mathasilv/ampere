@@ -35,6 +35,11 @@ public class Application : ExternalApplication
             .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
             .SetToolTip("Grava o local (IDR) dos pontos classificados pelo ambiente em que estão (Room/Space, inclusive de vínculo): um local por ambiente. Seleção vazia = projeto inteiro (um único desfazer).");
 
+        circuitos.AddPushButton<PrevisaoDeCargasCommand>("Previsão\nde cargas")
+            .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
+            .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
+            .SetToolTip("Confere cada cômodo de habitação contra a previsão mínima da NBR 5410 (9.5.2): iluminação pela área, número de tomadas pelo perímetro e potência das tomadas. A categoria de cada ambiente fica guardada no projeto (um único desfazer); o relatório vai para a pasta do projeto.");
+
         circuitos.AddPushButton<CriarCircuitosCommand>("Criar\ncircuitos")
             .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
             .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")

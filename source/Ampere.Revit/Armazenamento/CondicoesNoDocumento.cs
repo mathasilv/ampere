@@ -1,5 +1,4 @@
 using Ampere.Core.Dimensionamento;
-using Autodesk.Revit.DB.ExtensibleStorage;
 
 namespace Ampere.Revit.Armazenamento;
 
@@ -28,8 +27,7 @@ internal static class CondicoesNoDocumento
         "Ampere: condições do projeto usadas no dimensionamento (JSON versionado).");
 
     /// <summary>O JSON das condições do projeto, ou nulo se o documento não as tem.</summary>
-    public static string? Ler(Document documento) =>
-        Esquema.Existente() is { } esquema && Armazem(documento, esquema) is { } armazem ? Esquema.LerDo(armazem) : null;
+    public static string? Ler(Document documento) => Esquema.LerDoProjeto(documento);
 
     /// <summary>O JSON guardado no elemento (circuito), ou nulo se ele não tem.</summary>
     public static string? LerDo(Element elemento) => Esquema.LerDo(elemento);
@@ -38,35 +36,5 @@ internal static class CondicoesNoDocumento
     public static void GravarEm(Element elemento, string json) => Esquema.GravarEm(elemento, json);
 
     /// <summary>Grava o JSON do projeto (dentro de uma transação aberta); devolve o motivo se não pôde gravar, ou nulo.</summary>
-    public static string? Gravar(Document documento, string json)
-    {
-        var armazem = Armazem(documento, Esquema.Obter());
-        if (armazem is null)
-        {
-            Esquema.GravarEm(DataStorage.Create(documento), json);
-            return null;
-        }
-
-        if (Esquema.LerDo(armazem) == json) return null;
-        if (documento.IsWorkshared)
-        {
-            if (WorksharingUtils.GetCheckoutStatus(documento, armazem.Id, out var dono) == CheckoutStatus.OwnedByOtherUser)
-                return $"o armazenamento do Ampere no modelo está emprestado a {dono}";
-            if (WorksharingUtils.GetModelUpdatesStatus(documento, armazem.Id) is ModelUpdatesStatus.UpdatedInCentral or ModelUpdatesStatus.DeletedInCentral)
-                return "o armazenamento do Ampere foi alterado no modelo central: sincronize (Recarregar o mais recente) e rode de novo";
-        }
-
-        Esquema.GravarEm(armazem, json);
-        return null;
-    }
-
-    // DataStorage não tem categoria: o filtro de classe é o filtro rápido possível aqui. O de menor Id vence, se dois
-    // usuários de um modelo compartilhado criaram o seu antes de sincronizar.
-    private static DataStorage? Armazem(Document documento, Schema esquema) =>
-        new FilteredElementCollector(documento)
-            .OfClass(typeof(DataStorage))
-            .Cast<DataStorage>()
-            .Where(armazem => armazem.GetEntity(esquema).IsValid())
-            .OrderBy(armazem => armazem.Id.Value)
-            .FirstOrDefault();
+    public static string? Gravar(Document documento, string json) => Esquema.GravarNoProjeto(documento, json);
 }
