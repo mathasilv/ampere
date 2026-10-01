@@ -28,6 +28,7 @@ public sealed record SubtotalDoQuadro(TipoDeCarga Tipo, decimal PotenciaInstalad
 /// <param name="DemandaVA">Demanda total; <c>null</c> enquanto qualquer tipo estiver sem fator — soma parcial engana.</param>
 /// <param name="CorrenteDeDemandaA">Corrente de demanda do quadro; <c>null</c> sem demanda ou sem esquema calculável.</param>
 /// <param name="Memoria">Memória auditável; <c>null</c> quando o quadro está incompleto.</param>
+/// <param name="Esquema">Alimentação do quadro (F+N, 2F, 3F ou 3F+N); <paramref name="TensaoV" /> é a de linha (fase-neutro em F+N).</param>
 public sealed record ResultadoDoQuadroDeCargas(
     string Nome,
     string Esquema,
@@ -67,7 +68,8 @@ public static class QuadroDeCargas
         decimal tensaoV,
         IReadOnlyList<CircuitoDoQuadro> circuitos,
         PerfilNormativo perfil,
-        IReadOnlyDictionary<TipoDeCarga, decimal>? fatoresInformados = null)
+        IReadOnlyDictionary<TipoDeCarga, decimal>? fatoresInformados = null,
+        string? origemDaAlimentacao = null)
     {
         var problemas = new List<string>();
         if (string.IsNullOrWhiteSpace(nome)) problemas.Add("quadro sem nome");
@@ -162,7 +164,8 @@ public static class QuadroDeCargas
                     esquema is "3F" or "3F+N" ? "I = D_total / (√3 × V)" : "I = D_total / V",
                     [new ValorDoPasso("D_total", demandaTotal.Value, "VA"), new ValorDoPasso("V", tensaoV, "V")],
                     corrente,
-                    "A"));
+                    "A",
+                    origemDaAlimentacao is { Length: > 0 } origem ? $"alimentação {esquema} {NumeroEmTexto.Formatar(tensaoV)} V: {origem}" : null));
             }
             else
             {

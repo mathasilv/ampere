@@ -119,6 +119,14 @@ Resolvido (decisões do usuário):
   condições guardadas pela última rodada), avisos e onde o cálculo para. Salva `verificacao.md` e seleciona no modelo
   os elementos de uma pendência. Valores de resultado editados à mão (sem mudar a memória) ainda não são detectados.
 
+- ✅ Alimentação do quadro (01/10/2026): esquema e tensão do quadro de cargas vêm do sistema de distribuição atribuído
+  ao painel no Revit (3 fases e 4 fios = 3F+N; 3 fios = 3F; monofásico 2 fios = F+N; monofásico 3 fios = 2F+N, que o
+  quadro de cargas ainda não calcula). Antes, vinham dos circuitos e precisavam ser uniformes: o quadro residencial
+  típico (TUG e iluminação F+N 127 V com chuveiro 2F 220 V) ficava sem corrente de demanda. Circuito cuja tensão ou
+  esquema a alimentação não fornece (ex.: F+N 220 V num quadro 220/127 V; folga de 2% para 380/220 V) é problema
+  apontado. Sem sistema de distribuição, vale a regra antiga (esquema comum dos circuitos). A corrente de demanda segue
+  equilibrada (D / √3·V); cargas por fase e desequilíbrio ficam para a próxima etapa.
+
 Comportamento do modelo a validar pelo projetista:
 
 - Resultado que deixou de ser calculado (IDR que deixou de ser exigido, circuito que perdeu um dado, cálculo que parou

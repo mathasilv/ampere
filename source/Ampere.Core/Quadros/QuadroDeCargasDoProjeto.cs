@@ -13,7 +13,14 @@ namespace Ampere.Core.Quadros;
 public sealed record CircuitoLido(long Id, string? Numero, string? Tipo, decimal? PotenciaVA, string? Fases, decimal? TensaoV);
 
 /// <summary>Quadro do documento com os seus circuitos lidos.</summary>
-public sealed record QuadroLido(long Id, string Nome, IReadOnlyList<CircuitoLido> Circuitos);
+/// <param name="Alimentacao">Alimentação do quadro pelo sistema de distribuição do Revit; nula se o quadro não tem um.</param>
+public sealed record QuadroLido(long Id, string Nome, IReadOnlyList<CircuitoLido> Circuitos, AlimentacaoDoQuadro? Alimentacao = null);
+
+/// <summary>Alimentação do quadro, do sistema de distribuição atribuído a ele no Revit.</summary>
+/// <param name="Esquema">F+N, 2F, 2F+N, 3F ou 3F+N (o quadro de cargas calcula a corrente de F+N, 2F, 3F e 3F+N).</param>
+/// <param name="TensaoV">Tensão de linha (fase-fase); em F+N, a fase-neutro.</param>
+/// <param name="Origem">De onde veio, para a memória (ex.: "sistema de distribuição '220/127 Y' do quadro").</param>
+public sealed record AlimentacaoDoQuadro(string Esquema, decimal TensaoV, string Origem);
 
 /// <summary>Resultado do quadro de cargas de um quadro do documento.</summary>
 /// <param name="CircuitosDasLinhas">Id do circuito de cada linha de <see cref="ResultadoDoQuadroDeCargas.Linhas" />, na mesma ordem.</param>
@@ -72,8 +79,10 @@ public interface IDocumentoDeQuadros : IDocumentoTransacional
 ///     cada quadro contra o perfil. Não grava nada — o resultado é para exibir e para os relatórios.
 /// </summary>
 /// <remarks>
-///     Esquema e tensão do quadro vêm dos próprios circuitos (AMP_Fases e AMP_TensaoCircuitoV uniformes): mistos ou
-///     ausentes deixam a corrente sem cálculo, com o motivo nos problemas — o motor não escolhe por conta própria.
+///     Esquema e tensão do quadro vêm do sistema de distribuição atribuído a ele no Revit (a memória registra a origem), e
+///     circuito que essa alimentação não fornece (ex.: F+N 220 V num quadro 220/127 V) vira problema. Sem sistema de
+///     distribuição, vêm dos próprios circuitos (AMP_Fases e AMP_TensaoCircuitoV uniformes): mistos ou ausentes deixam a
+///     corrente sem cálculo, com o motivo nos problemas — o motor não escolhe por conta própria.
 /// </remarks>
 public static class QuadroDeCargasDoProjeto
 {
@@ -112,7 +121,16 @@ public static class QuadroDeCargasDoProjeto
                 idsDasLinhas.Add(lido.Id);
             }
 
-            // O par (esquema, tensão) do quadro precisa ser único entre os circuitos que o informam.
+            if (quadro.Alimentacao is { } alimentacao)
+            {
+                Compatibilidade(quadro, alimentacao, problemas);
+                var pelaAlimentacao = QuadroDeCargas.Montar(quadro.Nome, alimentacao.Esquema, alimentacao.TensaoV, circuitos, perfil, fatoresInformados, alimentacao.Origem);
+                if (problemas.Count > 0) pelaAlimentacao = pelaAlimentacao with { Problemas = [.. pelaAlimentacao.Problemas, .. problemas] };
+                resultados.Add(new ResultadoDoQuadro(quadro.Id, quadro.Nome, pelaAlimentacao, idsDasLinhas, foraDoQuadro));
+                continue;
+            }
+
+            // Sem sistema de distribuição no quadro, o par (esquema, tensão) precisa ser único entre os circuitos que o informam.
             var pares = quadro.Circuitos
                 .Where(lido => lido.Fases is { Length: > 0 } && lido.TensaoV is > 0)
                 .Select(lido => (lido.Fases!.Trim(), lido.TensaoV!.Value))
@@ -133,7 +151,7 @@ public static class QuadroDeCargasDoProjeto
                 default:
                     esquema = "F+N";
                     tensao = 0m;
-                    problemas.Add($"circuitos com esquemas/tensões diferentes ({string.Join(", ", pares.Select(par => $"{par.Item1} {NumeroEmTexto.Formatar(par.Item2)} V"))}): corrente do quadro não calculada");
+                    problemas.Add($"circuitos com esquemas/tensões diferentes ({string.Join(", ", pares.Select(par => $"{par.Item1} {NumeroEmTexto.Formatar(par.Item2)} V"))}) e quadro sem sistema de distribuição no Revit: corrente do quadro não calculada (atribua o sistema de distribuição ao quadro)");
                     break;
             }
 
@@ -144,6 +162,41 @@ public static class QuadroDeCargasDoProjeto
         }
 
         return resultados;
+    }
+
+    // Tensão fase-neutro de um sistema com neutro: a de linha / √3, com folga de 2% para as nominais arredondadas
+    // (380/220 V: 380 / √3 = 219,4 V).
+    private const decimal Raiz3 = 1.7320508075688772935274463415m;
+    private const decimal Folga = 0.02m;
+
+    /// <summary>Circuito com esquema ou tensão que a alimentação do quadro não fornece vira problema (não para a montagem).</summary>
+    private static void Compatibilidade(QuadroLido quadro, AlimentacaoDoQuadro alimentacao, List<string> problemas)
+    {
+        var comNeutro = alimentacao.Esquema.EndsWith("+N", StringComparison.Ordinal);
+        var faseNeutro = alimentacao.Esquema == "F+N" ? alimentacao.TensaoV : alimentacao.TensaoV / Raiz3;
+        var fasesDoQuadro = alimentacao.Esquema.StartsWith("3F", StringComparison.Ordinal) ? 3 : alimentacao.Esquema.StartsWith("2F", StringComparison.Ordinal) ? 2 : 1;
+        foreach (var circuito in quadro.Circuitos.Where(circuito => circuito.Fases is { Length: > 0 } && circuito.TensaoV is > 0))
+        {
+            var fases = circuito.Fases!.Trim();
+            var tensao = circuito.TensaoV!.Value;
+            var (fasesDoCircuito, neutro, esperada) = fases switch
+            {
+                "F+N" => (1, true, faseNeutro),
+                "2F" => (2, false, alimentacao.TensaoV),
+                "2F+N" => (2, true, alimentacao.TensaoV),
+                "3F" => (3, false, alimentacao.TensaoV),
+                "3F+N" => (3, true, alimentacao.TensaoV),
+                _ => (0, false, 0m)
+            };
+            var cabe = fasesDoCircuito > 0 && fasesDoCircuito <= fasesDoQuadro && (!neutro || comNeutro)
+                       && (alimentacao.Esquema != "F+N" || fases == "F+N")
+                       && Math.Abs(tensao - esperada) <= esperada * Folga;
+            if (!cabe)
+            {
+                problemas.Add($"circuito {circuito.Numero ?? "(sem número)"} ({fases} {NumeroEmTexto.Formatar(tensao)} V) incompatível com a alimentação do quadro " +
+                              $"({alimentacao.Esquema} {NumeroEmTexto.Formatar(alimentacao.TensaoV)} V)");
+            }
+        }
     }
 
     /// <summary>

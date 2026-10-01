@@ -10,7 +10,8 @@ namespace Ampere.Revit.Quadros;
 /// <remarks>
 ///     Leitura por quadro: os circuitos são os <c>ElectricalSystem</c> de força atribuídos ao painel; a potência do
 ///     circuito é a soma de <c>AMP_PotenciaInstaladaVA</c> dos membros (o sistema nativo não guarda a nossa potência);
-///     esquema e tensão vêm do primeiro membro classificado que os tiver. AMP_TensaoCircuitoV é número puro.
+///     esquema e tensão vêm do primeiro membro classificado que os tiver. AMP_TensaoCircuitoV é número puro. A
+///     alimentação do quadro vem do sistema de distribuição atribuído ao painel (fases, fios e tensões).
 /// </remarks>
 public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQuadros
 {
@@ -155,8 +156,35 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
             .Select(par => new QuadroLido(
                 par.Painel.Id.Value,
                 NomeDoPainel(par.Painel),
-                par.Sistemas.Select(LerCircuito).ToList()))
+                par.Sistemas.Select(LerCircuito).ToList(),
+                Alimentacao(par.Painel)))
             .ToList();
+
+    // Sistema de distribuição atribuído ao quadro: fases, fios e tensões. Tensão pelo parâmetro do VoltageType, em unidades
+    // internas convertidas (como as demais leituras do adapter). Sem sistema, o Core usa o esquema comum dos circuitos.
+    private AlimentacaoDoQuadro? Alimentacao(FamilyInstance painel)
+    {
+        if (painel.get_Parameter(BuiltInParameter.RBS_FAMILY_CONTENT_DISTRIBUTION_SYSTEM)?.AsElementId() is not { } id
+            || documento.GetElement(id) is not DistributionSysType sistema)
+            return null;
+
+        var linha = Volts(sistema.VoltageLineToLine);
+        var terra = Volts(sistema.VoltageLineToGround);
+        var (esquema, tensao) = sistema.ElectricalPhase switch
+        {
+            ElectricalPhase.ThreePhase => (sistema.NumWires >= 4 ? "3F+N" : "3F", linha),
+            ElectricalPhase.SinglePhase => sistema.NumWires >= 3 ? ("2F+N", linha) : ("F+N", terra ?? linha),
+            _ => ((string?)null, (decimal?)null)
+        };
+        return esquema is null || tensao is not > 0m
+            ? null
+            : new AlimentacaoDoQuadro(esquema, tensao.Value, $"sistema de distribuição '{sistema.Name}' do quadro");
+    }
+
+    private static decimal? Volts(VoltageType? tensao) =>
+        tensao?.get_Parameter(BuiltInParameter.RBS_VOLTAGETYPE_VOLTAGE_PARAM) is { HasValue: true } parametro
+            ? Math.Round((decimal)UnitUtils.ConvertFromInternalUnits(parametro.AsDouble(), UnitTypeId.Volts), 3, MidpointRounding.AwayFromZero)
+            : null;
 
     private static List<ElectricalSystem> SistemasDeForca(FamilyInstance painel) =>
         painel.MEPModel.GetAssignedElectricalSystems()?

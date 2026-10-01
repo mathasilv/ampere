@@ -153,7 +153,57 @@ public class QuadroDeCargasDoProjeto_Teste
         var resultado = QuadroDeCargasDoProjeto.Executar(new DocumentoDeQuadrosFalso([quadro]), Ficticio)[0].Quadro;
 
         await Assert.That(resultado.CorrenteDeDemandaA).IsNull();
-        await Assert.That(string.Join("\n", resultado.Problemas)).Contains("circuitos com esquemas/tensões diferentes (F+N 127 V, 2F 220 V)");
+        await Assert.That(string.Join("\n", resultado.Problemas)).Contains("circuitos com esquemas/tensões diferentes (F+N 127 V, 2F 220 V) e quadro sem sistema de distribuição no Revit");
+    }
+
+    [Test]
+    public async Task Alimentacao_do_quadro_pelo_sistema_de_distribuicao_calcula_a_corrente_com_circuitos_mistos()
+    {
+        var quadro = new QuadroLido(10, "QD1",
+        [
+            new CircuitoLido(101, "IL-01", "Iluminação", 600m, "F+N", 127m),
+            new CircuitoLido(102, "TUE-01", "TUE", 2000m, "2F", 220m)
+        ], new AlimentacaoDoQuadro("3F+N", 220m, "sistema de distribuição '220/127 Y' do quadro"));
+
+        var resultado = QuadroDeCargasDoProjeto.Executar(new DocumentoDeQuadrosFalso([quadro]), Ficticio)[0].Quadro;
+
+        await Assert.That(resultado.Problemas).IsEmpty();
+        await Assert.That(resultado.Esquema).IsEqualTo("3F+N");
+        await Assert.That(Math.Round(resultado.CorrenteDeDemandaA!.Value, 6)).IsEqualTo(Math.Round(resultado.DemandaVA!.Value / (1.7320508075688772935274463415m * 220m), 6));
+        var passo = resultado.Memoria!.Passos[^1];
+        await Assert.That(passo.Expressao).IsEqualTo("I = D_total / (√3 × V)");
+        await Assert.That(passo.Observacao).IsEqualTo("alimentação 3F+N 220 V: sistema de distribuição '220/127 Y' do quadro");
+    }
+
+    [Test]
+    [Arguments("3F+N", 220, "F+N", 220, false)]
+    [Arguments("3F+N", 220, "F+N", 127, true)]
+    [Arguments("3F+N", 380, "F+N", 220, true)]
+    [Arguments("3F+N", 220, "3F", 220, true)]
+    [Arguments("3F", 220, "F+N", 127, false)]
+    [Arguments("F+N", 127, "2F", 220, false)]
+    [Arguments("F+N", 127, "F+N", 127, true)]
+    [Arguments("2F", 220, "3F", 220, false)]
+    public async Task Circuito_que_a_alimentacao_nao_fornece_vira_problema(string esquema, decimal tensao, string fases, decimal tensaoDoCircuito, bool compativel)
+    {
+        var quadro = new QuadroLido(10, "QD1", [new CircuitoLido(101, "TUE-01", "TUE", 1000m, fases, tensaoDoCircuito)],
+            new AlimentacaoDoQuadro(esquema, tensao, "teste"));
+
+        var problemas = QuadroDeCargasDoProjeto.Executar(new DocumentoDeQuadrosFalso([quadro]), Ficticio)[0].Quadro.Problemas;
+
+        await Assert.That(problemas.Any(problema => problema.Contains("incompatível com a alimentação do quadro"))).IsEqualTo(!compativel);
+    }
+
+    [Test]
+    public async Task Alimentacao_sem_calculo_de_corrente_diz_o_esquema()
+    {
+        var quadro = new QuadroLido(10, "QD1", [new CircuitoLido(101, "IL-01", "Iluminação", 600m, "F+N", 120m)],
+            new AlimentacaoDoQuadro("2F+N", 240m, "sistema de distribuição '120/240 monofásico' do quadro"));
+
+        var resultado = QuadroDeCargasDoProjeto.Executar(new DocumentoDeQuadrosFalso([quadro]), Ficticio)[0].Quadro;
+
+        await Assert.That(resultado.CorrenteDeDemandaA).IsNull();
+        await Assert.That(string.Join("\n", resultado.Problemas)).Contains("esquema desconhecido '2F+N'");
     }
 
     private sealed class DocumentoDeQuadrosFalso(IReadOnlyList<QuadroLido> quadros) : IDocumentoDeQuadros

@@ -42,7 +42,22 @@ public sealed class QuadroDeCargasNoRevit_Teste : TesteComProjetoEletrico
             CodigosDeTipoDeCarga.Codigo(TipoDeCarga.Iluminacao) + "," + CodigosDeTipoDeCarga.Codigo(TipoDeCarga.TUG));
         await Assert.That(leituras[0].PotenciaVA!.Value).IsEqualTo(186m);
         await Assert.That(leituras[1].PotenciaVA!.Value).IsEqualTo(720m);
-        await Assert.That(leituras.All(circuito => circuito.Fases == "F+N" && circuito.TensaoV == 127m)).IsTrue();
+        await Assert.That(leituras.All(circuito => circuito.Fases == "F+N" && circuito.TensaoV == 120m)).IsTrue();
+        // O cenário atribui ao QD1 o sistema "120/208 Wye" (3 fases, 4 fios).
+        await Assert.That(quadros[0].Alimentacao).IsEqualTo(new AlimentacaoDoQuadro("3F+N", 208m, "sistema de distribuição '120/208 Wye' do quadro"));
+    }
+
+    [Test]
+    public async Task Circuito_com_tensao_que_o_quadro_nao_fornece_e_problema()
+    {
+        var tomadas = Cenario.ColocarTomadas(2);
+        Classificar(tomadas, TipoDeCarga.TUG, 180m, tensaoV: 127m);
+        CriacaoDeCircuitos.Executar(tomadas, Cenario.Quadro.Id.Value, RegrasDoCenario, ConfiguracaoDeNumeracao.Padrao, Porta);
+
+        var quadro = QuadroDeCargasDoProjeto.Executar(new DocumentoDeQuadrosRevit(Cenario.Documento), PerfilNormativo.NBR5410_2004,
+            new Dictionary<TipoDeCarga, decimal> { [TipoDeCarga.TUG] = 0.5m })[0].Quadro;
+
+        await Assert.That(string.Join("\n", quadro.Problemas)).Contains("circuito TUG-01 (F+N 127 V) incompatível com a alimentação do quadro (3F+N 208 V)");
     }
 
     [Test]
@@ -60,7 +75,8 @@ public sealed class QuadroDeCargasNoRevit_Teste : TesteComProjetoEletrico
         await Assert.That(quadro.Linhas.Count).IsEqualTo(2);
         await Assert.That(quadro.PotenciaInstaladaVA).IsEqualTo(906m);
         await Assert.That(quadro.DemandaVA).IsEqualTo(546m);
-        await Assert.That(quadro.CorrenteDeDemandaA).IsEqualTo(546m / 127m);
+        await Assert.That(quadro.CorrenteDeDemandaA).IsEqualTo(546m / (1.7320508075688772935274463415m * 208m));
+        await Assert.That(quadro.Memoria!.Passos[^1].Observacao).IsEqualTo("alimentação 3F+N 208 V: sistema de distribuição '120/208 Wye' do quadro");
         await Assert.That(quadro.Memoria).IsNotNull();
         await Assert.That(quadro.Memoria!.Circuito).IsEqualTo("QD1");
         await Assert.That(resultados[0].Nome).IsEqualTo("QD1");
@@ -207,7 +223,7 @@ public sealed class QuadroDeCargasNoRevit_Teste : TesteComProjetoEletrico
         await Assert.That(tabela.Definition.GetFilters().Count).IsEqualTo(1);
     }
 
-    /// <summary>QD1 com IL-01 (3 × 62 VA) e TUG-01 (4 × 180 VA), classificados com F+N 127 V.</summary>
+    /// <summary>QD1 (120/208 Wye) com IL-01 (3 × 62 VA) e TUG-01 (4 × 180 VA), classificados com F+N 120 V.</summary>
     private void MontarQuadroComDoisCircuitos()
     {
         var luminarias = Cenario.ColocarLuminarias(3);
@@ -217,9 +233,9 @@ public sealed class QuadroDeCargasNoRevit_Teste : TesteComProjetoEletrico
         CriacaoDeCircuitos.Executar([.. luminarias, .. tomadas], Cenario.Quadro.Id.Value, RegrasDoCenario, ConfiguracaoDeNumeracao.Padrao, Porta);
     }
 
-    private void Classificar(IReadOnlyCollection<long> ids, TipoDeCarga tipo, decimal potenciaVA)
+    private void Classificar(IReadOnlyCollection<long> ids, TipoDeCarga tipo, decimal potenciaVA, decimal tensaoV = 120m)
     {
-        var resultado = ClassificacaoEmLote.Executar(ids, new ClassificacaoDeCarga(tipo, PotenciaVA: potenciaVA, TensaoV: 127m, Fases: "F+N"), Porta);
+        var resultado = ClassificacaoEmLote.Executar(ids, new ClassificacaoDeCarga(tipo, PotenciaVA: potenciaVA, TensaoV: tensaoV, Fases: "F+N"), Porta);
         if (resultado.Classificados != ids.Count) throw new InvalidOperationException($"Classificação do cenário incompleta ({tipo}).");
     }
 
