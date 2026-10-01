@@ -26,6 +26,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <TextBlock Grid.Row="0" Text="Tipo de carga" VerticalAlignment="Center" />
@@ -35,18 +36,22 @@
             <TextBlock Grid.Row="1" Text="Potência (VA)" VerticalAlignment="Center" />
             <TextBox Grid.Row="1" Grid.Column="1" Margin="0,4" Text="{Binding PotenciaVA, UpdateSourceTrigger=PropertyChanged}" />
 
-            <TextBlock Grid.Row="2" Text="Fator de potência" VerticalAlignment="Center" />
-            <TextBox Grid.Row="2" Grid.Column="1" Margin="0,4" Text="{Binding FatorDePotencia, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBlock Grid.Row="2" Text="ou Potência (W)" VerticalAlignment="Center"
+                       ToolTip="Potência de placa em W: com o fator de potência, vira VA (VA = W / FP)" />
+            <TextBox Grid.Row="2" Grid.Column="1" Margin="0,4" Text="{Binding PotenciaW, UpdateSourceTrigger=PropertyChanged}" />
 
-            <TextBlock Grid.Row="3" Text="Tensão (V)" VerticalAlignment="Center" />
-            <TextBox Grid.Row="3" Grid.Column="1" Margin="0,4" Text="{Binding TensaoV, UpdateSourceTrigger=PropertyChanged}" />
+            <TextBlock Grid.Row="3" Text="Fator de potência" VerticalAlignment="Center" />
+            <TextBox Grid.Row="3" Grid.Column="1" Margin="0,4" Text="{Binding FatorDePotencia, UpdateSourceTrigger=PropertyChanged}" />
 
-            <TextBlock Grid.Row="4" Text="Fases" VerticalAlignment="Center" />
-            <ComboBox Grid.Row="4" Grid.Column="1" Margin="0,4" ItemsSource="{Binding OpcoesDeFases}" SelectedItem="{Binding Fases}" />
+            <TextBlock Grid.Row="4" Text="Tensão (V)" VerticalAlignment="Center" />
+            <TextBox Grid.Row="4" Grid.Column="1" Margin="0,4" Text="{Binding TensaoV, UpdateSourceTrigger=PropertyChanged}" />
 
-            <TextBlock Grid.Row="5" Text="Local (IDR)" VerticalAlignment="Center"
+            <TextBlock Grid.Row="5" Text="Fases" VerticalAlignment="Center" />
+            <ComboBox Grid.Row="5" Grid.Column="1" Margin="0,4" ItemsSource="{Binding OpcoesDeFases}" SelectedItem="{Binding Fases}" />
+
+            <TextBlock Grid.Row="6" Text="Local (IDR)" VerticalAlignment="Center"
                        ToolTip="Local do ponto na tabela de proteção diferencial do perfil (NBR 5410, 5.1.3.2.2)" />
-            <ComboBox Grid.Row="5" Grid.Column="1" Margin="0,4" ItemsSource="{Binding OpcoesDeLocal}" SelectedItem="{Binding Local}" />
+            <ComboBox Grid.Row="6" Grid.Column="1" Margin="0,4" ItemsSource="{Binding OpcoesDeLocal}" SelectedItem="{Binding Local}" />
         </Grid>
 
         <TextBlock Margin="0,10,0,0" TextWrapping="Wrap" Foreground="Gray" Text="{Binding Dica}" />

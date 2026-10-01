@@ -103,6 +103,43 @@ public class EntradaDeClassificacao_Teste
     }
 
     [Test]
+    public async Task Potencia_em_W_com_fator_de_potencia_vira_VA()
+    {
+        var entrada = EntradaDeClassificacao.Interpretar(TipoDeCarga.TUE, "", "0,92", "220", "2F", PtBr, potenciaW: "5500");
+
+        await Assert.That(entrada.Problemas).IsEmpty();
+        await Assert.That(entrada.Classificacao!.PotenciaVA).IsEqualTo(5978.26m);
+        await Assert.That(entrada.Classificacao.FatorDePotencia).IsEqualTo(0.92m);
+    }
+
+    [Test]
+    public async Task Potencia_em_W_sem_fator_de_potencia_e_recusada()
+    {
+        var entrada = EntradaDeClassificacao.Interpretar(TipoDeCarga.TUE, "", "", "", "", PtBr, potenciaW: "5500");
+
+        await Assert.That(entrada.Classificacao).IsNull();
+        await Assert.That(entrada.Problemas).IsEquivalentTo(["potência em W exige o fator de potência (VA = W / FP)"]);
+    }
+
+    [Test]
+    public async Task Potencia_em_VA_e_em_W_ao_mesmo_tempo_e_recusada()
+    {
+        var entrada = EntradaDeClassificacao.Interpretar(TipoDeCarga.TUE, "6000", "1", "", "", PtBr, potenciaW: "5500");
+
+        await Assert.That(entrada.Classificacao).IsNull();
+        await Assert.That(entrada.Problemas).IsEquivalentTo(["informe a potência em VA ou em W, não as duas"]);
+    }
+
+    [Test]
+    public async Task Fator_de_potencia_invalido_com_potencia_em_W_cai_na_regra_de_dominio()
+    {
+        var entrada = EntradaDeClassificacao.Interpretar(TipoDeCarga.TUE, "", "1,5", "", "", PtBr, potenciaW: "5500");
+
+        await Assert.That(entrada.Classificacao).IsNull();
+        await Assert.That(string.Join("\n", entrada.Problemas)).Contains("fator de potência deve estar em (0; 1]");
+    }
+
+    [Test]
     public async Task Local_da_tabela_do_perfil_entra_na_classificacao()
     {
         var entrada = EntradaDeClassificacao.Interpretar(TipoDeCarga.TUG, "", "", "", "", PtBr, " Area externa ", Locais);

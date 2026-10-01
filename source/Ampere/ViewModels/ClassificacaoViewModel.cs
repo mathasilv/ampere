@@ -14,6 +14,7 @@ public sealed class ClassificacaoViewModel(int quantidadeSelecionada, PerfilNorm
     private OpcaoDeTipo? _tipo;
     private string _local = string.Empty;
     private string _potenciaVA = string.Empty;
+    private string _potenciaW = string.Empty;
     private string _fatorDePotencia = string.Empty;
     private string _tensaoV = string.Empty;
     private string _fases = string.Empty;
@@ -22,7 +23,7 @@ public sealed class ClassificacaoViewModel(int quantidadeSelecionada, PerfilNorm
     public string Titulo { get; } = $"{quantidadeSelecionada} elemento(s) selecionado(s)";
 
     public string Dica { get; } =
-        $"Campos em branco não alteram o valor atual. Decimais com '{CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator}', sem separador de milhar.";
+        $"Campos em branco não alteram o valor atual. Potência em VA, ou em W com o fator de potência (VA = W / FP). Decimais com '{CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator}', sem separador de milhar.";
 
     public IReadOnlyList<OpcaoDeTipo> Tipos { get; } = OpcaoDeTipo.ParaPontos();
 
@@ -41,6 +42,13 @@ public sealed class ClassificacaoViewModel(int quantidadeSelecionada, PerfilNorm
     {
         get => _potenciaVA;
         set => SetProperty(ref _potenciaVA, value);
+    }
+
+    /// <summary>Potência ativa (W), alternativa à potência em VA: exige o fator de potência.</summary>
+    public string PotenciaW
+    {
+        get => _potenciaW;
+        set => SetProperty(ref _potenciaW, value);
     }
 
     public string FatorDePotencia
@@ -80,7 +88,7 @@ public sealed class ClassificacaoViewModel(int quantidadeSelecionada, PerfilNorm
     public bool Confirmar()
     {
         var entrada = EntradaDeClassificacao.Interpretar(
-            Tipo?.Tipo, PotenciaVA, FatorDePotencia, TensaoV, Fases, CultureInfo.CurrentCulture, Local, perfil.Vocabulario.Locais);
+            Tipo?.Tipo, PotenciaVA, FatorDePotencia, TensaoV, Fases, CultureInfo.CurrentCulture, Local, perfil.Vocabulario.Locais, PotenciaW);
         Classificacao = entrada.Classificacao;
         Problemas = string.Join(Environment.NewLine, entrada.Problemas);
         return Classificacao is not null;

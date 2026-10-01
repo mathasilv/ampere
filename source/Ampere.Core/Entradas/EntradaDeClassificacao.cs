@@ -7,19 +7,32 @@ namespace Ampere.Core.Entradas;
 ///     Converte os campos do diálogo de classificação em <see cref="ClassificacaoDeCarga" />: primeiro a digitação, depois
 ///     as regras de domínio. Campo vazio = não alterar.
 /// </summary>
+/// <remarks>
+///     A potência pode vir em VA ou, como na placa do equipamento, em W com o fator de potência: S = P / FP, arredondada
+///     ao centésimo de VA. O que fica no ponto é sempre a potência aparente (AMP_PotenciaInstaladaVA).
+/// </remarks>
 public static class EntradaDeClassificacao
 {
     /// <param name="local">Local escolhido (vazio = não alterar).</param>
     /// <param name="locaisDoPerfil">Locais da tabela de proteção diferencial do perfil: o local precisa ser um deles.</param>
+    /// <param name="potenciaW">Potência ativa, em W (alternativa à potência em VA; exige o fator de potência).</param>
     public static ClassificacaoDigitada Interpretar(
         TipoDeCarga? tipo, string? potenciaVA, string? fatorDePotencia, string? tensaoV, string? fases, CultureInfo cultura,
-        string? local = null, IReadOnlyCollection<string>? locaisDoPerfil = null)
+        string? local = null, IReadOnlyCollection<string>? locaisDoPerfil = null, string? potenciaW = null)
     {
         var problemas = new List<string>();
         if (tipo is null) problemas.Add("escolha o tipo de carga");
         var potencia = Campo("potência", potenciaVA, cultura, problemas);
+        var potenciaAtiva = Campo("potência em W", potenciaW, cultura, problemas);
         var fator = Campo("fator de potência", fatorDePotencia, cultura, problemas);
         var tensao = Campo("tensão", tensaoV, cultura, problemas);
+        if (potenciaAtiva is { } ativa)
+        {
+            if (potencia is not null) problemas.Add("informe a potência em VA ou em W, não as duas");
+            else if (fator is not { } fp || fp <= 0m) problemas.Add("potência em W exige o fator de potência (VA = W / FP)");
+            else potencia = Math.Round(ativa / fp, 2, MidpointRounding.AwayFromZero);
+        }
+
         var localEscolhido = string.IsNullOrWhiteSpace(local) ? null : local.Trim();
         if (localEscolhido is not null && locaisDoPerfil?.Contains(localEscolhido, StringComparer.Ordinal) != true)
             problemas.Add($"local '{localEscolhido}' fora da tabela de proteção diferencial do perfil");
