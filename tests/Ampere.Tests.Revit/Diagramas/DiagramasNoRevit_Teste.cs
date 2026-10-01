@@ -50,7 +50,7 @@ public sealed class DiagramasNoRevit_Teste : TesteComProjetoEletrico
         MontarEDimensionar();
         var porta = new DocumentoDeDiagramasRevit(Cenario.Documento);
 
-        var primeiro = DiagramasDoProjeto.Desenhar(porta);
+        var primeiro = DiagramasDoProjeto.Desenhar(porta, PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao);
         var vista = new FilteredElementCollector(Cenario.Documento).OfClass(typeof(ViewDrafting)).Cast<ViewDrafting>()
             .Single(view => view.Name == primeiro[0].Vista);
         Viewport naPrancha;
@@ -61,7 +61,7 @@ public sealed class DiagramasNoRevit_Teste : TesteComProjetoEletrico
             transacao.Commit();
         }
 
-        var segundo = DiagramasDoProjeto.Desenhar(porta);
+        var segundo = DiagramasDoProjeto.Desenhar(porta, PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao);
 
         await Assert.That(primeiro[0].Vista).IsEqualTo("QD1 — unifilar (Ampere)");
         await Assert.That(segundo[0].Vista).IsEqualTo(primeiro[0].Vista);
@@ -71,6 +71,8 @@ public sealed class DiagramasNoRevit_Teste : TesteComProjetoEletrico
         await Assert.That(textos.Count).IsEqualTo(segundo[0].Desenho.Elementos.OfType<Texto>().Count());
         await Assert.That(linhas.Count).IsEqualTo(segundo[0].Desenho.Elementos.OfType<Segmento>().Sum(segmento => segmento.Grosso ? 3 : 1));
         await Assert.That(textos.Any(texto => texto.Text.StartsWith("TUG-01", StringComparison.Ordinal))).IsTrue();
+        // Neutro e PE da memória que confere com a gravada (refeita com as condições guardadas no circuito).
+        await Assert.That(textos.Any(texto => texto.Text.StartsWith("2,5 mm² (N 2,5 · PE 2,5)", StringComparison.Ordinal))).IsTrue();
     }
 
     /// <summary>QD1 com IL-01 (3 luminárias, demais locais) e TUG-01 (4 tomadas, cozinha), dimensionados.</summary>

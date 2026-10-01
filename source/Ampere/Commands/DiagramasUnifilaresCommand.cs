@@ -1,6 +1,8 @@
 using System.IO;
 using System.Text;
+using Ampere.Core.Catalogos;
 using Ampere.Core.Diagramas;
+using Ampere.Core.Normas;
 using Ampere.Relatorios;
 using Ampere.Revit.Diagramas;
 using Autodesk.Revit.Attributes;
@@ -32,7 +34,7 @@ public class DiagramasUnifilaresCommand : ExternalCommand
         IReadOnlyList<UnifilarDesenhado> desenhados;
         try
         {
-            desenhados = DiagramasDoProjeto.Desenhar(new DocumentoDeDiagramasRevit(documento));
+            desenhados = DiagramasDoProjeto.Desenhar(new DocumentoDeDiagramasRevit(documento), PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao);
         }
         catch (Exception excecao) when (excecao is InvalidOperationException or Autodesk.Revit.Exceptions.ApplicationException)
         {

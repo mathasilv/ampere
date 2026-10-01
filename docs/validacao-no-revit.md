@@ -91,7 +91,9 @@ Use um projeto de teste com arquitetura vinculada ou com ambientes (Rooms/Spaces
       condutor do cliente, o eletroduto, o aterramento e o ramal da linha da carga instalada (ex.: 29,85 kW → trifásico,
       63 A). Escolha "trifásico" para uma casa de menos de 12 kW: deve sair a primeira faixa (20 A) com a Nota 19 na
       memória. A memória `padrao-de-entrada-….md` fica na mesma pasta da demanda. Reabra o diálogo: a escolha deve voltar.
-12. **Diagramas unifilares.** Deve sair uma vista de desenho por quadro, com os valores do dimensionamento.
+12. **Diagramas unifilares.** Deve sair uma vista de desenho por quadro, com os valores do dimensionamento. Cada circuito
+    dimensionado mostra a fase com neutro e PE (ex.: "2,5 mm² (N 2,5 · PE 2,5)"); mude o comprimento de um circuito sem
+    redimensionar e redesenhe: ele deve ficar só com a fase.
 
 ## 3. O que conferir com a norma (pendências do usuário)
 

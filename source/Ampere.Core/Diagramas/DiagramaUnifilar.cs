@@ -7,6 +7,10 @@ namespace Ampere.Core.Diagramas;
 /// <param name="Descricao">Nome da carga do circuito (descrição livre do projetista).</param>
 /// <param name="Fases">Configuração (F+N, 2F, 3F, ...).</param>
 /// <param name="FasesNoQuadro">Fases do quadro que o circuito ocupa (rótulos do Revit, ex.: A, B); nulo se não lidas.</param>
+/// <param name="Id">Identificador do circuito no documento, para refazer o cálculo e achar neutro e PE.</param>
+/// <param name="MemoriaGravada">AMP_MemoriaCalculoId do circuito: neutro e PE só valem se o cálculo de hoje der a mesma memória.</param>
+/// <param name="SecaoDoNeutroMm2">Seção do neutro da memória (nula sem neutro ou sem memória que confira).</param>
+/// <param name="SecaoDeProtecaoMm2">Seção do condutor de proteção da memória (nula sem memória que confira).</param>
 public sealed record CircuitoDoUnifilar(
     string Numero,
     string? Descricao,
@@ -19,7 +23,11 @@ public sealed record CircuitoDoUnifilar(
     decimal? IdrNominalA,
     decimal? IdrSensibilidadeMa,
     decimal? QuedaPct,
-    IReadOnlyList<string>? FasesNoQuadro = null);
+    IReadOnlyList<string>? FasesNoQuadro = null,
+    long? Id = null,
+    string? MemoriaGravada = null,
+    decimal? SecaoDoNeutroMm2 = null,
+    decimal? SecaoDeProtecaoMm2 = null);
 
 /// <summary>O circuito que alimenta o quadro, como o 'Dimensionar alimentadores' o gravou (nulo = não calculado).</summary>
 /// <param name="Origem">Equipamento de onde ele sai (ex.: QGBT).</param>
@@ -56,6 +64,15 @@ public interface IDocumentoDeDiagramas : IDocumentoTransacional
     /// <summary>Quadros com circuitos, cada um com os circuitos na ordem do diagrama.</summary>
     IReadOnlyList<QuadroDoUnifilar> LerQuadros();
 
+    /// <summary>Os dados que o dimensionamento lê, para refazer o cálculo e achar neutro e PE.</summary>
+    IReadOnlyList<Dimensionamento.DadosDoCircuito> LerCircuitos(IReadOnlyCollection<long> ids);
+
+    /// <summary>Condições do projeto, guardadas pela última rodada completa do dimensionamento (nulas se nunca guardadas).</summary>
+    Dimensionamento.CondicoesDoProjeto? LerCondicoes();
+
+    /// <summary>Condições da rodada que dimensionou cada circuito (só os que as têm guardadas).</summary>
+    IReadOnlyDictionary<long, Dimensionamento.CondicoesDoProjeto> LerCondicoesDosCircuitos(IReadOnlyCollection<long> ids);
+
     /// <summary>Desenha (ou redesenha, na mesma vista) o unifilar do quadro; devolve o nome da vista.</summary>
     string DesenharUnifilar(string nomeDoQuadro, DesenhoDoUnifilar desenho);
 }
@@ -69,9 +86,10 @@ public static class DiagramasDoProjeto
     /// <summary>Nome da transação, que aparece no menu Desfazer do Revit.</summary>
     public const string NomeDaTransacao = "Ampere: diagramas unifilares";
 
-    public static IReadOnlyList<UnifilarDesenhado> Desenhar(IDocumentoDeDiagramas documento)
+    /// <param name="perfil">Para refazer o cálculo dos circuitos: neutro e PE vêm da memória que confere com a gravada.</param>
+    public static IReadOnlyList<UnifilarDesenhado> Desenhar(IDocumentoDeDiagramas documento, Normas.PerfilNormativo perfil, Catalogos.CatalogosDeProduto catalogos)
     {
-        var quadros = documento.LerQuadros();
+        var quadros = ComNeutroEProtecao(documento, documento.LerQuadros(), perfil, catalogos);
         var desenhados = new List<UnifilarDesenhado>();
         if (quadros.Count == 0) return desenhados;
 
@@ -84,6 +102,36 @@ public static class DiagramasDoProjeto
             }
         });
         return desenhados;
+    }
+
+    // Como no 'Verificar projeto': as condições da rodada do circuito (ou as do projeto) refazem o cálculo; só a memória igual
+    // à gravada dá neutro e PE — o modelo mudou desde o dimensionamento, e o desenho fica só com a fase.
+    private static List<QuadroDoUnifilar> ComNeutroEProtecao(
+        IDocumentoDeDiagramas documento, IReadOnlyList<QuadroDoUnifilar> quadros, Normas.PerfilNormativo perfil, Catalogos.CatalogosDeProduto catalogos)
+    {
+        var ids = quadros.SelectMany(quadro => quadro.Circuitos)
+            .Where(circuito => circuito.Id is not null && !string.IsNullOrWhiteSpace(circuito.MemoriaGravada))
+            .Select(circuito => circuito.Id!.Value)
+            .Distinct()
+            .ToList();
+        if (ids.Count == 0) return quadros.ToList();
+
+        var dados = documento.LerCircuitos(ids).ToDictionary(circuito => circuito.Id);
+        var porCircuito = documento.LerCondicoesDosCircuitos(ids);
+        var doProjeto = documento.LerCondicoes();
+        CircuitoDoUnifilar Completar(CircuitoDoUnifilar circuito)
+        {
+            if (circuito.Id is not { } id || circuito.MemoriaGravada?.Trim() is not { Length: > 0 } gravada || !dados.TryGetValue(id, out var doCircuito)
+                || (porCircuito.GetValueOrDefault(id) ?? doProjeto) is not { } condicoes)
+                return circuito;
+
+            var calculo = Dimensionamento.DimensionamentoDoProjeto.Calcular(doCircuito, condicoes, perfil, catalogos).Dimensionamento;
+            return calculo?.Memoria?.Hash() == gravada
+                ? circuito with { SecaoDoNeutroMm2 = calculo.SecaoDoNeutroMm2, SecaoDeProtecaoMm2 = calculo.SecaoDeProtecaoMm2 }
+                : circuito;
+        }
+
+        return quadros.Select(quadro => quadro with { Circuitos = quadro.Circuitos.Select(Completar).ToList() }).ToList();
     }
 }
 
@@ -156,12 +204,21 @@ public static class DiagramaUnifilar
         }
 
         elementos.Add(new Segmento(inicioDoCondutor, y, 90m, y));
-        var condutor = circuito.SecaoMm2 is { } secao ? $"{Numero(secao)} mm²" : "não dimensionado";
+        var condutor = circuito.SecaoMm2 is { } secao ? $"{Numero(secao)} mm²{NeutroEProtecao(circuito)}" : "não dimensionado";
         elementos.Add(new Texto(74m, y + 1m, condutor, AlinhamentoDoTexto.Centro, AlturaPequena));
         // No desenho, duas casas bastam; o valor completo está na memória do circuito.
         if (circuito.QuedaPct is { } queda)
             elementos.Add(new Texto(74m, y - 3m, $"ΔV {Numero(Math.Round(queda, 2, MidpointRounding.AwayFromZero))}%", AlinhamentoDoTexto.Centro, AlturaPequena));
         elementos.Add(new Texto(92m, y - 0.8m, Identificacao(circuito), AlinhamentoDoTexto.Esquerda, AlturaNormal));
+    }
+
+    // Neutro e PE, quando a memória que os dá confere com a gravada (ex.: " (N 2,5 · PE 2,5)").
+    private static string NeutroEProtecao(CircuitoDoUnifilar circuito)
+    {
+        var partes = new List<string>();
+        if (circuito.SecaoDoNeutroMm2 is { } neutro) partes.Add($"N {Numero(neutro)}");
+        if (circuito.SecaoDeProtecaoMm2 is { } protecao) partes.Add($"PE {Numero(protecao)}");
+        return partes.Count == 0 ? string.Empty : $" ({string.Join(" · ", partes)})";
     }
 
     // Sem alimentador nem sistema de distribuição, só "alimentação" (o desenho de antes, sem valor presumido).

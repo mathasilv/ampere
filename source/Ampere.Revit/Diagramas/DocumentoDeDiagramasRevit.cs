@@ -1,6 +1,8 @@
 using Ampere.Core;
 using Ampere.Core.Diagramas;
+using Ampere.Core.Dimensionamento;
 using Ampere.Core.Parametros;
+using Ampere.Revit.Dimensionamento;
 using Ampere.Revit.Quadros;
 using Autodesk.Revit.DB.Electrical;
 
@@ -13,7 +15,8 @@ namespace Ampere.Revit.Diagramas;
 /// <remarks>
 ///     <list type="bullet">
 ///         <item>Os valores vêm dos parâmetros que o 'Dimensionar circuitos' grava; 0 é o "apagado" do Ampere (parâmetro
-///         numérico não volta a vazio) e aparece como não calculado.</item>
+///         numérico não volta a vazio) e aparece como não calculado. Neutro e PE não são parâmetros: o Core refaz o cálculo
+///         com os dados e as condições que o <see cref="DocumentoDeDimensionamentoRevit" /> lê.</item>
 ///         <item>A vista é reaproveitada: só os elementos de detalhe dela são apagados e redesenhados, para não sair das
 ///         pranchas. Escala 1:1, para o desenho em mm de papel ficar com o tamanho certo na prancha.</item>
 ///         <item>Os textos usam o tipo de texto padrão do projeto (a altura é a dele, não a do SVG); o barramento é
@@ -24,7 +27,15 @@ public sealed class DocumentoDeDiagramasRevit(Document documento) : IDocumentoDe
 {
     private static readonly double Milimetro = UnitUtils.ConvertToInternalUnits(1, UnitTypeId.Millimeters);
 
+    private readonly DocumentoDeDimensionamentoRevit _circuitos = new(documento);
+
     public void EmUmaTransacao(string nome, Action acao) => TransacaoRevit.Executar(documento, nome, acao);
+
+    public IReadOnlyList<DadosDoCircuito> LerCircuitos(IReadOnlyCollection<long> ids) => _circuitos.LerCircuitos(ids);
+
+    public CondicoesDoProjeto? LerCondicoes() => _circuitos.LerCondicoes();
+
+    public IReadOnlyDictionary<long, CondicoesDoProjeto> LerCondicoesDosCircuitos(IReadOnlyCollection<long> ids) => _circuitos.LerCondicoesDosCircuitos(ids);
 
     public IReadOnlyList<QuadroDoUnifilar> LerQuadros()
     {
@@ -144,7 +155,9 @@ public sealed class DocumentoDeDiagramasRevit(Document documento) : IDocumentoDe
             Numero(sistema, ParametrosAmpere.BitolaCondutorMm2),
             Numero(sistema, ParametrosAmpere.IdrNominalA),
             Numero(sistema, ParametrosAmpere.IdrSensibilidadeMa),
-            Numero(sistema, ParametrosAmpere.QuedaTensaoPct));
+            Numero(sistema, ParametrosAmpere.QuedaTensaoPct),
+            Id: sistema.Id.Value,
+            MemoriaGravada: Texto(sistema, ParametrosAmpere.MemoriaCalculoId));
     }
 
     private static decimal? Potencia(IReadOnlyList<Element> membros)

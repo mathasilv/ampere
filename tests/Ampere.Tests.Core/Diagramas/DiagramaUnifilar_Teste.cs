@@ -1,6 +1,11 @@
 using System.Runtime.CompilerServices;
 using System.Text;
+using Ampere.Core.Catalogos;
 using Ampere.Core.Diagramas;
+using Ampere.Core.Dimensionamento;
+using Ampere.Core.Normas;
+using Ampere.Tests.Core.Catalogos;
+using Ampere.Tests.Core.Normas;
 
 namespace Ampere.Tests.Core.Diagramas;
 
@@ -11,6 +16,9 @@ namespace Ampere.Tests.Core.Diagramas;
 public class DiagramaUnifilar_Teste
 {
     private const string VariavelDeAtualizacao = "AMPERE_ATUALIZAR_REFERENCIAS";
+    private static readonly PerfilNormativo Ficticio = PerfilNormativo.Carregar(PerfilFicticio.Json);
+    private static readonly CatalogosDeProduto Catalogos = new(
+        CatalogoDeCondutores.Carregar(CatalogosFicticios.Condutores), CatalogoDeEletrodutos.Carregar(CatalogosFicticios.Eletrodutos));
 
     private static readonly QuadroDoUnifilar Qd1 = new("QD1",
     [
@@ -112,7 +120,7 @@ public class DiagramaUnifilar_Teste
     {
         var documento = new DocumentoFalso([Qd1, new QuadroDoUnifilar("QD2", [])]);
 
-        var desenhados = DiagramasDoProjeto.Desenhar(documento);
+        var desenhados = DiagramasDoProjeto.Desenhar(documento, Ficticio, Catalogos);
 
         await Assert.That(desenhados.Select(desenhado => desenhado.Vista)).IsEquivalentTo(["QD1 (vista)", "QD2 (vista)"]);
         await Assert.That(documento.Chamadas).IsEquivalentTo(["transacao", "QD1", "QD2"]);
@@ -123,13 +131,37 @@ public class DiagramaUnifilar_Teste
     {
         var documento = new DocumentoFalso([]);
 
-        await Assert.That(DiagramasDoProjeto.Desenhar(documento)).IsEmpty();
+        await Assert.That(DiagramasDoProjeto.Desenhar(documento, Ficticio, Catalogos)).IsEmpty();
         await Assert.That(documento.Chamadas).IsEmpty();
     }
 
-    private sealed class DocumentoFalso(IReadOnlyList<QuadroDoUnifilar> quadros) : IDocumentoDeDiagramas
+    [Test]
+    public async Task Neutro_e_protecao_so_quando_a_memoria_de_hoje_confere_com_a_gravada()
+    {
+        // TUG-01 de 7620 VA em 127 V: fase de 16 mm² e, no perfil fictício, PE de 10 mm².
+        var dados = new DadosDoCircuito(7, "TUG-01", "TUG", 10m, "B1", "PVC", [new DadosDoPonto(70, 7620m, 127m, "F+N", "LOCAL-SECO", "TUG")], Quadro: "QD1");
+        var condicoes = new CondicoesDoProjeto(30m, 1, "Cobre", TipoDeCondutorPadrao: CatalogosFicticios.TipoDeCondutor, TipoDeEletroduto: CatalogosFicticios.TipoDeEletroduto);
+        var gravada = DimensionamentoDoProjeto.Calcular(dados, condicoes, Ficticio, Catalogos).Memoria!.Hash();
+        CircuitoDoUnifilar Circuito(string? memoria) =>
+            new("TUG-01", null, "TUG", "F+N", 127m, 7620m, 63m, 16m, null, null, 1.2m, Id: 7, MemoriaGravada: memoria);
+
+        var confere = new DocumentoFalso([new QuadroDoUnifilar("QD1", [Circuito(gravada)])], [dados], condicoes);
+        var mudou = new DocumentoFalso([new QuadroDoUnifilar("QD1", [Circuito("sha256:outra")])], [dados], condicoes);
+
+        await Assert.That(Textos(DiagramasDoProjeto.Desenhar(confere, Ficticio, Catalogos)[0].Desenho)).Contains("16 mm² (N 16 · PE 10)");
+        await Assert.That(Textos(DiagramasDoProjeto.Desenhar(mudou, Ficticio, Catalogos)[0].Desenho)).Contains("16 mm²");
+    }
+
+    private sealed class DocumentoFalso(
+        IReadOnlyList<QuadroDoUnifilar> quadros, IReadOnlyList<DadosDoCircuito>? circuitos = null, CondicoesDoProjeto? condicoes = null) : IDocumentoDeDiagramas
     {
         public List<string> Chamadas { get; } = [];
+
+        public IReadOnlyList<DadosDoCircuito> LerCircuitos(IReadOnlyCollection<long> ids) => (circuitos ?? []).Where(circuito => ids.Contains(circuito.Id)).ToList();
+
+        public CondicoesDoProjeto? LerCondicoes() => condicoes;
+
+        public IReadOnlyDictionary<long, CondicoesDoProjeto> LerCondicoesDosCircuitos(IReadOnlyCollection<long> ids) => new Dictionary<long, CondicoesDoProjeto>();
 
         public void EmUmaTransacao(string nome, Action acao)
         {
