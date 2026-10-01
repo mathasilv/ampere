@@ -2,7 +2,9 @@ using System.Diagnostics;
 using System.Windows.Interop;
 using Ampere.Circuitos;
 using Ampere.Core.Circuitos;
+using Ampere.Core.Previsao;
 using Ampere.Revit.Circuitos;
+using Ampere.Revit.Previsao;
 using Ampere.ViewModels;
 using Ampere.Views;
 using Autodesk.Revit.Attributes;
@@ -66,7 +68,7 @@ public class CriarCircuitosCommand : ExternalCommand
         PlanoDeCircuitos plano;
         try
         {
-            plano = CriacaoDeCircuitos.Executar(ids, quadro.Id, regras, numeracao, porta);
+            plano = CriacaoDeCircuitos.Executar(ids, quadro.Id, regras, numeracao, porta, Divisao(documento));
         }
         catch (Exception excecao) when (excecao is InvalidOperationException or Autodesk.Revit.Exceptions.ApplicationException)
         {
@@ -82,5 +84,13 @@ public class CriarCircuitosCommand : ExternalCommand
     {
         TaskDialog.Show(TituloDaJanela, mensagem);
         Result = Result.Cancelled;
+    }
+
+    // A divisão da instalação (NBR 5410, 9.5.3) sai das categorias que a 'Previsão de cargas' guardou; sem elas, nada muda.
+    private static DivisaoDaInstalacao? Divisao(Document documento)
+    {
+        var previsao = new DocumentoDePrevisaoRevit(documento);
+        var categorias = previsao.LerCategorias();
+        return categorias.Count == 0 ? null : PrevisaoDeCargas.DivisaoParaCircuitos(previsao.Ler(), categorias, NormaDePrevisao.NBR5410_2004);
     }
 }

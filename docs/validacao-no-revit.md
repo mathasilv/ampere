@@ -41,7 +41,9 @@ Use um projeto de teste com arquitetura vinculada ou com ambientes (Rooms/Spaces
    do 'Criar circuitos' (passo 5), ponha uma tomada da cozinha e uma da sala no mesmo circuito e rode de novo: o resumo
    deve apontar a divisão dos circuitos ("tomadas de cozinha ou área de serviço com 1 ponto de outro tipo ou de outro
    cômodo"). Um ambiente de uma fase anterior (ex.: "Existente") não deve aparecer.
-5. **Criar circuitos.** Os circuitos devem ser numerados no quadro escolhido.
+5. **Criar circuitos.** Os circuitos devem ser numerados no quadro escolhido. Com as categorias do passo 4 escolhidas,
+   as tomadas da cozinha devem sair em circuitos só delas (sem as da sala), e o chuveiro (acima de 10 A) sozinho no seu
+   circuito; o resumo deve citar o item 9.5.3 da NBR 5410 nos dois avisos.
 6. **Dimensionar circuitos** (sem seleção).
    - O diálogo abre vazio na primeira vez. Nas vezes seguintes, abre com as condições guardadas no modelo; feche e
      reabra o projeto para conferir.

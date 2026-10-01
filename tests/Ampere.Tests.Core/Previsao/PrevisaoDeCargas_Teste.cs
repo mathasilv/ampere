@@ -241,6 +241,23 @@ public class PrevisaoDeCargas_Teste
     }
 
     [Test]
+    [Property("Fonte", "NBR 5410:2004, item 9.5.3")]
+    public async Task Divisao_para_os_circuitos_sai_das_categorias()
+    {
+        var cozinha = Comodo("Cozinha", 9m, 10m, new PontoDoComodo(80, TipoDeCarga.TUG, 600m), new PontoDoComodo(81, TipoDeCarga.Iluminacao, 100m));
+        var sala = Comodo("Sala", 15m, 16m, new PontoDoComodo(82, TipoDeCarga.TUG, 100m));
+        var loja = Comodo("Loja", 30m, 22m, new PontoDoComodo(83, TipoDeCarga.TUE, 5400m));
+
+        var divisao = PrevisaoDeCargas.DivisaoParaCircuitos(Leitura([cozinha, sala, loja]),
+            new Dictionary<string, string> { ["cozinha"] = Cozinha, ["Sala"] = "Sala ou dormitório", ["Loja"] = PrevisaoDeCargas.ForaDaHabitacao }, Norma);
+
+        await Assert.That(string.Join(",", divisao.PontosNaHabitacao.Order())).IsEqualTo("80,81,82");
+        await Assert.That(string.Join(",", divisao.TomadasDeCircuitoExclusivo)).IsEqualTo("80");
+        await Assert.That(divisao.CorrenteIndependenteAcimaDeA).IsEqualTo(10m);
+        await Assert.That(divisao.Independente(83, TipoDeCarga.TUE, 5400m, 220m, "2F")).IsFalse();
+    }
+
+    [Test]
     public async Task Executar_guarda_as_escolhas_com_as_do_projeto_e_avalia()
     {
         var documento = new DocumentoFalso(new Dictionary<string, string> { ["Banho"] = "Banheiro", ["Varanda"] = "Varanda" });

@@ -87,7 +87,9 @@ public sealed class DocumentoEletricoRevit(Document documento) : IDocumentoEletr
             }
 
             var tipo = CodigosDeTipoDeCarga.TryLer(ParametrosAmpere.LerTexto(instancia, ParametrosAmpere.TipoCarga), out var lido) ? lido : (TipoDeCarga?)null;
-            pontos.Add(new PontoDeCarga(id, tipo, LerPotenciaVA(instancia), Alimentacao(conector), CircuitoAtual(instancia)));
+            pontos.Add(new PontoDeCarga(id, tipo, LerPotenciaVA(instancia), Alimentacao(conector), CircuitoAtual(instancia),
+                ParametrosAmpere.Ler(instancia, ParametrosAmpere.TensaoCircuitoV) is { HasValue: true } tensao ? (decimal)tensao.AsDouble() : null,
+                ParametrosAmpere.LerTexto(instancia, ParametrosAmpere.Fases) is { Length: > 0 } fases ? fases : null));
         }
 
         return new LeituraDePontos(pontos, recusados);

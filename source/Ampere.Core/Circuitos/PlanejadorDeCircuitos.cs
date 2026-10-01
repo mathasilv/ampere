@@ -8,9 +8,11 @@ namespace Ampere.Core.Circuitos;
 ///     ordem, dão o mesmo plano.
 /// </summary>
 /// <remarks>
-///     Grupos por (tipo de carga, alimentação), na ordem do enum de tipos e da chave de alimentação; pontos por Id.
-///     Divisão gulosa pelos limites da regra do tipo; um ponto que excede sozinho o limite de VA fica sozinho e gera
-///     aviso. A numeração de cada prefixo continua depois do maior número já existente no quadro. Nada é descartado em
+///     Grupos por (tipo de carga, alimentação, circuito exclusivo), na ordem do enum de tipos e da chave de alimentação;
+///     pontos por Id. Divisão gulosa pelos limites da regra do tipo; um ponto que excede sozinho o limite de VA fica
+///     sozinho e gera aviso. Com a divisão da instalação (9.5.3, da previsão de cargas): tomadas de cozinha e áreas de
+///     serviço em circuitos só delas, e equipamento de habitação acima do limite de corrente sozinho no seu circuito.
+///     A numeração de cada prefixo continua depois do maior número já existente no quadro. Nada é descartado em
 ///     silêncio: todo ponto fora do plano aparece em <see cref="PlanoDeCircuitos.Ignorados" /> com o motivo.
 /// </remarks>
 public static class PlanejadorDeCircuitos
@@ -22,7 +24,8 @@ public static class PlanejadorDeCircuitos
         IReadOnlyCollection<PontoDeCarga> pontos,
         IReadOnlyDictionary<TipoDeCarga, RegraDeAgrupamento> regras,
         ConfiguracaoDeNumeracao numeracao,
-        IReadOnlyCollection<string> numerosExistentesNoQuadro)
+        IReadOnlyCollection<string> numerosExistentesNoQuadro,
+        Previsao.DivisaoDaInstalacao? divisao = null)
     {
         var problemasDeRegra = regras
             .SelectMany(regra => regra.Value.Validar().Select(problema => $"{CodigosDeTipoDeCarga.Codigo(regra.Key)}: {problema}"))
@@ -46,16 +49,33 @@ public static class PlanejadorDeCircuitos
 
         var circuitos = new List<CircuitoPlanejado>();
         var proximoNumero = new Dictionary<TipoDeCarga, int>();
+        bool Exclusivo(PontoDeCarga ponto) => divisao?.TomadasDeCircuitoExclusivo.Contains(ponto.Id) == true;
+        var independentes = validos
+            .Where(ponto => divisao?.Independente(ponto.Id, ponto.Tipo!.Value, ponto.PotenciaVA, ponto.TensaoV, ponto.Fases) == true)
+            .Select(ponto => ponto.Id)
+            .ToHashSet();
+        if (divisao is not null)
+        {
+            if (validos.Count(Exclusivo) is > 0 and var exclusivas)
+                avisos.Add($"{exclusivas} tomada(s) de cozinha e áreas de serviço em circuitos só delas ({divisao.Referencia})");
+            foreach (var ponto in validos.Where(ponto => independentes.Contains(ponto.Id)))
+            {
+                avisos.Add(string.Create(CultureInfo.InvariantCulture,
+                    $"ponto {ponto.Id} ({NumeroEmTexto.FormatarParaLeitura(Math.Round(Previsao.PrevisaoDeCargas.CorrenteA(ponto.PotenciaVA, ponto.TensaoV, ponto.Fases)!.Value, 2, MidpointRounding.AwayFromZero))} A) em circuito independente, acima de {NumeroEmTexto.Formatar(divisao.CorrenteIndependenteAcimaDeA)} A ({divisao.Referencia})"));
+            }
+        }
+
         var grupos = validos
-            .GroupBy(ponto => (Tipo: ponto.Tipo!.Value, ponto.Alimentacao))
+            .GroupBy(ponto => (Tipo: ponto.Tipo!.Value, ponto.Alimentacao, Exclusivo: Exclusivo(ponto)))
             .OrderBy(grupo => grupo.Key.Tipo)
-            .ThenBy(grupo => grupo.Key.Alimentacao, StringComparer.Ordinal);
+            .ThenBy(grupo => grupo.Key.Alimentacao, StringComparer.Ordinal)
+            .ThenBy(grupo => grupo.Key.Exclusivo);
 
         foreach (var grupo in grupos)
         {
             var tipo = grupo.Key.Tipo;
             var regra = regras.GetValueOrDefault(tipo) ?? SemLimites;
-            foreach (var membros in Dividir(grupo.OrderBy(ponto => ponto.Id).ToList(), regra, tipo, avisos))
+            foreach (var membros in Dividir(grupo.OrderBy(ponto => ponto.Id).ToList(), regra, tipo, avisos, independentes))
             {
                 if (!proximoNumero.TryGetValue(tipo, out var numero))
                     numero = numeracao.MaiorNumeroExistente(tipo, numerosExistentesNoQuadro) + 1;
@@ -83,13 +103,24 @@ public static class PlanejadorDeCircuitos
         return null;
     }
 
-    private static List<List<PontoDeCarga>> Dividir(List<PontoDeCarga> pontos, RegraDeAgrupamento regra, TipoDeCarga tipo, List<string> avisos)
+    private static List<List<PontoDeCarga>> Dividir(
+        List<PontoDeCarga> pontos, RegraDeAgrupamento regra, TipoDeCarga tipo, List<string> avisos, IReadOnlySet<long> independentes)
     {
         var circuitos = new List<List<PontoDeCarga>>();
         var atual = new List<PontoDeCarga>();
         var soma = 0m;
         foreach (var ponto in pontos)
         {
+            // Sozinho no seu circuito, na ordem dos Ids: o circuito em formação fecha antes dele.
+            if (independentes.Contains(ponto.Id))
+            {
+                if (atual.Count > 0) circuitos.Add(atual);
+                circuitos.Add([ponto]);
+                atual = [];
+                soma = 0m;
+                continue;
+            }
+
             var potencia = ponto.PotenciaVA ?? 0m;
             var estouraPontos = regra.MaximoDePontos is { } maximo && atual.Count + 1 > maximo;
             var estouraPotencia = regra.MaximaPotenciaVA is { } limite && soma + potencia > limite;

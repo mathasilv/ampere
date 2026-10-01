@@ -53,6 +53,21 @@ public interface IDocumentoDePrevisao : IDocumentoTransacional
     string? GravarCategorias(IReadOnlyDictionary<string, string> categoriaPorNome);
 }
 
+/// <summary>
+///     A divisão da instalação (9.5.3) para o "Criar circuitos", tirada da previsão de cargas: os pontos em cômodo de
+///     habitação e as tomadas que vão em circuitos só delas.
+/// </summary>
+/// <param name="PontosNaHabitacao">Pontos em cômodo de habitação (com categoria da norma).</param>
+/// <param name="TomadasDeCircuitoExclusivo">Tomadas (TUG e TUE) em cômodo de circuito exclusivo (cozinhas, áreas de serviço…).</param>
+public sealed record DivisaoDaInstalacao(
+    IReadOnlySet<long> PontosNaHabitacao, IReadOnlySet<long> TomadasDeCircuitoExclusivo, decimal CorrenteIndependenteAcimaDeA, string Referencia)
+{
+    /// <summary>O ponto é equipamento (TUE, ar condicionado, motor) de habitação acima do limite: vai sozinho num circuito.</summary>
+    public bool Independente(long id, TipoDeCarga tipo, decimal? potenciaVA, decimal? tensaoV, string? fases) =>
+        PontosNaHabitacao.Contains(id) && PrevisaoDeCargas.Equipamentos.Contains(tipo)
+                                       && PrevisaoDeCargas.CorrenteA(potenciaVA, tensaoV, fases) > CorrenteIndependenteAcimaDeA;
+}
+
 /// <summary>O que a previsão fez.</summary>
 /// <param name="Resultado">Nulo se houve problema (nada foi gravado).</param>
 /// <param name="CategoriasNaoGravadas">Por que as categorias não ficaram no modelo (a avaliação vale assim mesmo), ou nulo.</param>
@@ -207,7 +222,36 @@ public static class PrevisaoDeCargas
         return new ResultadoDaPrevisao(avaliacoes, conjunto, norma, Divisao(leitura, regraDoPonto, norma));
     }
 
-    private static readonly TipoDeCarga[] Equipamentos = [TipoDeCarga.TUE, TipoDeCarga.ArCondicionado, TipoDeCarga.Motor];
+    /// <summary>Tipos de carga tratados como equipamento no limite de corrente do circuito independente (critério do Ampere).</summary>
+    public static IReadOnlyList<TipoDeCarga> Equipamentos { get; } = [TipoDeCarga.TUE, TipoDeCarga.ArCondicionado, TipoDeCarga.Motor];
+
+    /// <summary>A divisão da instalação para o "Criar circuitos", com as categorias guardadas (vazias = nada a dividir).</summary>
+    public static DivisaoDaInstalacao DivisaoParaCircuitos(LeituraDaPrevisao leitura, IReadOnlyDictionary<string, string> categoriaPorNome, NormaDePrevisao norma)
+    {
+        var categorias = new Dictionary<string, string>(categoriaPorNome.Where(par => !string.IsNullOrWhiteSpace(par.Key) && !string.IsNullOrWhiteSpace(par.Value))
+            .ToDictionary(par => par.Key.Trim(), par => par.Value.Trim(), StringComparer.OrdinalIgnoreCase), StringComparer.OrdinalIgnoreCase);
+        var naHabitacao = new HashSet<long>();
+        var exclusivas = new HashSet<long>();
+        foreach (var comodo in leitura.Comodos.Where(comodo => comodo.AreaM2 > 0m))
+        {
+            if (norma.Regra(categorias.GetValueOrDefault(comodo.Nome.Trim())) is not { } regra) continue;
+            foreach (var ponto in comodo.Pontos)
+            {
+                naHabitacao.Add(ponto.Id);
+                if (regra.CircuitoExclusivo && ponto.Tipo is TipoDeCarga.TUG or TipoDeCarga.TUE) exclusivas.Add(ponto.Id);
+            }
+        }
+
+        return new DivisaoDaInstalacao(naHabitacao, exclusivas, norma.CorrenteIndependenteAcimaDeA, norma.ReferenciaDaDivisao);
+    }
+
+    /// <summary>Corrente do ponto: P / V, ou P / (√3 · V) no trifásico; nula sem potência ou tensão.</summary>
+    public static decimal? CorrenteA(decimal? potenciaVA, decimal? tensaoV, string? fases)
+    {
+        if (potenciaVA is not { } potencia || tensaoV is not > 0m) return null;
+        var trifasico = fases is { } texto && texto.StartsWith("3F", StringComparison.Ordinal);
+        return potencia / (tensaoV.Value * (trifasico ? Raiz3 : 1m));
+    }
 
     private static List<FaltaDeDivisao> Divisao(LeituraDaPrevisao leitura, IReadOnlyDictionary<long, RegraDoComodo> regraDoPonto, NormaDePrevisao norma)
     {
@@ -250,12 +294,7 @@ public static class PrevisaoDeCargas
         return faltas;
     }
 
-    private static decimal? Corrente(PontoDoComodo ponto)
-    {
-        if (ponto.PotenciaVA is not { } potencia || ponto.TensaoV is not > 0m) return null;
-        var trifasico = ponto.Fases is { } fases && fases.StartsWith("3F", StringComparison.Ordinal);
-        return potencia / (ponto.TensaoV.Value * (trifasico ? Raiz3 : 1m));
-    }
+    private static decimal? Corrente(PontoDoComodo ponto) => CorrenteA(ponto.PotenciaVA, ponto.TensaoV, ponto.Fases);
 
     private const decimal Raiz3 = 1.7320508075688772935274463415m;
 

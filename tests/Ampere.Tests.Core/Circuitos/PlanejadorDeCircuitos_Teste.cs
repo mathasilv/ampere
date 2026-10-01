@@ -1,5 +1,6 @@
 using Ampere.Core.Cargas;
 using Ampere.Core.Circuitos;
+using Ampere.Core.Previsao;
 using TUnit.Assertions.Enums;
 
 namespace Ampere.Tests.Core.Circuitos;
@@ -26,6 +27,26 @@ public class PlanejadorDeCircuitos_Teste
         var plano = Planejar([Ponto(1, TipoDeCarga.TUG), Ponto(2, TipoDeCarga.TUG, alimentacao: A220), Ponto(3, TipoDeCarga.TUG)]);
 
         await Assert.That(Resumo(plano)).IsEquivalentTo(["TUG-01: 1,3", "TUG-02: 2"], CollectionOrdering.Matching);
+    }
+
+    [Test]
+    [Property("Fonte", "NBR 5410:2004, item 9.5.3")]
+    public async Task Divisao_da_instalacao_separa_as_tomadas_de_cozinha_e_isola_o_equipamento_acima_do_limite()
+    {
+        // Tomadas 1 e 2 na cozinha, 3 na sala; chuveiro 5 (5400 VA, 220 V, 24,5 A) e torneira 6 (1000 VA, 4,5 A) na habitação.
+        var divisao = new DivisaoDaInstalacao(new HashSet<long> { 1, 2, 3, 5, 6 }, new HashSet<long> { 1, 2 }, 10m, "NBR 5410:2004, item 9.5.3");
+        PontoDeCarga Tue(long id, decimal va) => Ponto(id, TipoDeCarga.TUE, va, A220) with { TensaoV = 220m, Fases = "2F" };
+
+        var plano = PlanejadorDeCircuitos.Planejar(
+            [Ponto(1, TipoDeCarga.TUG), Ponto(2, TipoDeCarga.TUG), Ponto(3, TipoDeCarga.TUG), Tue(5, 5400m), Tue(6, 1000m), Tue(7, 1200m)],
+            SemRegras, ConfiguracaoDeNumeracao.Padrao, [], divisao);
+        var semDivisao = Planejar([Ponto(1, TipoDeCarga.TUG), Ponto(2, TipoDeCarga.TUG), Ponto(3, TipoDeCarga.TUG)]);
+
+        await Assert.That(Resumo(plano)).IsEquivalentTo(["TUG-01: 3", "TUG-02: 1,2", "TUE-01: 5", "TUE-02: 6,7"], CollectionOrdering.Matching);
+        await Assert.That(string.Join("\n", plano.Avisos)).IsEqualTo(string.Join("\n",
+            "2 tomada(s) de cozinha e áreas de serviço em circuitos só delas (NBR 5410:2004, item 9.5.3)",
+            "ponto 5 (24,55 A) em circuito independente, acima de 10 A (NBR 5410:2004, item 9.5.3)"));
+        await Assert.That(Resumo(semDivisao)).IsEquivalentTo(["TUG-01: 1,2,3"], CollectionOrdering.Matching);
     }
 
     [Test]

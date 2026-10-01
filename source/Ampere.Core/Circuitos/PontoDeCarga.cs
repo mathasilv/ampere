@@ -13,9 +13,13 @@ namespace Ampere.Core.Circuitos;
 ///     dividem circuito — o Revit recusaria.
 /// </param>
 /// <param name="CircuitoAtual">Circuito a que o ponto já pertence; <c>null</c> se livre.</param>
+/// <param name="TensaoV">AMP_TensaoCircuitoV (nulo = vazio), para a corrente do ponto na divisão da instalação.</param>
+/// <param name="Fases">AMP_Fases (nulo = vazio), idem.</param>
 public sealed record PontoDeCarga(
     long Id,
     TipoDeCarga? Tipo,
     decimal? PotenciaVA,
     string Alimentacao,
-    string? CircuitoAtual = null);
+    string? CircuitoAtual = null,
+    decimal? TensaoV = null,
+    string? Fases = null);
