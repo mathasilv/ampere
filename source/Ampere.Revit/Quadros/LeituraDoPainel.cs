@@ -1,4 +1,5 @@
 using Ampere.Core.Quadros;
+using Ampere.Core.Surtos;
 using Autodesk.Revit.DB.Electrical;
 
 namespace Ampere.Revit.Quadros;
@@ -66,6 +67,23 @@ internal static class LeituraDoPainel
         IReadOnlyList<string>? fases = rotulos.Length >= quantas ? rotulos.Take(quantas).ToList() : null;
         var faseNeutro = esquema.EndsWith("+N", StringComparison.Ordinal) && esquema != "F+N" ? terra : null;
         return new AlimentacaoDoQuadro(esquema, tensao.Value, $"sistema de distribuição '{sistema.Name}' do quadro", fases, faseNeutro);
+    }
+
+    /// <summary>
+    ///     O quadro para a seleção dos DPS: o esquema da alimentação, Uo (a fase-terra do sistema de distribuição; sem ela, a
+    ///     derivada de 3F+N) e U (a fase-fase; nula em F+N, onde a tensão do quadro já é a fase-neutro).
+    /// </summary>
+    public static QuadroParaDps ParaDps(Document documento, FamilyInstance painel, string[] rotulos)
+    {
+        var nome = Nome(painel);
+        if (Alimentacao(documento, painel, rotulos) is not { } alimentacao)
+            return new QuadroParaDps(painel.Id.Value, nome, null, null, null, "quadro sem sistema de distribuição");
+
+        var sistema = Sistema(documento, painel, BuiltInParameter.RBS_FAMILY_CONTENT_SECONDARY_DISTRIBSYS)
+                      ?? Sistema(documento, painel, BuiltInParameter.RBS_FAMILY_CONTENT_DISTRIBUTION_SYSTEM);
+        var monofasico = alimentacao.Esquema == "F+N";
+        var faseTerra = monofasico ? alimentacao.TensaoV : Volts(sistema?.VoltageLineToGround) ?? alimentacao.FaseNeutro;
+        return new QuadroParaDps(painel.Id.Value, nome, alimentacao.Esquema, faseTerra, monofasico ? null : alimentacao.TensaoV, alimentacao.Origem);
     }
 
     private static DistributionSysType? Sistema(Document documento, FamilyInstance painel, BuiltInParameter parametro) =>

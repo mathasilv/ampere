@@ -93,6 +93,46 @@ internal sealed record ConteudoDoRelatorio(
             "Documento da distribuidora", "Identificador da memória (não gravado no modelo)");
     }
 
+    /// <summary>
+    ///     Relatório dos DPS do quadro: o quadro e as escolhas, a localização e o que conferir no catálogo do DPS antes dos
+    ///     passos da memória.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Seleção que não saiu (sem memória) não gera relatório.</exception>
+    public static ConteudoDoRelatorio DeDps(Surtos.ResultadoDoDps dps, Surtos.NormaDeDps norma)
+    {
+        if (dps.Memoria is not { } memoria)
+            throw new InvalidOperationException("Os DPS não foram selecionados (veja os problemas): relatório só de seleção feita.");
+
+        var quadro = dps.Quadro;
+        var tensoes = quadro.TensaoEntreFasesV is { } entreFases && quadro.Esquema != "F+N"
+            ? $"{Quantidade(entreFases, string.Empty)}/{Quantidade(quadro.TensaoFaseNeutroV!.Value, "V")}"
+            : Quantidade(quadro.TensaoFaseNeutroV!.Value, "V");
+        var escolha = dps.Escolha;
+        var localizacao = new List<Campo> { new("Referência", norma.ReferenciaDaLocalizacao) };
+        if (escolha.Finalidade is not Surtos.FinalidadeDoDps.DescargasDiretas)
+            localizacao.Add(new Campo("Sobretensões transmitidas pela linha externa e de manobra", norma.LocalizacaoDaLinhaExterna));
+        if (escolha.Finalidade is not Surtos.FinalidadeDoDps.LinhaExterna)
+            localizacao.Add(new Campo("Descargas atmosféricas diretas", norma.LocalizacaoDasDescargasDiretas));
+        var abertura = new List<SecaoDePasso>
+        {
+            new("Quadro", [
+                new Campo("Quadro", quadro.Nome),
+                new Campo("Alimentação", $"{quadro.Esquema} {tensoes} ({quadro.Origem})"),
+                new Campo("Esquema de aterramento", escolha.EsquemaDeAterramento),
+                new Campo("Finalidade", escolha.Finalidade switch
+                {
+                    Surtos.FinalidadeDoDps.LinhaExterna => "sobretensões de origem atmosférica transmitidas pela linha externa e de manobra",
+                    Surtos.FinalidadeDoDps.DescargasDiretas => "descargas atmosféricas diretas sobre a edificação ou em suas proximidades",
+                    _ => "as duas: sobretensões transmitidas pela linha externa e de manobra, e descargas atmosféricas diretas"
+                }),
+                new Campo("Dispositivo DR", escolha.AJusanteDeDr ? "os DPS ficam a jusante de um DR" : "os DPS ficam a montante dos DR")
+            ]),
+            new("Localização", localizacao),
+            new("A conferir no DPS escolhido", norma.AConferir.Select(item => new Campo(item.Referencia, item.Texto)).ToList())
+        };
+        return Montar(memoria, null, $"Memória de cálculo — {memoria.Circuito}", abertura, rotuloDoIdentificador: "Identificador da memória (não gravado no modelo)");
+    }
+
     // Memória que não vai para o modelo (ex.: a demanda) não tem AMP_MemoriaCalculoId: os rótulos dizem o que ela é.
     private static ConteudoDoRelatorio Montar(
         MemoriaDeCalculo memoria, string? identificadorGravado, string titulo, IReadOnlyList<SecaoDePasso> abertura,

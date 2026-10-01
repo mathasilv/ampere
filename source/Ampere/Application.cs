@@ -74,6 +74,11 @@ public class Application : ExternalApplication
             .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
             .SetToolTip("Calcula a demanda da instalação pela norma da distribuidora (CELG CT 04/18, vigência a conferir), com todos os pontos classificados — TUE pelo aparelho —, e o padrão de entrada pela carga instalada (Equatorial NT.00001 rev. 09: disjuntor, ramal, eletroduto, condutor do cliente e aterramento); salva as memórias. Não grava nada no modelo.");
 
+        quadros.AddPushButton<DpsDoQuadroCommand>("DPS do\nquadro")
+            .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
+            .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
+            .SetToolTip("Seleciona os DPS do quadro de entrada ou de distribuição principal (NBR 5410, 6.3.5.2): esquema de conexão (Figura 13), Uc (Tabela 49), Up (Tabela 31), In ou Iimp e condutor de conexão, pelas tensões do sistema de distribuição do quadro; salva a memória. Não grava nada no modelo.");
+
         quadros.AddPushButton<DiagramasUnifilaresCommand>("Diagramas\nunifilares")
             .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
             .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")

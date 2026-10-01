@@ -1,0 +1,56 @@
+<Window
+    x:Class="Ampere.Views.DpsView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:viewModels="clr-namespace:Ampere.ViewModels"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance viewModels:DpsViewModel}"
+    Title="DPS do quadro"
+    SizeToContent="WidthAndHeight"
+    ResizeMode="NoResize"
+    WindowStartupLocation="CenterOwner"
+    ShowInTaskbar="False">
+    <StackPanel Margin="16" Width="480">
+        <TextBlock Text="Seleção dos DPS da linha de energia (NBR 5410, 6.3.5.2)" FontWeight="SemiBold" Margin="0,0,0,12" />
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="130" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Text="Quadro" VerticalAlignment="Center"
+                       ToolTip="O quadro no ponto de entrada da linha na edificação ou o quadro de distribuição principal (6.3.5.2.1)" />
+            <ComboBox Grid.Column="1" Margin="0,2" ItemsSource="{Binding Quadros}" SelectedItem="{Binding Quadro}" />
+            <TextBlock Grid.Row="1" Text="Aterramento" VerticalAlignment="Center"
+                       ToolTip="Esquema de aterramento da instalação. TN-C-S: entra TN-C e passa a TN-S no quadro principal (Figura 13, nota b)" />
+            <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,2" ItemsSource="{Binding Aterramentos}" SelectedItem="{Binding Aterramento}" />
+            <TextBlock Grid.Row="2" Text="Finalidade" VerticalAlignment="Center"
+                       ToolTip="Linha externa e manobra: corrente nominal de descarga (In). Descargas diretas: corrente de impulso (Iimp) e condutor de conexão de 16 mm²" />
+            <ComboBox Grid.Row="2" Grid.Column="1" Margin="0,2" ItemsSource="{Binding Finalidades}" SelectedItem="{Binding Finalidade}" />
+        </Grid>
+
+        <CheckBox Margin="0,8,0,0" IsChecked="{Binding AJusanteDeDr}"
+                  Content="Os DPS ficam a jusante de um DR (DR geral antes deles)"
+                  ToolTip="O DR antes dos DPS precisa de imunidade a surtos de 3 kA (6.3.5.2.6, alínea b); no TT com os DPS antes dos DR, o esquema 3 é obrigatório" />
+
+        <TextBlock Text="Esquema de conexão" FontWeight="SemiBold" Margin="0,12,0,4" />
+        <TextBlock Text="{Binding Conexao}" TextWrapping="Wrap" Margin="0,0,0,4" />
+        <ComboBox IsEnabled="{Binding EscolheAConexao}" ItemsSource="{Binding EsquemasDeConexao}" SelectedItem="{Binding EsquemaDeConexao}" />
+
+        <TextBlock Margin="0,10,0,0" TextWrapping="Wrap" Foreground="Gray"
+                   Text="Tensões pelo sistema de distribuição do quadro. Nada é gravado: a memória vai para Documentos\Ampere\{projeto}\DPS." />
+        <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" Foreground="Firebrick" Text="{Binding Problemas}" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Selecionar" IsDefault="True" Width="96" Margin="0,0,8,0" Click="Confirmar" />
+            <Button Content="Cancelar" IsCancel="True" Width="96" />
+        </StackPanel>
+    </StackPanel>
+</Window>

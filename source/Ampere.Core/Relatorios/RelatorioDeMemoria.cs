@@ -52,6 +52,15 @@ public static class RelatorioDeMemoria
     public static byte[] PdfDoPadrao(Demanda.ResultadoDoPadrao padrao, Demanda.NormaDoPadraoDeEntrada norma) =>
         PdfDoRelatorio.Gerar(ConteudoDoRelatorio.DePadrao(padrao, norma), padrao.Memoria!.Hash());
 
+    /// <summary>O relatório dos DPS do quadro: quadro, localização e o que conferir antes dos passos da memória.</summary>
+    /// <exception cref="InvalidOperationException">Seleção que não saiu não gera relatório.</exception>
+    public static string MarkdownDoDps(Surtos.ResultadoDoDps dps, Surtos.NormaDeDps norma) => Renderizar(ConteudoDoRelatorio.DeDps(dps, norma));
+
+    /// <summary>Os DPS do quadro em PDF, com o identificador da memória como Assunto.</summary>
+    /// <exception cref="InvalidOperationException">Seleção que não saiu não gera relatório.</exception>
+    public static byte[] PdfDoDps(Surtos.ResultadoDoDps dps, Surtos.NormaDeDps norma) =>
+        PdfDoRelatorio.Gerar(ConteudoDoRelatorio.DeDps(dps, norma), dps.Memoria!.Hash());
+
     private static string Renderizar(ConteudoDoRelatorio conteudo)
     {
         var texto = new StringBuilder();

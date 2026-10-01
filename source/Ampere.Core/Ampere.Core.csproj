@@ -21,6 +21,8 @@
                           LogicalName="Ampere.Core.Normas.NBR5410_2004.perfil.json"/>
         <EmbeddedResource Include="..\..\data\normas\NBR5410\2004\previsao_de_cargas.json"
                           LogicalName="Ampere.Core.Previsao.NBR5410_2004.previsao_de_cargas.json"/>
+        <EmbeddedResource Include="..\..\data\normas\NBR5410\2004\dps.json"
+                          LogicalName="Ampere.Core.Surtos.NBR5410_2004.dps.json"/>
         <EmbeddedResource Include="..\..\data\catalogos\condutores.json"
                           LogicalName="Ampere.Core.Catalogos.condutores.json"/>
         <EmbeddedResource Include="..\..\data\catalogos\eletrodutos.json"

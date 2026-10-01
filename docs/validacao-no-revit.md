@@ -96,7 +96,13 @@ Use um projeto de teste com arquitetura vinculada ou com ambientes (Rooms/Spaces
       condutor do cliente, o eletroduto, o aterramento e o ramal da linha da carga instalada (ex.: 29,85 kW → trifásico,
       63 A). Escolha "trifásico" para uma casa de menos de 12 kW: deve sair a primeira faixa (20 A) com a Nota 19 na
       memória. A memória `padrao-de-entrada-….md` fica na mesma pasta da demanda. Reabra o diálogo: a escolha deve voltar.
-12. **Diagramas unifilares.** Deve sair uma vista de desenho por quadro, com os valores do dimensionamento. Cada circuito
+12. **DPS do quadro.** Escolha o quadro geral, "TN-C-S" e "Sobretensões transmitidas pela linha externa": o resumo deve
+    trazer o esquema de conexão 1, um DPS por fase com Uc ≥ 1,1 Uo (ex.: 139,7 V em 127 V), In ≥ 5 kA, Up ≤ 1,5 kV (127/220)
+    ou 2,5 kV (220/380) e condutor de conexão de 4 mm². Com "TT" e a caixa do DR desmarcada, o esquema de conexão fica
+    travado no 3 (com o neutro–PE de 20 kA no trifásico); marcando a caixa, o diálogo deixa escolher o 2 ou o 3 e a
+    memória pede DR com imunidade de 3 kA. Num quadro sem sistema de distribuição, o resumo deve dizer o que falta. A
+    memória `dps-{quadro}-….md` fica em `Documentos\Ampere\{projeto}\DPS`, com a lista do que conferir no catálogo.
+13. **Diagramas unifilares.** Deve sair uma vista de desenho por quadro, com os valores do dimensionamento. Cada circuito
     dimensionado mostra a fase com neutro e PE (ex.: "2,5 mm² (N 2,5 · PE 2,5)"); mude o comprimento de um circuito sem
     redimensionar e redesenhe: ele deve ficar só com a fase.
 

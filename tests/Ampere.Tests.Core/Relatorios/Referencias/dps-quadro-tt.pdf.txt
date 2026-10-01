@@ -1,0 +1,115 @@
+== página 1 de 3
+56,7 [Titulo 56,7] Memória de cálculo — DPS do quadro QD1
+80,2 [Rotulo 56,7] Perfil normativo: [Texto 150,4] NBR5410:2004
+91,2 [Rotulo 56,7] Identificador da memória (não gravado no modelo):
+102,3 [Codigo 56,7] sha256:dac755a3b3b7c8df962d9a71cf3840cfe66adfd5574c598090385593ba6cb41c
+112,8 [Rotulo 56,7] Esquema do documento: [Texto 191,8] 1
+123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo completo (12 passos)
+142,9 [Nota 56,7] Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O
+152,8 [Nota 56,7] documento JSON da memória guarda os valores completos.
+180,7 [TituloDoPasso 56,7] Quadro
+194,9 [Rotulo 68,7] Quadro: [Texto 114,8] QD1
+205,9 [Rotulo 68,7] Alimentação: [Texto 142] 3F+N 220/127 V (sistema de distribuição '220/127 Y' do quadro)
+217 [Rotulo 68,7] Esquema de aterramento: [Texto 211,2] TT
+228,1 [Rotulo 68,7] Finalidade: [Texto 131,4] as duas: sobretensões transmitidas pela linha externa e de manobra, e descargas
+239,1 [Texto 68,7] atmosféricas diretas
+250,2 [Rotulo 68,7] Dispositivo DR: [Texto 153,6] os DPS ficam a montante dos DR
+269,2 [TituloDoPasso 56,7] Localização
+283,5 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.3.5.2.1
+294,5 [Rotulo 68,7] Sobretensões transmitidas pela linha externa e de manobra: [Texto 397,8] junto ao ponto de entrada da
+305,6 [Texto 68,7] linha na edificação ou no quadro de distribuição principal, localizado o mais próximo possível do
+316,6 [Texto 68,7] ponto de entrada (alínea a)
+327,7 [Rotulo 68,7] Descargas atmosféricas diretas: [Texto 244,7] no ponto de entrada da linha na edificação (alínea b)
+346,8 [TituloDoPasso 56,7] A conferir no DPS escolhido
+361 [Rotulo 68,7] NBR 5410:2004, item 6.3.5.2.4, alínea c: [Texto 288,3] sobretensões temporárias: o DPS atende aos
+372 [Texto 68,7] ensaios da IEC 61643-1
+383,1 [Rotulo 68,7] NBR 5410:2004, item 6.3.5.2.4, alínea e: [Texto 289,1] suportabilidade à corrente de curto-circuito, com o
+394,1 [Texto 68,7] dispositivo de proteção que o integra ou que o fabricante especifica, igual ou superior à corrente
+405,2 [Texto 68,7] de curto-circuito presumida no ponto de instalação; com centelhador, a capacidade de
+416,3 [Texto 68,7] interrupção de corrente subsequente também
+427,3 [Rotulo 68,7] NBR 5410:2004, item 6.3.5.2.4, alínea f: [Texto 286,8] coordenação com os DPS a montante e a jusante,
+438,4 [Texto 68,7] pelas instruções do fabricante
+449,4 [Rotulo 68,7] NBR 5410:2004, item 6.3.5.2.5: [Texto 239,9] proteção contra sobrecorrentes para a falha do DPS (na
+460,5 [Texto 68,7] conexão do DPS ou no circuito), com corrente nominal inferior ou no máximo igual à indicada pelo
+471,6 [Texto 68,7] fabricante do DPS
+482,6 [Rotulo 68,7] NBR 5410:2004, item 6.3.5.2.8: [Texto 239,9] indicação do estado do DPS (indicador próprio ou o dispositivo
+493,7 [Texto 68,7] de proteção à parte)
+504,7 [Secao 56,7] Passos
+526,7 [TituloDoPasso 56,7] 1. Esquema de conexão dos DPS
+540,9 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.3.5.2.2 e Figura 13; NBR 5410:2004, item 6.3.5.2.6, alínea b
+552 [Texto 68,7] (esquema TT com os DPS a montante dos dispositivos DR)
+563 [Rotulo 68,7] Expressão: [Codigo 132,7] TT com os DPS a montante do DR → esquema 3
+574,1 [Rotulo 68,7] Resultado: [Texto 129,2] 3
+585,2 [Rotulo 68,7] Observação: [Texto 138,3] DPS entre cada fase e o neutro e entre o neutro e o PE
+604,2 [TituloDoPasso 56,7] 2. Quantidade de DPS
+618,4 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.3.5.2.2 e Figura 13
+629,5 [Rotulo 68,7] Expressão: [Codigo 132,7] n = fases + 1 (neutro–PE)
+640,6 [Rotulo 68,7] Valores: [Texto 115,8] fases = 3
+651,6 [Rotulo 68,7] Resultado: [Texto 129,2] 4 DPS
+670,7 [TituloDoPasso 56,7] 3. Uc mínimo — fase–neutro
+684,9 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.3.5.2.4, alínea b, e Tabela 49 (TT)
+696 [Rotulo 68,7] Expressão: [Codigo 132,7] Uc ≥ 1,1 · Uo
+707 [Rotulo 68,7] Valores: [Texto 115,8] Uo = 127 V
+718,1 [Rotulo 68,7] Resultado: [Texto 129,2] 139,7 V
+729,1 [Rotulo 68,7] Observação: [Texto 138,3] mínimo da tabela; os valores adequados podem ser bem maiores (nota 4)
+776 [Rodape 180,8] Memória de cálculo — DPS do quadro QD1 · página 1 de 3
+== página 2 de 3
+56,7 [TituloDoPasso 56,7] 4. Uc mínimo — neutro–PE
+70,9 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.3.5.2.4, alínea b, e Tabela 49 (TT)
+82 [Rotulo 68,7] Expressão: [Codigo 132,7] Uc ≥ Uo
+93 [Rotulo 68,7] Valores: [Texto 115,8] Uo = 127 V
+104,1 [Rotulo 68,7] Resultado: [Texto 129,2] 127 V
+123,2 [TituloDoPasso 56,7] 5. Nível de proteção máximo (Up)
+137,4 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.3.5.2.4, alínea a, e Tabela 31 (categoria II de
+148,4 [Texto 68,7] suportabilidade a impulsos); linha 120/208, 127/220, 115-230, 120-240, 127-254
+159,5 [Rotulo 68,7] Expressão: [Codigo 132,7] Up ≤ tabela (Uo), categoria II
+170,6 [Rotulo 68,7] Valores: [Texto 115,8] Uo = 127 V
+181,6 [Rotulo 68,7] Resultado: [Texto 129,2] 1,5 kV
+192,7 [Rotulo 68,7] Observação: [Texto 138,3] nível global, entre fase e PE (esquema 3); proteção de modo comum; DPS
+203,7 [Texto 68,7] adicionais para equipamentos entre fase e neutro precisam de nível menor (alínea a, nota 1)
+222,8 [TituloDoPasso 56,7] 6. Corrente nominal de descarga mínima (In) — fase–neutro
+237 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.3.5.2.4, alínea d, primeira situação (sobretensões de origem
+248,1 [Texto 68,7] atmosférica transmitidas pela linha externa e de manobra; onda 8/20 µs)
+259,1 [Rotulo 68,7] Expressão: [Codigo 132,7] In ≥ 5 kA por modo de proteção
+270,2 [Rotulo 68,7] Resultado: [Texto 129,2] 5 kA
+289,2 [TituloDoPasso 56,7] 7. Corrente nominal de descarga mínima (In) — neutro–PE
+303,5 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.3.5.2.4, alínea d, primeira situação (sobretensões de origem
+314,5 [Texto 68,7] atmosférica transmitidas pela linha externa e de manobra; onda 8/20 µs)
+325,6 [Rotulo 68,7] Expressão: [Codigo 132,7] In ≥ 20 kA (neutro–PE no esquema 3, rede trifásica)
+336,6 [Rotulo 68,7] Resultado: [Texto 129,2] 20 kA
+355,7 [TituloDoPasso 56,7] 8. Corrente de impulso mínima (Iimp) — fase–neutro
+369,9 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.3.5.2.4, alínea d, segunda situação (descargas atmosféricas
+381 [Texto 68,7] diretas sobre a edificação ou em suas proximidades, quando a corrente não puder ser
+392 [Texto 68,7] determinada pela IEC 61312-1)
+403,1 [Rotulo 68,7] Expressão: [Codigo 132,7] Iimp ≥ 12,5 kA por modo de proteção
+414,2 [Rotulo 68,7] Resultado: [Texto 129,2] 12,5 kA
+425,2 [Rotulo 68,7] Observação: [Texto 138,3] sem a corrente determinada pela IEC 61312-1, que vale quando puder ser
+436,3 [Texto 68,7] determinada
+455,3 [TituloDoPasso 56,7] 9. Corrente de impulso mínima (Iimp) — neutro–PE
+469,6 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.3.5.2.4, alínea d, segunda situação (descargas atmosféricas
+480,6 [Texto 68,7] diretas sobre a edificação ou em suas proximidades, quando a corrente não puder ser
+491,7 [Texto 68,7] determinada pela IEC 61312-1)
+502,7 [Rotulo 68,7] Expressão: [Codigo 132,7] Iimp ≥ 50 kA (neutro–PE no esquema 3, rede trifásica)
+513,8 [Rotulo 68,7] Resultado: [Texto 129,2] 50 kA
+524,9 [Rotulo 68,7] Observação: [Texto 138,3] sem a corrente determinada pela IEC 61312-1, que vale quando puder ser
+535,9 [Texto 68,7] determinada
+555 [TituloDoPasso 56,7] 10. Corrente subsequente interrompida mínima — neutro–PE
+569,2 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.3.5.2.4, alínea e (DPS entre neutro e PE, esquema TN ou TT,
+580,3 [Texto 68,7] quando incorporar centelhador)
+591,3 [Rotulo 68,7] Expressão: [Codigo 132,7] Ifi ≥ 100 A
+602,4 [Rotulo 68,7] Resultado: [Texto 129,2] 100 A
+613,4 [Rotulo 68,7] Observação: [Texto 138,3] só para DPS com centelhador
+632,5 [TituloDoPasso 56,7] 11. Seção mínima do condutor de conexão ao PE
+646,7 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.3.5.2.9 e Figura 15
+657,8 [Rotulo 68,7] Expressão: [Codigo 132,7] S ≥ 16 mm²
+668,8 [Rotulo 68,7] Resultado: [Texto 129,2] 16 mm²
+679,9 [Rotulo 68,7] Observação: [Texto 138,3] cobre ou equivalente; DPS contra descargas atmosféricas diretas
+776 [Rodape 180,8] Memória de cálculo — DPS do quadro QD1 · página 2 de 3
+== página 3 de 3
+56,7 [TituloDoPasso 56,7] 12. Comprimento total dos condutores de conexão
+70,9 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.3.5.2.9 e Figura 15
+82 [Rotulo 68,7] Expressão: [Codigo 132,7] a + b ≤ 0,5 m
+93 [Rotulo 68,7] Resultado: [Texto 129,2] 0,5 m
+104,1 [Rotulo 68,7] Observação: [Texto 138,3] o mais curto possível, sem curvas ou laços; se a + b não puder ficar abaixo disso, o
+115,2 [Texto 68,7] esquema da Figura 15-b
+776 [Rodape 180,8] Memória de cálculo — DPS do quadro QD1 · página 3 de 3

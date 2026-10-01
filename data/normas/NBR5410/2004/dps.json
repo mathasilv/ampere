@@ -1,0 +1,112 @@
+{
+  "$meta": {
+    "fonte": "ABNT NBR 5410:2004 Versão Corrigida 17.03.2008, itens 6.3.5.2.1 a 6.3.5.2.9, Figura 13 e Tabelas 31 e 49 (texto oficial anexado pelo usuário na conversa, não versionado; só os valores transcritos, com o item); conferido visualmente nas páginas 71, 131 a 136 em 01/10/2026",
+    "versao": "2004",
+    "data": "2026-10-01",
+    "ficticio": false,
+    "situacao": "Seleção dos DPS da linha de energia no ponto de entrada ou no quadro de distribuição principal (6.3.5.2.1 a 6.3.5.2.4, 6.3.5.2.6 e 6.3.5.2.9). Fora daqui: linhas de sinal (6.3.5.3), DPS adicionais ao longo da instalação (6.3.5.2.3, coordenados pelo fabricante) e a corrente de impulso determinada pela IEC 61312-1 (aqui, o mínimo da norma quando ela não é determinada)."
+  },
+  "perfil": "NBR5410:2004",
+  "localizacao": {
+    "ref": "NBR 5410:2004, item 6.3.5.2.1",
+    "linha_externa": "junto ao ponto de entrada da linha na edificação ou no quadro de distribuição principal, localizado o mais próximo possível do ponto de entrada (alínea a)",
+    "descargas_diretas": "no ponto de entrada da linha na edificação (alínea b)"
+  },
+  "esquema_de_conexao": {
+    "ref": "NBR 5410:2004, item 6.3.5.2.2 e Figura 13",
+    "esquema_3_obrigatorio": "NBR 5410:2004, item 6.3.5.2.6, alínea b (esquema TT com os DPS a montante dos dispositivos DR)"
+  },
+  "uc_minimo": {
+    "ref": "NBR 5410:2004, item 6.3.5.2.4, alínea b, e Tabela 49",
+    "linhas": [
+      { "ligacao": "fase-neutro", "esquema": "TT", "uc": "1,1 Uo" },
+      { "ligacao": "fase-neutro", "esquema": "TN-S", "uc": "1,1 Uo" },
+      { "ligacao": "fase-neutro", "esquema": "IT com neutro", "uc": "1,1 Uo" },
+      { "ligacao": "fase-PE", "esquema": "TT", "uc": "1,1 Uo" },
+      { "ligacao": "fase-PE", "esquema": "TN-S", "uc": "1,1 Uo" },
+      { "ligacao": "fase-PE", "esquema": "IT com neutro", "uc": "√3 Uo" },
+      { "ligacao": "fase-PE", "esquema": "IT sem neutro", "uc": "U" },
+      { "ligacao": "fase-PEN", "esquema": "TN-C", "uc": "1,1 Uo" },
+      { "ligacao": "neutro-PE", "esquema": "TT", "uc": "Uo" },
+      { "ligacao": "neutro-PE", "esquema": "TN-S", "uc": "Uo" },
+      { "ligacao": "neutro-PE", "esquema": "IT com neutro", "uc": "Uo" }
+    ]
+  },
+  "nivel_de_protecao": {
+    "ref": "NBR 5410:2004, item 6.3.5.2.4, alínea a, e Tabela 31 (categoria II de suportabilidade a impulsos)",
+    "linhas": [
+      {
+        "sistemas_trifasicos": ["120/208", "127/220"],
+        "sistemas_monofasicos": ["115-230", "120-240", "127-254"],
+        "categoria_iv_kv": 4,
+        "categoria_iii_kv": 2.5,
+        "categoria_ii_kv": 1.5,
+        "categoria_i_kv": 0.8
+      },
+      {
+        "sistemas_trifasicos": ["220/380", "230/400", "277/480"],
+        "sistemas_monofasicos": [],
+        "categoria_iv_kv": 6,
+        "categoria_iii_kv": 4,
+        "categoria_ii_kv": 2.5,
+        "categoria_i_kv": 1.5
+      },
+      {
+        "sistemas_trifasicos": ["400/690"],
+        "sistemas_monofasicos": [],
+        "categoria_iv_kv": 8,
+        "categoria_iii_kv": 6,
+        "categoria_ii_kv": 4,
+        "categoria_i_kv": 2.5
+      }
+    ]
+  },
+  "corrente_nominal_de_descarga": {
+    "ref": "NBR 5410:2004, item 6.3.5.2.4, alínea d, primeira situação (sobretensões de origem atmosférica transmitidas pela linha externa e de manobra; onda 8/20 µs)",
+    "por_modo_ka": 5,
+    "neutro_pe_esquema_3_trifasica_ka": 20,
+    "neutro_pe_esquema_3_monofasica_ka": 10
+  },
+  "corrente_de_impulso": {
+    "ref": "NBR 5410:2004, item 6.3.5.2.4, alínea d, segunda situação (descargas atmosféricas diretas sobre a edificação ou em suas proximidades, quando a corrente não puder ser determinada pela IEC 61312-1)",
+    "por_modo_ka": 12.5,
+    "neutro_pe_esquema_3_trifasica_ka": 50,
+    "neutro_pe_esquema_3_monofasica_ka": 25
+  },
+  "corrente_subsequente_neutro_pe": {
+    "ref": "NBR 5410:2004, item 6.3.5.2.4, alínea e (DPS entre neutro e PE, esquema TN ou TT, quando incorporar centelhador)",
+    "minima_a": 100
+  },
+  "condutor_de_conexao": {
+    "ref": "NBR 5410:2004, item 6.3.5.2.9 e Figura 15",
+    "secao_minima_cobre_mm2": 4,
+    "secao_minima_cobre_descargas_diretas_mm2": 16,
+    "comprimento_maximo_m": 0.5
+  },
+  "imunidade_do_dr": {
+    "ref": "NBR 5410:2004, item 6.3.5.2.6, alínea b (DR a montante dos DPS; nota: DR tipo S conforme a IEC 61008-2-1 e a IEC 61009-2-1 é um exemplo)",
+    "minima_ka": 3
+  },
+  "a_conferir": [
+    {
+      "ref": "NBR 5410:2004, item 6.3.5.2.4, alínea c",
+      "texto": "sobretensões temporárias: o DPS atende aos ensaios da IEC 61643-1"
+    },
+    {
+      "ref": "NBR 5410:2004, item 6.3.5.2.4, alínea e",
+      "texto": "suportabilidade à corrente de curto-circuito, com o dispositivo de proteção que o integra ou que o fabricante especifica, igual ou superior à corrente de curto-circuito presumida no ponto de instalação; com centelhador, a capacidade de interrupção de corrente subsequente também"
+    },
+    {
+      "ref": "NBR 5410:2004, item 6.3.5.2.4, alínea f",
+      "texto": "coordenação com os DPS a montante e a jusante, pelas instruções do fabricante"
+    },
+    {
+      "ref": "NBR 5410:2004, item 6.3.5.2.5",
+      "texto": "proteção contra sobrecorrentes para a falha do DPS (na conexão do DPS ou no circuito), com corrente nominal inferior ou no máximo igual à indicada pelo fabricante do DPS"
+    },
+    {
+      "ref": "NBR 5410:2004, item 6.3.5.2.8",
+      "texto": "indicação do estado do DPS (indicador próprio ou o dispositivo de proteção à parte)"
+    }
+  ]
+}
