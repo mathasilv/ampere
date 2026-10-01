@@ -84,6 +84,9 @@ Resolvido (decisões do usuário):
 - ✅ `AMP_MemoriaCalculoId`: no circuito, a memória do dimensionamento; no quadro (categoria ampliada no catálogo 0.2), a
   memória do quadro de cargas.
 - ✅ Adapter `DocumentoDeDimensionamentoRevit` e comando "Dimensionar circuitos".
+- ✅ Local pelo ambiente (01/10/2026): comando "Locais pelos ambientes" — o projetista escolhe um local da tabela de IDR
+  por nome de ambiente (Room/Space, inclusive de vínculo). Decisão do desenvolvedor: o Ampere **não** deduz o local pelo
+  nome do ambiente ("Banho" → banheiro); a correspondência é sempre do projetista.
 
 Comportamento do modelo a validar pelo projetista:
 

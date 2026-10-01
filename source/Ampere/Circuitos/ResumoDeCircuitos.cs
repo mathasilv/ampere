@@ -1,6 +1,7 @@
 using System.Text;
 using Ampere.Core.Cargas;
 using Ampere.Core.Circuitos;
+using Ampere.Core.Locais;
 
 namespace Ampere.Circuitos;
 
@@ -23,6 +24,24 @@ internal static class ResumoDeCircuitos
 
         texto.AppendLine($"Classificados: {resultado.Classificados}");
         AnexarMotivos(texto, "Recusados", resultado.Recusados);
+        return texto.ToString();
+    }
+
+    public static string Locais(ResultadoDosLocais resultado)
+    {
+        var texto = new StringBuilder();
+        if (resultado.Problemas.Count > 0)
+        {
+            texto.AppendLine("Nada foi alterado:");
+            foreach (var problema in resultado.Problemas) texto.AppendLine($"• {problema}");
+            return texto.ToString();
+        }
+
+        texto.AppendLine($"Pontos com local gravado: {resultado.Gravados} (um único desfazer)");
+        if (resultado.JaEstavam > 0) texto.AppendLine($"Já estavam com o local escolhido: {resultado.JaEstavam}");
+        if (resultado.SemEscolha > 0) texto.AppendLine($"Em ambientes sem local escolhido (não alterados): {resultado.SemEscolha}");
+        if (resultado.NaoEditaveis > 0) texto.AppendLine($"Em grupo ou vínculo (não alterados): {resultado.NaoEditaveis}");
+        if (resultado.SemAmbiente > 0) texto.AppendLine($"Fora de qualquer ambiente: {resultado.SemAmbiente} — informe o local pelo 'Classificar cargas'");
         return texto.ToString();
     }
 

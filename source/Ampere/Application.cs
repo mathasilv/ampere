@@ -30,6 +30,11 @@ public class Application : ExternalApplication
             .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
             .SetToolTip("Grava tipo de carga, potência, fatores e local (IDR) nos elementos selecionados (um único desfazer).");
 
+        circuitos.AddPushButton<LocaisPorAmbienteCommand>("Locais pelos\nambientes")
+            .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
+            .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
+            .SetToolTip("Grava o local (IDR) dos pontos classificados pelo ambiente em que estão (Room/Space, inclusive de vínculo): um local por ambiente. Seleção vazia = projeto inteiro (um único desfazer).");
+
         circuitos.AddPushButton<CriarCircuitosCommand>("Criar\ncircuitos")
             .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
             .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
