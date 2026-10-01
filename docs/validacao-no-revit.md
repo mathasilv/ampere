@@ -45,7 +45,8 @@ Use um projeto de teste com arquitetura vinculada ou com ambientes (Rooms/Spaces
    - Num circuito no método E (ao ar livre), o cálculo deve terminar no IDR, sem eletroduto (`AMP_EletrodutoTipo`
      vazio), e a memória deve citar a coluna da Tabela 38.
    - Em `Documentos\Ampere\{projeto}\Circuitos` devem aparecer as memórias (JSON, MD e PDF), `circuitos.csv` e
-     `materiais.csv`. Abra os CSV no Excel e confira os acentos.
+     `materiais.csv`. Abra os CSV no Excel e confira os acentos. `circuitos.csv` traz as seções do neutro e do PE; num
+     circuito de 50 mm², o PE deve ser 25 mm², também em `materiais.csv`.
 6. **Decisões do projetista.** Num circuito, preencha `AMP_SecaoMinimaProjetistaMm2` = 6 e
    `AMP_JustificativaProjetista`, e rode o dimensionamento selecionando só esse circuito.
    - O resumo deve dizer "rodada só da seleção".

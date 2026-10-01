@@ -30,7 +30,8 @@ public sealed class PerfilNormativo
         ["queda_de_tensao"] = RegraNormativa.QuedaDeTensao,
         ["condutores_no_eletroduto"] = RegraNormativa.CondutoresNoEletroduto,
         ["coordenacao_idr_disjuntor"] = RegraNormativa.CoordenacaoIdrDisjuntor,
-        ["demanda_do_quadro"] = RegraNormativa.DemandaDoQuadro
+        ["demanda_do_quadro"] = RegraNormativa.DemandaDoQuadro,
+        ["secao_do_neutro"] = RegraNormativa.SecaoDoNeutro
     };
 
     private readonly Dictionary<RegraNormativa, string> _regras = [];
@@ -48,6 +49,7 @@ public sealed class PerfilNormativo
     private readonly Tabela<IReadOnlyList<decimal>> _sensibilidadesDeIdr;
     private readonly Tabela<IReadOnlyDictionary<string, ProtecaoDiferencialDoLocal>> _protecaoDiferencial;
     private readonly Tabela<IReadOnlyDictionary<string, decimal>> _fatorDeDemanda;
+    private readonly Tabela<IReadOnlyDictionary<decimal, decimal>> _secaoDeProtecao;
     private readonly Tabela<IReadOnlyList<string>>? _metodosComEletroduto;
     private readonly Tabela<IReadOnlyDictionary<int, decimal>>? _agrupamentoEnterrado;
     private readonly IReadOnlyList<string> _metodosEnterrados = [];
@@ -81,6 +83,9 @@ public sealed class PerfilNormativo
             "protecao_diferencial_por_local", tabelas.ProtecaoDiferencialPorLocal, valores => valores.Count == 0, leitor.ProtecaoDiferencial);
         _fatorDeDemanda = leitor.Ler<Dictionary<string, decimal>, IReadOnlyDictionary<string, decimal>>(
             "fator_de_demanda_por_tipo", tabelas.FatorDeDemandaPorTipo, valores => valores.Count == 0, leitor.Fracao);
+
+        _secaoDeProtecao = leitor.Ler<Dictionary<string, decimal>, IReadOnlyDictionary<decimal, decimal>>(
+            "secao_do_condutor_de_protecao_mm2", tabelas.SecaoDoCondutorDeProtecaoMm2, valores => valores.Count == 0, leitor.SecaoDeProtecao);
 
         // Opcionais: sem elas, todo método leva eletroduto e usa a tabela geral de agrupamento (perfis anteriores).
         if (tabelas.MetodosComEletroduto is { } comEletroduto)
@@ -189,6 +194,11 @@ public sealed class PerfilNormativo
             ? DadoNormativo<decimal>.Com(capacidade, referencia)
             : DadoNormativo<decimal>.Ausente(referencia, $"sem valor para {NumeroEmTexto.Formatar(secaoMm2)} mm² ({descricao})");
     }
+
+    /// <summary>Seção mínima do condutor de proteção (PE) do mesmo material das fases, pela seção dos condutores de fase.</summary>
+    public DadoNormativo<decimal> SecaoDoCondutorDeProtecaoMm2(decimal secaoDeFaseMm2) =>
+        PorChave(_secaoDeProtecao, "secao_do_condutor_de_protecao_mm2", secaoDeFaseMm2,
+            $"sem seção do condutor de proteção para fase de {NumeroEmTexto.Formatar(secaoDeFaseMm2)} mm²");
 
     /// <summary>
     ///     O método de instalação leva eletroduto? Sem a tabela metodos_com_eletroduto no perfil (ou pendente), todos levam.
@@ -448,6 +458,15 @@ public sealed class PerfilNormativo
             }
 
             if (resultado.Count == 0) problemas.Add($"{nome}: linha sem valores");
+            return resultado;
+        }
+
+        /// <summary>Seção do PE por seção de fase: positiva e nunca maior que a da fase.</summary>
+        public IReadOnlyDictionary<decimal, decimal> SecaoDeProtecao(Dictionary<string, decimal> valores, string nome)
+        {
+            var resultado = PorDecimal(nome, valores);
+            foreach (var (fase, protecao) in resultado.Where(par => par.Value > par.Key))
+                problemas.Add($"{nome}: seção do condutor de proteção ({NumeroEmTexto.Formatar(protecao)} mm²) maior que a da fase ({NumeroEmTexto.Formatar(fase)} mm²)");
             return resultado;
         }
 

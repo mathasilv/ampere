@@ -151,6 +151,8 @@ public enum SituacaoDoDimensionamento
 ///     IDR. Falso quando o cálculo parou antes ou dentro do IDR (inclusive sem corrente nominal de IDR que atenda o
 ///     disjuntor): aí IDR nulo não quer dizer "sem IDR", e o disjuntor não forma um conjunto de proteção completo.
 /// </param>
+/// <param name="SecaoDoNeutroMm2">Seção do neutro; nula sem neutro no circuito ou se o cálculo parou antes.</param>
+/// <param name="SecaoDeProtecaoMm2">Seção do condutor de proteção (PE); nula se o cálculo parou antes.</param>
 public sealed record ResultadoDoDimensionamento(
     string Circuito,
     SituacaoDoDimensionamento Situacao,
@@ -171,4 +173,6 @@ public sealed record ResultadoDoDimensionamento(
     MemoriaDeCalculo? Memoria,
     IReadOnlyList<string> Problemas,
     IReadOnlyList<string> Avisos,
-    bool IdrAvaliado = false);
+    bool IdrAvaliado = false,
+    decimal? SecaoDoNeutroMm2 = null,
+    decimal? SecaoDeProtecaoMm2 = null);

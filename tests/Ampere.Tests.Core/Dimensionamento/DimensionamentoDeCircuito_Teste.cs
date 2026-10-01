@@ -508,6 +508,34 @@ public class DimensionamentoDeCircuito_Teste
     }
 
     [Test]
+    public async Task Neutro_com_a_secao_da_fase_e_protecao_pela_tabela()
+    {
+        var monofasico = Dimensionar(Entrada(potenciaVA: 7620m));
+        var bifasico = Dimensionar(Entrada(potenciaVA: 2200m, fases: "2F", tensaoV: 220m));
+
+        await Assert.That(monofasico.SecaoMm2).IsEqualTo(16m);
+        await Assert.That(monofasico.SecaoDoNeutroMm2).IsEqualTo(16m);
+        await Assert.That(monofasico.SecaoDeProtecaoMm2).IsEqualTo(10m);
+        await Assert.That(PassoDe(monofasico, "Seção do neutro").Observacao).IsNull();
+        await Assert.That(PassoDe(monofasico, "Seção do condutor de proteção").Referencia).IsEqualTo("FICTÍCIO: seção do PE");
+        await Assert.That(bifasico.SecaoDoNeutroMm2).IsNull();
+        await Assert.That(bifasico.Memoria!.Passos.Any(passo => passo.Descricao == "Seção do neutro")).IsFalse();
+        await Assert.That(bifasico.SecaoDeProtecaoMm2).IsEqualTo(2.5m);
+    }
+
+    [Test]
+    public async Task Sem_secao_de_protecao_no_perfil_o_calculo_para_depois_do_IDR()
+    {
+        var semPe = PerfilNormativo.Carregar(PerfilFicticio.Json.Replace("\"2.5\": 2.5, \"4\": 4,", "\"4\": 4,"));
+
+        var resultado = DimensionamentoDeCircuito.Dimensionar(Entrada(), semPe, CatalogosFicticiosCarregados);
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
+        await Assert.That(resultado.IdrAvaliado).IsTrue();
+        await Assert.That(resultado.Problemas).IsEquivalentTo(["sem seção do condutor de proteção para fase de 2,5 mm²"]);
+    }
+
+    [Test]
     public async Task Metodo_enterrado_acima_de_6_circuitos_para_sem_fator()
     {
         var resultado = DimensionamentoDeCircuito.Dimensionar(

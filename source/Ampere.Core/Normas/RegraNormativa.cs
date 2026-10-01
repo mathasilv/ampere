@@ -22,5 +22,8 @@ public enum RegraNormativa
     CoordenacaoIdrDisjuntor,
 
     /// <summary>Demanda do quadro de cargas: fator de demanda por tipo de carga aplicado à potência instalada ("demanda_do_quadro").</summary>
-    DemandaDoQuadro
+    DemandaDoQuadro,
+
+    /// <summary>Seção do condutor neutro frente à das fases ("secao_do_neutro").</summary>
+    SecaoDoNeutro
 }

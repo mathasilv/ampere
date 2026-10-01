@@ -2,11 +2,11 @@
 56,7 [Titulo 56,7] Memória de cálculo — circuito TUG-03
 80,2 [Rotulo 56,7] Perfil normativo: [Texto 150,4] FICTICIO-TESTE
 91,2 [Rotulo 56,7] Identificador (AMP_MemoriaCalculoId):
-102,3 [Codigo 56,7] sha256:9b02719a7cf300e3ff94452a8d40a0e5e82e55dd69769f1b618fbba7699960e7
+102,3 [Codigo 56,7] sha256:80b8ca477f4a0023407175b0d8995344287267858eaf6e749f94028ea4bbf8e6
 112,8 [Rotulo 56,7] Esquema do documento: [Texto 191,8] 1
-123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo interrompido no passo 14 (Diâmetro externo do condutor): catálogo de
+123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo interrompido no passo 16 (Diâmetro externo do condutor): catálogo de
 134,9 [Texto 56,7] condutores sem dados (TODO_CATALOGO)
-145,9 [Rotulo 56,7] Referências pendentes (TODO_NORMA ou TODO_CATALOGO): [Texto 387,4] 1 passo (14), sem fonte oficial
+145,9 [Rotulo 56,7] Referências pendentes (TODO_NORMA ou TODO_CATALOGO): [Texto 387,4] 1 passo (16), sem fonte oficial
 157 [Rotulo 56,7] Atenção: [Texto 107,2] perfil fictício, só para testes
 176 [Nota 56,7] Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O
 185,9 [Nota 56,7] documento JSON da memória guarda os valores completos.
@@ -73,14 +73,25 @@
 314,5 [Rotulo 68,7] Valores: [Texto 115,8] total = 1 ponto
 325,6 [Rotulo 68,7] Resultado: [Texto 129,2] 0 pontos
 336,6 [Rotulo 68,7] Observação: [Texto 138,3] LOCAL-SECO (1 ponto): não exige
-355,7 [TituloDoPasso 56,7] 13. Condutores no eletroduto
-369,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra dos condutores no eletroduto
-381 [Rotulo 68,7] Expressão: [Codigo 132,7] n = F + N + PE
-392 [Rotulo 68,7] Resultado: [Texto 129,2] 3 condutores
-403,1 [Rotulo 68,7] Observação: [Texto 138,3] neutro e proteção com o diâmetro da fase (conservador para a ocupação)
-422,2 [TituloDoPasso 56,7] 14. Diâmetro externo do condutor
-436,4 [Rotulo 68,7] Referência: [Texto 133] TODO_CATALOGO
-447,4 [Rotulo 68,7] Expressão: [Codigo 132,7] d = catálogo (FIO-TESTE; 2,5 mm²)
-458,5 [Rotulo 68,7] Resultado: [Texto 129,2] não calculado
-469,6 [Rotulo 68,7] Observação: [Texto 138,3] catálogo de condutores sem dados (TODO_CATALOGO)
+355,7 [TituloDoPasso 56,7] 13. Seção do neutro
+369,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra da seção do neutro
+381 [Rotulo 68,7] Expressão: [Codigo 132,7] SN = S
+392 [Rotulo 68,7] Valores: [Texto 115,8] S = 2,5 mm²
+403,1 [Rotulo 68,7] Resultado: [Texto 129,2] 2,5 mm²
+422,2 [TituloDoPasso 56,7] 14. Seção do condutor de proteção
+436,4 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: seção do PE
+447,4 [Rotulo 68,7] Expressão: [Codigo 132,7] SPE = tabela (S)
+458,5 [Rotulo 68,7] Valores: [Texto 115,8] S = 2,5 mm²
+469,6 [Rotulo 68,7] Resultado: [Texto 129,2] 2,5 mm²
+480,6 [Rotulo 68,7] Observação: [Texto 138,3] condutor de proteção do mesmo material das fases
+499,7 [TituloDoPasso 56,7] 15. Condutores no eletroduto
+513,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra dos condutores no eletroduto
+525 [Rotulo 68,7] Expressão: [Codigo 132,7] n = F + N + PE
+536 [Rotulo 68,7] Resultado: [Texto 129,2] 3 condutores
+547,1 [Rotulo 68,7] Observação: [Texto 138,3] neutro e proteção com o diâmetro da fase (conservador para a ocupação)
+566,1 [TituloDoPasso 56,7] 16. Diâmetro externo do condutor
+580,4 [Rotulo 68,7] Referência: [Texto 133] TODO_CATALOGO
+591,4 [Rotulo 68,7] Expressão: [Codigo 132,7] d = catálogo (FIO-TESTE; 2,5 mm²)
+602,5 [Rotulo 68,7] Resultado: [Texto 129,2] não calculado
+613,5 [Rotulo 68,7] Observação: [Texto 138,3] catálogo de condutores sem dados (TODO_CATALOGO)
 776 [Rodape 189,5] Memória de cálculo — circuito TUG-03 · página 2 de 2

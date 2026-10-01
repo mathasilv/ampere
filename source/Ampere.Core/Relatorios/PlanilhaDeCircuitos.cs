@@ -15,7 +15,7 @@ public static class PlanilhaDeCircuitos
 {
     private static readonly string[] Cabecalho =
     [
-        "Quadro", "Circuito", "Tipo de carga", "Situação", "Potência (VA)", "IB (A)", "FCT", "FCA", "Seção (mm²)", "IZ (A)",
+        "Quadro", "Circuito", "Tipo de carga", "Situação", "Potência (VA)", "IB (A)", "FCT", "FCA", "Seção (mm²)", "Neutro (mm²)", "PE (mm²)", "IZ (A)",
         "Disjuntor (A)", "IDR In (A)", "IDR IΔn (mA)", "Queda de tensão (%)", "Eletroduto", "Ocupação (%)", "Motivo", "Avisos",
         "Memória"
     ];
@@ -44,6 +44,8 @@ public static class PlanilhaDeCircuitos
             Numero(calculo?.FCT),
             Numero(calculo?.FCA),
             Numero(protecao?.SecaoMm2),
+            Numero(protecao?.SecaoDoNeutroMm2),
+            Numero(protecao?.SecaoDeProtecaoMm2),
             Numero(protecao?.CapacidadeDeConducaoA),
             Numero(protecao?.DisjuntorA),
             Numero(protecao?.IdrNominalA),

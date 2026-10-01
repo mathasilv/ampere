@@ -1,10 +1,10 @@
-== página 1 de 2
+== página 1 de 3
 56,7 [Titulo 56,7] Memória de cálculo — circuito TUG-01
 80,2 [Rotulo 56,7] Perfil normativo: [Texto 150,4] NBR5410:2004
 91,2 [Rotulo 56,7] Identificador (AMP_MemoriaCalculoId):
-102,3 [Codigo 56,7] sha256:96ac5ca43392e3b9c0d7f92aa58a3433530db2e4e2b659b5a74c3a7e1da17168
+102,3 [Codigo 56,7] sha256:8b8496d80544ff1817e4518a43a09869b00f1dea5011679a1f59b131e51089cb
 112,8 [Rotulo 56,7] Esquema do documento: [Texto 191,8] 1
-123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo completo (17 passos)
+123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo completo (19 passos)
 142,9 [Nota 56,7] Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O
 152,8 [Nota 56,7] documento JSON da memória guarda os valores completos.
 172,7 [Secao 56,7] Passos
@@ -51,8 +51,8 @@
 718,3 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, itens 6.2.7.1 (alíneas a a d) e 6.2.7.2
 729,3 [Rotulo 68,7] Expressão: [Codigo 132,7] ΔV%máx = tabela (circuito terminal)
 740,4 [Rotulo 68,7] Resultado: [Texto 129,2] 4%
-776 [Rodape 189,5] Memória de cálculo — circuito TUG-01 · página 1 de 2
-== página 2 de 2
+776 [Rodape 189,5] Memória de cálculo — circuito TUG-01 · página 1 de 3
+== página 2 de 3
 56,7 [TituloDoPasso 56,7] 9. Capacidade de condução da seção adotada
 70,9 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabelas 36 e 37 (A1 a D; transcrita do texto oficial por
 82 [Texto 68,7] coordenadas, validada contra IEC 60364-5-52)
@@ -80,32 +80,48 @@
 358,8 [Rotulo 68,7] Valores: [Texto 115,8] total = 1 ponto
 369,8 [Rotulo 68,7] Resultado: [Texto 129,2] 0 pontos
 380,9 [Rotulo 68,7] Observação: [Texto 138,3] Demais locais internos (1 ponto): não exige
-399,9 [TituloDoPasso 56,7] 13. Condutores no eletroduto
-414,2 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.2.11.1.6, alínea a (soma das seções transversais dos
-425,2 [Texto 68,7] condutores previstos no eletroduto, pelo diâmetro externo)
-436,3 [Rotulo 68,7] Expressão: [Codigo 132,7] n = F + N + PE
-447,3 [Rotulo 68,7] Resultado: [Texto 129,2] 3 condutores
-458,4 [Rotulo 68,7] Observação: [Texto 138,3] neutro e proteção com o diâmetro da fase (conservador para a ocupação)
-477,5 [TituloDoPasso 56,7] 14. Diâmetro externo do condutor
-491,7 [Rotulo 68,7] Referência: [Texto 133] Prysmian, ficha técnica Superastic Flex 450/750 V (rodapé BW_005_02_PT), p. 4:
-502,7 [Texto 68,7] diâmetro nominal externo
-513,8 [Rotulo 68,7] Expressão: [Codigo 132,7] d = catálogo (Prysmian Superastic Flex 450/750 V; 2,5 mm²)
-524,9 [Rotulo 68,7] Resultado: [Texto 129,2] 3,5 mm
-535,9 [Rotulo 68,7] Observação: [Texto 138,3] isolação do condutor: PVC, a do circuito
-555 [TituloDoPasso 56,7] 15. Taxa máxima de ocupação
-569,2 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.2.11.1.6, alinea a
-580,3 [Rotulo 68,7] Expressão: [Codigo 132,7] taxa = tabela (3 condutores)
-591,3 [Rotulo 68,7] Resultado: [Texto 129,2] 40%
-610,4 [TituloDoPasso 56,7] 16. Eletroduto adotado
-624,6 [Rotulo 68,7] Referência: [Texto 133] Tigre, Ficha Técnica Tigreflex (setembro/2025), p. 1: diâmetro interno
-635,6 [Rotulo 68,7] Expressão: [Codigo 132,7] menor Di com n · d² / Di² · 100 ≤ taxa
-646,7 [Rotulo 68,7] Valores: [Texto 115,8] n = 3 condutores; d = 3,5 mm; taxa = 40%
-657,8 [Rotulo 68,7] Resultado: [Texto 129,2] 15 mm
-668,8 [Rotulo 68,7] Observação: [Texto 138,3] tamanho nominal DN 20 (Tigre Tigreflex amarelo)
-687,9 [TituloDoPasso 56,7] 17. Ocupação do eletroduto
-702,1 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.2.11.1.6, alinea a
-713,2 [Rotulo 68,7] Expressão: [Codigo 132,7] ocupação = n · d² / Di² · 100
-724,2 [Rotulo 68,7] Valores: [Texto 115,8] n = 3 condutores; d = 3,5 mm; Di = 15 mm
-735,3 [Rotulo 68,7] Resultado: [Texto 129,2] 16,3333%
-746,3 [Rotulo 68,7] Observação: [Texto 138,3] só os condutores deste circuito: outros circuitos na mesma tubulação não entram
-776 [Rodape 189,5] Memória de cálculo — circuito TUG-01 · página 2 de 2
+399,9 [TituloDoPasso 56,7] 13. Seção do neutro
+414,2 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, itens 6.2.6.2.2 a 6.2.6.2.4 (neutro com a seção das fases; a seção
+425,2 [Texto 68,7] reduzida da Tabela 48, permitida em 6.2.6.2.6 acima de 25 mm², não é aplicada pelo Ampere)
+436,3 [Rotulo 68,7] Expressão: [Codigo 132,7] SN = S
+447,3 [Rotulo 68,7] Valores: [Texto 115,8] S = 2,5 mm²
+458,4 [Rotulo 68,7] Resultado: [Texto 129,2] 2,5 mm²
+477,5 [TituloDoPasso 56,7] 14. Seção do condutor de proteção
+491,7 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.4.3.1.3 e Tabela 58 (S ≤ 16: S; 16 < S ≤ 35: 16; S > 35: S/2
+502,7 [Texto 68,7] na seção padronizada mais próxima, empate na maior; condutor de proteção do mesmo metal
+513,8 [Texto 68,7] das fases)
+524,9 [Rotulo 68,7] Expressão: [Codigo 132,7] SPE = tabela (S)
+535,9 [Rotulo 68,7] Valores: [Texto 115,8] S = 2,5 mm²
+547 [Rotulo 68,7] Resultado: [Texto 129,2] 2,5 mm²
+558 [Rotulo 68,7] Observação: [Texto 138,3] condutor de proteção do mesmo material das fases
+577,1 [TituloDoPasso 56,7] 15. Condutores no eletroduto
+591,3 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.2.11.1.6, alínea a (soma das seções transversais dos
+602,4 [Texto 68,7] condutores previstos no eletroduto, pelo diâmetro externo)
+613,4 [Rotulo 68,7] Expressão: [Codigo 132,7] n = F + N + PE
+624,5 [Rotulo 68,7] Resultado: [Texto 129,2] 3 condutores
+635,5 [Rotulo 68,7] Observação: [Texto 138,3] neutro e proteção com o diâmetro da fase (conservador para a ocupação)
+654,6 [TituloDoPasso 56,7] 16. Diâmetro externo do condutor
+668,8 [Rotulo 68,7] Referência: [Texto 133] Prysmian, ficha técnica Superastic Flex 450/750 V (rodapé BW_005_02_PT), p. 4:
+679,9 [Texto 68,7] diâmetro nominal externo
+690,9 [Rotulo 68,7] Expressão: [Codigo 132,7] d = catálogo (Prysmian Superastic Flex 450/750 V; 2,5 mm²)
+702 [Rotulo 68,7] Resultado: [Texto 129,2] 3,5 mm
+713,1 [Rotulo 68,7] Observação: [Texto 138,3] isolação do condutor: PVC, a do circuito
+776 [Rodape 189,5] Memória de cálculo — circuito TUG-01 · página 2 de 3
+== página 3 de 3
+56,7 [TituloDoPasso 56,7] 17. Taxa máxima de ocupação
+70,9 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.2.11.1.6, alinea a
+82 [Rotulo 68,7] Expressão: [Codigo 132,7] taxa = tabela (3 condutores)
+93 [Rotulo 68,7] Resultado: [Texto 129,2] 40%
+112,1 [TituloDoPasso 56,7] 18. Eletroduto adotado
+126,3 [Rotulo 68,7] Referência: [Texto 133] Tigre, Ficha Técnica Tigreflex (setembro/2025), p. 1: diâmetro interno
+137,4 [Rotulo 68,7] Expressão: [Codigo 132,7] menor Di com n · d² / Di² · 100 ≤ taxa
+148,4 [Rotulo 68,7] Valores: [Texto 115,8] n = 3 condutores; d = 3,5 mm; taxa = 40%
+159,5 [Rotulo 68,7] Resultado: [Texto 129,2] 15 mm
+170,6 [Rotulo 68,7] Observação: [Texto 138,3] tamanho nominal DN 20 (Tigre Tigreflex amarelo)
+189,6 [TituloDoPasso 56,7] 19. Ocupação do eletroduto
+203,8 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.2.11.1.6, alinea a
+214,9 [Rotulo 68,7] Expressão: [Codigo 132,7] ocupação = n · d² / Di² · 100
+226 [Rotulo 68,7] Valores: [Texto 115,8] n = 3 condutores; d = 3,5 mm; Di = 15 mm
+237 [Rotulo 68,7] Resultado: [Texto 129,2] 16,3333%
+248,1 [Rotulo 68,7] Observação: [Texto 138,3] só os condutores deste circuito: outros circuitos na mesma tubulação não entram
+776 [Rodape 189,5] Memória de cálculo — circuito TUG-01 · página 3 de 3

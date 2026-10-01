@@ -19,9 +19,9 @@ public sealed record CircuitoForaDaLista(string Circuito, string Motivo);
 ///     <list type="bullet">
 ///         <item>Entra o circuito com a proteção decidida por completo (o mesmo critério da gravação no modelo); os outros
 ///         vão para <see cref="ForaDaLista" /> com o motivo.</item>
-///         <item>Condutores: comprimento do circuito × condutores (fases, neutro e proteção), sem sobras nem emendas. Neutro e
-///         proteção com a seção da fase, como no cálculo do eletroduto — a redução de seção que a norma permite não é
-///         aplicada (a favor da segurança na compra).</item>
+///         <item>Condutores: comprimento do circuito × condutores (fases, neutro e proteção), sem sobras nem emendas, com as
+///         seções da memória: neutro com a da fase, condutor de proteção pela tabela do perfil. Circuito sem a seção do
+///         condutor de proteção fica fora da lista.</item>
 ///         <item>Disjuntor com um polo por fase; IDR com um polo por condutor vivo (fases e neutro). Curva, capacidade de
 ///         interrupção e tipo do IDR não são decididos pelo Ampere.</item>
 ///         <item>Eletrodutos ficam de fora: vários circuitos dividem o mesmo trecho, e somar comprimentos de circuito daria
@@ -68,8 +68,8 @@ public sealed record ListaDeMateriais(IReadOnlyList<ItemDeMaterial> Itens, IRead
             var isolamento = $"{entrada.Material.Trim()}, {entrada.Isolacao.Trim()}";
             var secao = calculo.SecaoMm2!.Value;
             Somar(condutores, (tipo, isolamento, secao, 0), entrada.ComprimentoM * fases, circuito);
-            if (neutro) Somar(condutores, (tipo, isolamento, secao, 1), entrada.ComprimentoM, circuito);
-            Somar(condutores, (tipo, isolamento, secao, 2), entrada.ComprimentoM, circuito);
+            if (neutro) Somar(condutores, (tipo, isolamento, calculo.SecaoDoNeutroMm2 ?? secao, 1), entrada.ComprimentoM, circuito);
+            Somar(condutores, (tipo, isolamento, calculo.SecaoDeProtecaoMm2!.Value, 2), entrada.ComprimentoM, circuito);
             Somar(disjuntores, (fases, calculo.DisjuntorA!.Value), 1m, circuito);
             if (calculo.IdrNominalA is { } nominal && calculo.IdrSensibilidadeMa is { } sensibilidade)
                 Somar(idrs, (polosDoIdr, nominal, sensibilidade), 1m, circuito);
@@ -81,9 +81,12 @@ public sealed record ListaDeMateriais(IReadOnlyList<ItemDeMaterial> Itens, IRead
             .ThenBy(par => par.Key.Secao).ThenBy(par => par.Key.Funcao)
             .Select(par => new ItemDeMaterial(Condutores, $"{par.Key.Tipo} ({par.Key.Isolamento}) {Numero(par.Key.Secao)} mm² — {Funcoes[par.Key.Funcao]}",
                 par.Value.Quantidade, "m", par.Value.Circuitos,
-                par.Key.Funcao == 0
-                    ? "comprimento do circuito × fases, sem sobras nem emendas"
-                    : "comprimento do circuito, sem sobras nem emendas; seção da fase (sem a redução que a norma permite)")));
+                par.Key.Funcao switch
+                {
+                    0 => "comprimento do circuito × fases, sem sobras nem emendas",
+                    1 => "comprimento do circuito, sem sobras nem emendas; seção da fase (sem a redução que a norma permite)",
+                    _ => "comprimento do circuito, sem sobras nem emendas; seção pela tabela do condutor de proteção"
+                })));
         itens.AddRange(disjuntores
             .OrderBy(par => par.Key.Polos).ThenBy(par => par.Key.Corrente)
             .Select(par => new ItemDeMaterial(Disjuntores, $"Disjuntor {par.Key.Polos}P {Numero(par.Key.Corrente)} A",
@@ -115,6 +118,7 @@ public sealed record ListaDeMateriais(IReadOnlyList<ItemDeMaterial> Itens, IRead
         if (resultado.Dimensionamento is not { } calculo || resultado.Entrada is null || resultado.Memoria is null) return "não calculado";
         if (!calculo.IdrAvaliado || calculo.SecaoMm2 is null || calculo.DisjuntorA is null)
             return $"proteção não decidida: {string.Join(" | ", calculo.Problemas)}";
+        if (calculo.SecaoDeProtecaoMm2 is null) return $"seção do condutor de proteção não calculada: {string.Join(" | ", calculo.Problemas)}";
         return null;
     }
 

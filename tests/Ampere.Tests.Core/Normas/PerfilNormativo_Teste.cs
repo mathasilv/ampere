@@ -238,6 +238,32 @@ public class PerfilNormativo_Teste
     }
 
     [Test]
+    [Property("Fonte", "NBR 5410:2004, item 6.4.3.1.3 e Tabela 58")]
+    public async Task Secao_do_condutor_de_protecao_pela_tabela_58()
+    {
+        var oficial = PerfilNormativo.NBR5410_2004;
+        string Pe(decimal fase) => oficial.SecaoDoCondutorDeProtecaoMm2(fase).Valor.ToString(CultureInfo.InvariantCulture);
+
+        // Até 16: a da fase; até 35: 16; acima: S/2 na padronizada mais próxima (120 → 60: empate entre 50 e 70, a maior).
+        await Assert.That(string.Join("|", new[] { 2.5m, 16m, 25m, 35m, 50m, 95m, 120m, 150m, 185m, 400m, 630m, 1000m }.Select(Pe)))
+            .IsEqualTo("2.5|16.0|16.0|16.0|25.0|50.0|70.0|70.0|95.0|185.0|300.0|500.0");
+        await Assert.That(oficial.SecaoDoCondutorDeProtecaoMm2(3m).Ausencia).IsEqualTo("sem seção do condutor de proteção para fase de 3 mm²");
+        await Assert.That(oficial.ReferenciaDaRegra(RegraNormativa.SecaoDoNeutro)).StartsWith("NBR 5410:2004, itens 6.2.6.2.2 a 6.2.6.2.4");
+        // A série das seções e a tabela do PE andam juntas: toda seção nominal tem PE.
+        foreach (var secao in oficial.SecoesNominaisMm2().Valor)
+            await Assert.That(oficial.SecaoDoCondutorDeProtecaoMm2(secao).Disponivel).IsTrue().Because($"{secao} mm²");
+    }
+
+    [Test]
+    public async Task Secao_de_protecao_maior_que_a_da_fase_e_rejeitada()
+    {
+        var json = PerfilFicticio.Json.Replace("\"16\": 10, \"25\": 16", "\"16\": 25, \"25\": 16");
+
+        await Assert.That(() => PerfilNormativo.Carregar(json)).Throws<PerfilNormativoInvalidoException>()
+            .WithMessageContaining("secao_do_condutor_de_protecao_mm2: seção do condutor de proteção (25 mm²) maior que a da fase (16 mm²)");
+    }
+
+    [Test]
     public async Task Linha_de_temperatura_vale_so_para_os_metodos_declarados()
     {
         var perfil = PerfilNormativo.Carregar(PerfilFicticio.Json.Replace(

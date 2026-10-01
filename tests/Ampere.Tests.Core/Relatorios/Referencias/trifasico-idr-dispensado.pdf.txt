@@ -1,10 +1,10 @@
-== página 1 de 2
+== página 1 de 3
 56,7 [Titulo 56,7] Memória de cálculo — circuito TUE-01
 80,2 [Rotulo 56,7] Perfil normativo: [Texto 150,4] FICTICIO-TESTE
 91,2 [Rotulo 56,7] Identificador (AMP_MemoriaCalculoId):
-102,3 [Codigo 56,7] sha256:8016d430ede361548fd497019da1d1341f0833eafd50c9852db53c4a4ca07de5
+102,3 [Codigo 56,7] sha256:9486bd1d639422c8091a923e22c877fdd35d6a0f502e17b32aec291e72883982
 112,8 [Rotulo 56,7] Esquema do documento: [Texto 191,8] 1
-123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo completo (17 passos)
+123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo completo (19 passos)
 134,9 [Rotulo 56,7] Atenção: [Texto 107,2] perfil fictício, só para testes
 153,9 [Nota 56,7] Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O
 163,8 [Nota 56,7] documento JSON da memória guarda os valores completos.
@@ -46,8 +46,8 @@
 663 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: queda máxima
 674,1 [Rotulo 68,7] Expressão: [Codigo 132,7] ΔV%máx = tabela (circuito terminal)
 685,1 [Rotulo 68,7] Resultado: [Texto 129,2] 5%
-776 [Rodape 190] Memória de cálculo — circuito TUE-01 · página 1 de 2
-== página 2 de 2
+776 [Rodape 190] Memória de cálculo — circuito TUE-01 · página 1 de 3
+== página 2 de 3
 56,7 [TituloDoPasso 56,7] 9. Capacidade de condução da seção adotada
 70,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: capacidade de condução
 82 [Rotulo 68,7] Expressão: [Codigo 132,7] IZ = IZ₀(S) · FCA · FCT
@@ -74,29 +74,44 @@
 347,7 [Rotulo 68,7] Resultado: [Texto 129,2] 0 pontos
 358,8 [Rotulo 68,7] Observação: [Texto 138,3] decisão do projetista, prevalece sobre a tabela (motivo: motivo de teste); pela
 369,8 [Texto 68,7] tabela: LOCAL-MOLHADO (1 ponto): exige IΔn ≤ 30 mA; ATENÇÃO: a tabela exige IDR em 1 ponto
-388,9 [TituloDoPasso 56,7] 13. Condutores no eletroduto
-403,1 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra dos condutores no eletroduto
-414,2 [Rotulo 68,7] Expressão: [Codigo 132,7] n = 3F + N + PE
-425,2 [Rotulo 68,7] Resultado: [Texto 129,2] 5 condutores
-436,3 [Rotulo 68,7] Observação: [Texto 138,3] neutro e proteção com o diâmetro da fase (conservador para a ocupação)
-455,3 [TituloDoPasso 56,7] 14. Diâmetro externo do condutor
-469,6 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: catálogo de condutores
-480,6 [Rotulo 68,7] Expressão: [Codigo 132,7] d = catálogo (FIO-TESTE; 4 mm²)
-491,7 [Rotulo 68,7] Resultado: [Texto 129,2] 5 mm
-510,7 [TituloDoPasso 56,7] 15. Taxa máxima de ocupação
-525 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: ocupação
-536 [Rotulo 68,7] Expressão: [Codigo 132,7] taxa = tabela (5 condutores: faixa de 3 ou mais)
-547,1 [Rotulo 68,7] Resultado: [Texto 129,2] 40%
-566,1 [TituloDoPasso 56,7] 16. Eletroduto adotado
-580,4 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: catálogo de eletrodutos
-591,4 [Rotulo 68,7] Expressão: [Codigo 132,7] menor Di com n · d² / Di² · 100 ≤ taxa
-602,5 [Rotulo 68,7] Valores: [Texto 115,8] n = 5 condutores; d = 5 mm; taxa = 40%
-613,5 [Rotulo 68,7] Resultado: [Texto 129,2] 20 mm
-624,6 [Rotulo 68,7] Observação: [Texto 138,3] tamanho nominal C (ELETRODUTO-TESTE); acima da taxa: A (125%), B (55,5556%)
-643,6 [TituloDoPasso 56,7] 17. Ocupação do eletroduto
-657,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: ocupação
-668,9 [Rotulo 68,7] Expressão: [Codigo 132,7] ocupação = n · d² / Di² · 100
-680 [Rotulo 68,7] Valores: [Texto 115,8] n = 5 condutores; d = 5 mm; Di = 20 mm
-691 [Rotulo 68,7] Resultado: [Texto 129,2] 31,25%
-702,1 [Rotulo 68,7] Observação: [Texto 138,3] só os condutores deste circuito: outros circuitos na mesma tubulação não entram
-776 [Rodape 190] Memória de cálculo — circuito TUE-01 · página 2 de 2
+388,9 [TituloDoPasso 56,7] 13. Seção do neutro
+403,1 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra da seção do neutro
+414,2 [Rotulo 68,7] Expressão: [Codigo 132,7] SN = S
+425,2 [Rotulo 68,7] Valores: [Texto 115,8] S = 4 mm²
+436,3 [Rotulo 68,7] Resultado: [Texto 129,2] 4 mm²
+447,3 [Rotulo 68,7] Observação: [Texto 138,3] premissa: sem harmônicas significativas, como nos condutores carregados; a
+458,4 [Texto 68,7] seção reduzida permitida acima de 25 mm² não é aplicada
+477,5 [TituloDoPasso 56,7] 14. Seção do condutor de proteção
+491,7 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: seção do PE
+502,7 [Rotulo 68,7] Expressão: [Codigo 132,7] SPE = tabela (S)
+513,8 [Rotulo 68,7] Valores: [Texto 115,8] S = 4 mm²
+524,9 [Rotulo 68,7] Resultado: [Texto 129,2] 4 mm²
+535,9 [Rotulo 68,7] Observação: [Texto 138,3] condutor de proteção do mesmo material das fases
+555 [TituloDoPasso 56,7] 15. Condutores no eletroduto
+569,2 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra dos condutores no eletroduto
+580,3 [Rotulo 68,7] Expressão: [Codigo 132,7] n = 3F + N + PE
+591,3 [Rotulo 68,7] Resultado: [Texto 129,2] 5 condutores
+602,4 [Rotulo 68,7] Observação: [Texto 138,3] neutro e proteção com o diâmetro da fase (conservador para a ocupação)
+621,4 [TituloDoPasso 56,7] 16. Diâmetro externo do condutor
+635,6 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: catálogo de condutores
+646,7 [Rotulo 68,7] Expressão: [Codigo 132,7] d = catálogo (FIO-TESTE; 4 mm²)
+657,8 [Rotulo 68,7] Resultado: [Texto 129,2] 5 mm
+676,8 [TituloDoPasso 56,7] 17. Taxa máxima de ocupação
+691 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: ocupação
+702,1 [Rotulo 68,7] Expressão: [Codigo 132,7] taxa = tabela (5 condutores: faixa de 3 ou mais)
+713,2 [Rotulo 68,7] Resultado: [Texto 129,2] 40%
+776 [Rodape 190] Memória de cálculo — circuito TUE-01 · página 2 de 3
+== página 3 de 3
+56,7 [TituloDoPasso 56,7] 18. Eletroduto adotado
+70,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: catálogo de eletrodutos
+82 [Rotulo 68,7] Expressão: [Codigo 132,7] menor Di com n · d² / Di² · 100 ≤ taxa
+93 [Rotulo 68,7] Valores: [Texto 115,8] n = 5 condutores; d = 5 mm; taxa = 40%
+104,1 [Rotulo 68,7] Resultado: [Texto 129,2] 20 mm
+115,2 [Rotulo 68,7] Observação: [Texto 138,3] tamanho nominal C (ELETRODUTO-TESTE); acima da taxa: A (125%), B (55,5556%)
+134,2 [TituloDoPasso 56,7] 19. Ocupação do eletroduto
+148,4 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: ocupação
+159,5 [Rotulo 68,7] Expressão: [Codigo 132,7] ocupação = n · d² / Di² · 100
+170,6 [Rotulo 68,7] Valores: [Texto 115,8] n = 5 condutores; d = 5 mm; Di = 20 mm
+181,6 [Rotulo 68,7] Resultado: [Texto 129,2] 31,25%
+192,7 [Rotulo 68,7] Observação: [Texto 138,3] só os condutores deste circuito: outros circuitos na mesma tubulação não entram
+776 [Rodape 190] Memória de cálculo — circuito TUE-01 · página 3 de 3

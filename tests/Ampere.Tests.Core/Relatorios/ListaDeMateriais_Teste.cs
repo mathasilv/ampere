@@ -45,6 +45,17 @@ public class ListaDeMateriais_Teste
     }
 
     [Test]
+    public async Task Neutro_e_protecao_com_as_secoes_da_memoria()
+    {
+        // 7620 VA / 127 V = 60 A: disjuntor 63 A, fase 16 mm²; no perfil fictício, o PE de 16 mm² é 10 mm².
+        var lista = Montar(Circuito(1, "TUE-03", "TUE", 10m, "LOCAL-SECO", 7620m));
+
+        await Assert.That(string.Join("|", lista.Itens.Where(item => item.Grupo == ListaDeMateriais.Condutores).Select(item => item.Item))).IsEqualTo(
+            "FIO-TESTE (Cobre, PVC) 10 mm² — proteção (PE)|FIO-TESTE (Cobre, PVC) 16 mm² — fase|FIO-TESTE (Cobre, PVC) 16 mm² — neutro");
+        await Assert.That(lista.Itens[0].Observacao).IsEqualTo("comprimento do circuito, sem sobras nem emendas; seção pela tabela do condutor de proteção");
+    }
+
+    [Test]
     public async Task Bifasico_sem_neutro_nao_leva_neutro()
     {
         var lista = Montar(Circuito(1, "TUE-02", "TUE", 10m, "LOCAL-SECO", 2200m, 220m, "2F"));

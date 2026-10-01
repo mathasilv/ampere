@@ -1,9 +1,9 @@
 # Memória de cálculo — circuito TUG-01
 
 - **Perfil normativo:** NBR5410:2004
-- **Identificador (AMP_MemoriaCalculoId):** `sha256:96ac5ca43392e3b9c0d7f92aa58a3433530db2e4e2b659b5a74c3a7e1da17168`
+- **Identificador (AMP_MemoriaCalculoId):** `sha256:8b8496d80544ff1817e4518a43a09869b00f1dea5011679a1f59b131e51089cb`
 - **Esquema do documento:** 1
-- **Situação:** cálculo completo (17 passos)
+- **Situação:** cálculo completo (19 passos)
 
 > Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O documento JSON da memória guarda os valores completos.
 
@@ -93,27 +93,42 @@
 - **Resultado:** 0 pontos
 - **Observação:** Demais locais internos (1 ponto): não exige
 
-### 13. Condutores no eletroduto
+### 13. Seção do neutro
+
+- **Referência:** NBR 5410:2004, itens 6.2.6.2.2 a 6.2.6.2.4 (neutro com a seção das fases; a seção reduzida da Tabela 48, permitida em 6.2.6.2.6 acima de 25 mm², não é aplicada pelo Ampere)
+- **Expressão:** `SN = S`
+- **Valores:** S = 2,5 mm²
+- **Resultado:** 2,5 mm²
+
+### 14. Seção do condutor de proteção
+
+- **Referência:** NBR 5410:2004, item 6.4.3.1.3 e Tabela 58 (S ≤ 16: S; 16 \< S ≤ 35: 16; S \> 35: S/2 na seção padronizada mais próxima, empate na maior; condutor de proteção do mesmo metal das fases)
+- **Expressão:** `SPE = tabela (S)`
+- **Valores:** S = 2,5 mm²
+- **Resultado:** 2,5 mm²
+- **Observação:** condutor de proteção do mesmo material das fases
+
+### 15. Condutores no eletroduto
 
 - **Referência:** NBR 5410:2004, item 6.2.11.1.6, alínea a (soma das seções transversais dos condutores previstos no eletroduto, pelo diâmetro externo)
 - **Expressão:** `n = F + N + PE`
 - **Resultado:** 3 condutores
 - **Observação:** neutro e proteção com o diâmetro da fase (conservador para a ocupação)
 
-### 14. Diâmetro externo do condutor
+### 16. Diâmetro externo do condutor
 
 - **Referência:** Prysmian, ficha técnica Superastic Flex 450/750 V (rodapé BW_005_02_PT), p. 4: diâmetro nominal externo
 - **Expressão:** `d = catálogo (Prysmian Superastic Flex 450/750 V; 2,5 mm²)`
 - **Resultado:** 3,5 mm
 - **Observação:** isolação do condutor: PVC, a do circuito
 
-### 15. Taxa máxima de ocupação
+### 17. Taxa máxima de ocupação
 
 - **Referência:** NBR 5410:2004, item 6.2.11.1.6, alinea a
 - **Expressão:** `taxa = tabela (3 condutores)`
 - **Resultado:** 40%
 
-### 16. Eletroduto adotado
+### 18. Eletroduto adotado
 
 - **Referência:** Tigre, Ficha Técnica Tigreflex (setembro/2025), p. 1: diâmetro interno
 - **Expressão:** `menor Di com n · d² / Di² · 100 ≤ taxa`
@@ -121,7 +136,7 @@
 - **Resultado:** 15 mm
 - **Observação:** tamanho nominal DN 20 (Tigre Tigreflex amarelo)
 
-### 17. Ocupação do eletroduto
+### 19. Ocupação do eletroduto
 
 - **Referência:** NBR 5410:2004, item 6.2.11.1.6, alinea a
 - **Expressão:** `ocupação = n · d² / Di² · 100`

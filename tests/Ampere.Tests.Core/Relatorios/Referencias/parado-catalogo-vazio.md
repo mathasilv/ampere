@@ -1,10 +1,10 @@
 # Memória de cálculo — circuito TUG-03
 
 - **Perfil normativo:** FICTICIO-TESTE
-- **Identificador (AMP_MemoriaCalculoId):** `sha256:9b02719a7cf300e3ff94452a8d40a0e5e82e55dd69769f1b618fbba7699960e7`
+- **Identificador (AMP_MemoriaCalculoId):** `sha256:80b8ca477f4a0023407175b0d8995344287267858eaf6e749f94028ea4bbf8e6`
 - **Esquema do documento:** 1
-- **Situação:** cálculo interrompido no passo 14 (Diâmetro externo do condutor): catálogo de condutores sem dados (TODO_CATALOGO)
-- **Referências pendentes (TODO_NORMA ou TODO_CATALOGO):** 1 passo (14), sem fonte oficial
+- **Situação:** cálculo interrompido no passo 16 (Diâmetro externo do condutor): catálogo de condutores sem dados (TODO_CATALOGO)
+- **Referências pendentes (TODO_NORMA ou TODO_CATALOGO):** 1 passo (16), sem fonte oficial
 - **Atenção:** perfil fictício, só para testes
 
 > Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O documento JSON da memória guarda os valores completos.
@@ -95,14 +95,29 @@
 - **Resultado:** 0 pontos
 - **Observação:** LOCAL-SECO (1 ponto): não exige
 
-### 13. Condutores no eletroduto
+### 13. Seção do neutro
+
+- **Referência:** FICTÍCIO: regra da seção do neutro
+- **Expressão:** `SN = S`
+- **Valores:** S = 2,5 mm²
+- **Resultado:** 2,5 mm²
+
+### 14. Seção do condutor de proteção
+
+- **Referência:** FICTÍCIO: seção do PE
+- **Expressão:** `SPE = tabela (S)`
+- **Valores:** S = 2,5 mm²
+- **Resultado:** 2,5 mm²
+- **Observação:** condutor de proteção do mesmo material das fases
+
+### 15. Condutores no eletroduto
 
 - **Referência:** FICTÍCIO: regra dos condutores no eletroduto
 - **Expressão:** `n = F + N + PE`
 - **Resultado:** 3 condutores
 - **Observação:** neutro e proteção com o diâmetro da fase (conservador para a ocupação)
 
-### 14. Diâmetro externo do condutor
+### 16. Diâmetro externo do condutor
 
 - **Referência:** TODO_CATALOGO
 - **Expressão:** `d = catálogo (FIO-TESTE; 2,5 mm²)`

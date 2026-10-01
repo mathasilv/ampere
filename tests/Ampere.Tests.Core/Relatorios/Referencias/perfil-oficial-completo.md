@@ -1,9 +1,9 @@
 # Memória de cálculo — circuito IL-01
 
 - **Perfil normativo:** NBR5410:2004
-- **Identificador (AMP_MemoriaCalculoId):** `sha256:46f3a0fed0275d6fbccec73618b8905c2a1441f2ba0c40272d80ad9768e72ac4`
+- **Identificador (AMP_MemoriaCalculoId):** `sha256:930ea8aac57b75f33e8609ef11424a0f5843989d1d2be03778ca35216ce65bc3`
 - **Esquema do documento:** 1
-- **Situação:** cálculo completo (17 passos)
+- **Situação:** cálculo completo (19 passos)
 
 > Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O documento JSON da memória guarda os valores completos.
 
@@ -93,26 +93,41 @@
 - **Resultado:** 0 pontos
 - **Observação:** Demais locais internos (1 ponto): não exige
 
-### 13. Condutores no eletroduto
+### 13. Seção do neutro
+
+- **Referência:** NBR 5410:2004, itens 6.2.6.2.2 a 6.2.6.2.4 (neutro com a seção das fases; a seção reduzida da Tabela 48, permitida em 6.2.6.2.6 acima de 25 mm², não é aplicada pelo Ampere)
+- **Expressão:** `SN = S`
+- **Valores:** S = 1,5 mm²
+- **Resultado:** 1,5 mm²
+
+### 14. Seção do condutor de proteção
+
+- **Referência:** NBR 5410:2004, item 6.4.3.1.3 e Tabela 58 (S ≤ 16: S; 16 \< S ≤ 35: 16; S \> 35: S/2 na seção padronizada mais próxima, empate na maior; condutor de proteção do mesmo metal das fases)
+- **Expressão:** `SPE = tabela (S)`
+- **Valores:** S = 1,5 mm²
+- **Resultado:** 1,5 mm²
+- **Observação:** condutor de proteção do mesmo material das fases
+
+### 15. Condutores no eletroduto
 
 - **Referência:** NBR 5410:2004, item 6.2.11.1.6, alínea a (soma das seções transversais dos condutores previstos no eletroduto, pelo diâmetro externo)
 - **Expressão:** `n = F + N + PE`
 - **Resultado:** 3 condutores
 - **Observação:** neutro e proteção com o diâmetro da fase (conservador para a ocupação)
 
-### 14. Diâmetro externo do condutor
+### 16. Diâmetro externo do condutor
 
 - **Referência:** FICTÍCIO: catálogo de condutores
 - **Expressão:** `d = catálogo (FIO-TESTE; 1,5 mm²)`
 - **Resultado:** 3 mm
 
-### 15. Taxa máxima de ocupação
+### 17. Taxa máxima de ocupação
 
 - **Referência:** NBR 5410:2004, item 6.2.11.1.6, alinea a
 - **Expressão:** `taxa = tabela (3 condutores)`
 - **Resultado:** 40%
 
-### 16. Eletroduto adotado
+### 18. Eletroduto adotado
 
 - **Referência:** FICTÍCIO: catálogo de eletrodutos
 - **Expressão:** `menor Di com n · d² / Di² · 100 ≤ taxa`
@@ -120,7 +135,7 @@
 - **Resultado:** 10 mm
 - **Observação:** tamanho nominal A (ELETRODUTO-TESTE)
 
-### 17. Ocupação do eletroduto
+### 19. Ocupação do eletroduto
 
 - **Referência:** NBR 5410:2004, item 6.2.11.1.6, alinea a
 - **Expressão:** `ocupação = n · d² / Di² · 100`

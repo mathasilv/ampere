@@ -1,9 +1,9 @@
 # Memória de cálculo — circuito TUE-01
 
 - **Perfil normativo:** FICTICIO-TESTE
-- **Identificador (AMP_MemoriaCalculoId):** `sha256:8016d430ede361548fd497019da1d1341f0833eafd50c9852db53c4a4ca07de5`
+- **Identificador (AMP_MemoriaCalculoId):** `sha256:9486bd1d639422c8091a923e22c877fdd35d6a0f502e17b32aec291e72883982`
 - **Esquema do documento:** 1
-- **Situação:** cálculo completo (17 passos)
+- **Situação:** cálculo completo (19 passos)
 - **Atenção:** perfil fictício, só para testes
 
 > Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O documento JSON da memória guarda os valores completos.
@@ -95,26 +95,42 @@
 - **Resultado:** 0 pontos
 - **Observação:** decisão do projetista, prevalece sobre a tabela (motivo: motivo de teste); pela tabela: LOCAL-MOLHADO (1 ponto): exige IΔn ≤ 30 mA; ATENÇÃO: a tabela exige IDR em 1 ponto
 
-### 13. Condutores no eletroduto
+### 13. Seção do neutro
+
+- **Referência:** FICTÍCIO: regra da seção do neutro
+- **Expressão:** `SN = S`
+- **Valores:** S = 4 mm²
+- **Resultado:** 4 mm²
+- **Observação:** premissa: sem harmônicas significativas, como nos condutores carregados; a seção reduzida permitida acima de 25 mm² não é aplicada
+
+### 14. Seção do condutor de proteção
+
+- **Referência:** FICTÍCIO: seção do PE
+- **Expressão:** `SPE = tabela (S)`
+- **Valores:** S = 4 mm²
+- **Resultado:** 4 mm²
+- **Observação:** condutor de proteção do mesmo material das fases
+
+### 15. Condutores no eletroduto
 
 - **Referência:** FICTÍCIO: regra dos condutores no eletroduto
 - **Expressão:** `n = 3F + N + PE`
 - **Resultado:** 5 condutores
 - **Observação:** neutro e proteção com o diâmetro da fase (conservador para a ocupação)
 
-### 14. Diâmetro externo do condutor
+### 16. Diâmetro externo do condutor
 
 - **Referência:** FICTÍCIO: catálogo de condutores
 - **Expressão:** `d = catálogo (FIO-TESTE; 4 mm²)`
 - **Resultado:** 5 mm
 
-### 15. Taxa máxima de ocupação
+### 17. Taxa máxima de ocupação
 
 - **Referência:** FICTÍCIO: ocupação
 - **Expressão:** `taxa = tabela (5 condutores: faixa de 3 ou mais)`
 - **Resultado:** 40%
 
-### 16. Eletroduto adotado
+### 18. Eletroduto adotado
 
 - **Referência:** FICTÍCIO: catálogo de eletrodutos
 - **Expressão:** `menor Di com n · d² / Di² · 100 ≤ taxa`
@@ -122,7 +138,7 @@
 - **Resultado:** 20 mm
 - **Observação:** tamanho nominal C (ELETRODUTO-TESTE); acima da taxa: A (125%), B (55,5556%)
 
-### 17. Ocupação do eletroduto
+### 19. Ocupação do eletroduto
 
 - **Referência:** FICTÍCIO: ocupação
 - **Expressão:** `ocupação = n · d² / Di² · 100`

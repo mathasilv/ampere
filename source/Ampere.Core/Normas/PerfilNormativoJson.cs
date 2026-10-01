@@ -29,6 +29,7 @@ internal sealed record TabelasDoPerfil(
     TabelaJson<List<decimal>>? SensibilidadesNominaisIdrMa,
     TabelaJson<List<LinhaDeProtecaoDiferencialJson>>? ProtecaoDiferencialPorLocal,
     TabelaJson<Dictionary<string, decimal>>? FatorDeDemandaPorTipo,
+    TabelaJson<Dictionary<string, decimal>>? SecaoDoCondutorDeProtecaoMm2,
     TabelaJson<List<string>>? MetodosComEletroduto = null,
     TabelaDeAgrupamentoJson? FatorDeAgrupamentoEnterrado = null);
 

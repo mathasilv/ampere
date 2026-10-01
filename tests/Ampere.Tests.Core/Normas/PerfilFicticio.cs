@@ -16,7 +16,8 @@ internal static class PerfilFicticio
             "queda_de_tensao": "FICTÍCIO: regra de queda",
             "condutores_no_eletroduto": "FICTÍCIO: regra dos condutores no eletroduto",
             "coordenacao_idr_disjuntor": "FICTÍCIO: regra IDR x disjuntor",
-            "demanda_do_quadro": "FICTÍCIO: regra de demanda do quadro"
+            "demanda_do_quadro": "FICTÍCIO: regra de demanda do quadro",
+            "secao_do_neutro": "FICTÍCIO: regra da seção do neutro"
           },
           "tabelas": {
             "secoes_nominais_mm2": { "ref": "FICTÍCIO: seções", "valores": [1.5, 2.5, 4, 6, 10, 16, 25] },
@@ -42,6 +43,7 @@ internal static class PerfilFicticio
             "ocupacao_maxima_eletroduto_pct": { "ref": "FICTÍCIO: ocupação", "valores": { "1": 50, "2": 30, "3": 40 } },
             "correntes_nominais_idr_a": { "ref": "FICTÍCIO: correntes de IDR", "valores": [25, 40, 63] },
             "sensibilidades_nominais_idr_ma": { "ref": "FICTÍCIO: sensibilidades de IDR", "valores": [10, 30, 300] },
+            "secao_do_condutor_de_protecao_mm2": { "ref": "FICTÍCIO: seção do PE", "valores": { "1.5": 1.5, "2.5": 2.5, "4": 4, "6": 6, "10": 10, "16": 10, "25": 16 } },
             "fator_de_demanda_por_tipo": { "ref": "FICTÍCIO: fatores de demanda", "valores": { "Iluminacao": 0.8, "TUG": 0.5, "TUE": 1, "ArCondicionado": 1, "Motor": 1, "Reserva": 1 } },
             "protecao_diferencial_por_local": {
               "ref": "FICTÍCIO: IDR por local",

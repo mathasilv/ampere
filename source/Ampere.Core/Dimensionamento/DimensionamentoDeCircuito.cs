@@ -7,7 +7,8 @@ namespace Ampere.Core.Dimensionamento;
 
 /// <summary>
 ///     Motor de dimensionamento de um circuito terminal: IB → condutores carregados → FCT → FCA → seção mínima →
-///     seção pela capacidade de condução → disjuntor (IB ≤ In ≤ IZ) → queda de tensão → IDR → eletroduto (ocupação).
+///     seção pela capacidade de condução → disjuntor (IB ≤ In ≤ IZ) → queda de tensão → IDR → seções do neutro e do
+///     condutor de proteção → eletroduto (ocupação).
 /// </summary>
 /// <remarks>
 ///     <list type="bullet">
@@ -25,6 +26,8 @@ namespace Ampere.Core.Dimensionamento;
 ///         do próprio circuito (fases, neutro e proteção, todos com o diâmetro da fase). Diâmetros vêm dos catálogos de
 ///         fabricante; catálogo sem dados interrompe o cálculo como tabela TODO_NORMA. Só nos métodos que o perfil diz
 ///         levarem eletroduto (<see cref="PerfilNormativo.ComEletroduto" />).</item>
+///         <item>Neutro com a seção da fase (a seção reduzida que a norma permite acima de 25 mm² não é aplicada); condutor
+///         de proteção pela tabela do perfil, do mesmo material das fases.</item>
 ///         <item>Linha enterrada (<see cref="PerfilNormativo.Enterrado" />): a temperatura da entrada é a do solo e o
 ///         agrupamento sai da tabela própria do método.</item>
 ///         <item>Decisões do projetista (seção mínima, disjuntor): verificadas, nunca aceitas às cegas. A seção do
@@ -64,6 +67,8 @@ public static class DimensionamentoDeCircuito
         private string? _eletroduto;
         private decimal? _diametroInterno;
         private decimal? _ocupacao;
+        private decimal? _secaoDoNeutro;
+        private decimal? _secaoDeProtecao;
         private decimal? _idrNominal;
         private decimal? _idrSensibilidade;
         private bool _idrAvaliado;
@@ -151,6 +156,7 @@ public static class DimensionamentoDeCircuito
                     _disjuntor = disjuntor;
                     _queda = queda;
                     Idr(disjuntor!.Value);
+                    NeutroEProtecao(secao);
                     // C, E, F e G (sobre parede ou ao ar livre) não têm eletroduto: a memória termina no IDR.
                     if (perfil.ComEletroduto(entrada.MetodoDeInstalacao)) Eletroduto(secao);
                     return;
@@ -336,6 +342,21 @@ public static class DimensionamentoDeCircuito
             Passo(referencia, "Sensibilidade do IDR", "IΔn = informada pelo projetista", [], sensibilidade, "mA",
                 string.Join("; ", new[] { alerta, $"sensibilidades nominais: {dadoDaSerie.Referencia}" }.OfType<string>()));
             return sensibilidade;
+        }
+
+        private void NeutroEProtecao(decimal secao)
+        {
+            if (entrada.Fases.EndsWith("+N", StringComparison.Ordinal))
+            {
+                Passo(perfil.ReferenciaDaRegra(RegraNormativa.SecaoDoNeutro), "Seção do neutro", "SN = S", [new ValorDoPasso("S", secao, "mm²")], secao, "mm²",
+                    entrada.Fases == "F+N"
+                        ? null
+                        : "premissa: sem harmônicas significativas, como nos condutores carregados; a seção reduzida permitida acima de 25 mm² não é aplicada");
+                _secaoDoNeutro = secao;
+            }
+
+            _secaoDeProtecao = Consultar(perfil.SecaoDoCondutorDeProtecaoMm2(secao), "Seção do condutor de proteção", "SPE = tabela (S)",
+                [new ValorDoPasso("S", secao, "mm²")], "mm²", "condutor de proteção do mesmo material das fases");
         }
 
         private void Eletroduto(decimal secao)
@@ -526,7 +547,7 @@ public static class DimensionamentoDeCircuito
         private ResultadoDoDimensionamento Resultado(SituacaoDoDimensionamento situacao, IReadOnlyList<string> problemas) =>
             new(entrada.Circuito, situacao, perfil.Nome, _correnteDeProjeto, _condutoresCarregados, _fct, _fca, _secao, _capacidade, _disjuntor,
                 _idrNominal, _idrSensibilidade, _queda, _eletroduto, _diametroInterno, _ocupacao,
-                new MemoriaDeCalculo(entrada.Circuito, perfil.Nome, _passos), problemas, _avisos, _idrAvaliado);
+                new MemoriaDeCalculo(entrada.Circuito, perfil.Nome, _passos), problemas, _avisos, _idrAvaliado, _secaoDoNeutro, _secaoDeProtecao);
 
         private static string Numero(decimal valor) => NumeroEmTexto.FormatarParaLeitura(valor);
 

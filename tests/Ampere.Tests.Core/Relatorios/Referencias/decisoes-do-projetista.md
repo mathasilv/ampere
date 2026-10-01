@@ -1,9 +1,9 @@
 # Memória de cálculo — circuito TUG-04
 
 - **Perfil normativo:** FICTICIO-TESTE
-- **Identificador (AMP_MemoriaCalculoId):** `sha256:6871e0a85c7aa40463877523e19289e71451dfa70e4bd3c9f86577a497f86ba0`
+- **Identificador (AMP_MemoriaCalculoId):** `sha256:347617633dc9cef16846c5d336e55b68c7294dd28cff10b81936d5f89de51eae`
 - **Esquema do documento:** 1
-- **Situação:** cálculo completo (21 passos)
+- **Situação:** cálculo completo (23 passos)
 - **Atenção:** perfil fictício, só para testes
 
 > Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O documento JSON da memória guarda os valores completos.
@@ -126,26 +126,41 @@
 - **Resultado:** 25 A
 - **Observação:** correntes nominais de IDR: FICTÍCIO: correntes de IDR
 
-### 17. Condutores no eletroduto
+### 17. Seção do neutro
+
+- **Referência:** FICTÍCIO: regra da seção do neutro
+- **Expressão:** `SN = S`
+- **Valores:** S = 6 mm²
+- **Resultado:** 6 mm²
+
+### 18. Seção do condutor de proteção
+
+- **Referência:** FICTÍCIO: seção do PE
+- **Expressão:** `SPE = tabela (S)`
+- **Valores:** S = 6 mm²
+- **Resultado:** 6 mm²
+- **Observação:** condutor de proteção do mesmo material das fases
+
+### 19. Condutores no eletroduto
 
 - **Referência:** FICTÍCIO: regra dos condutores no eletroduto
 - **Expressão:** `n = F + N + PE`
 - **Resultado:** 3 condutores
 - **Observação:** neutro e proteção com o diâmetro da fase (conservador para a ocupação)
 
-### 18. Diâmetro externo do condutor
+### 20. Diâmetro externo do condutor
 
 - **Referência:** FICTÍCIO: catálogo de condutores
 - **Expressão:** `d = catálogo (FIO-TESTE; 6 mm²)`
 - **Resultado:** 6 mm
 
-### 19. Taxa máxima de ocupação
+### 21. Taxa máxima de ocupação
 
 - **Referência:** FICTÍCIO: ocupação
 - **Expressão:** `taxa = tabela (3 condutores)`
 - **Resultado:** 40%
 
-### 20. Eletroduto adotado
+### 22. Eletroduto adotado
 
 - **Referência:** FICTÍCIO: catálogo de eletrodutos
 - **Expressão:** `menor Di com n · d² / Di² · 100 ≤ taxa`
@@ -153,7 +168,7 @@
 - **Resultado:** 20 mm
 - **Observação:** tamanho nominal C (ELETRODUTO-TESTE); acima da taxa: A (108%), B (48%)
 
-### 21. Ocupação do eletroduto
+### 23. Ocupação do eletroduto
 
 - **Referência:** FICTÍCIO: ocupação
 - **Expressão:** `ocupação = n · d² / Di² · 100`
