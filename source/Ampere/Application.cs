@@ -53,5 +53,10 @@ public class Application : ExternalApplication
             .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
             .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
             .SetToolTip("Monta demanda por tipo de carga e corrente de demanda dos quadros com circuitos; grava potência e fator nos circuitos e a memória no quadro e cria as tabelas, com os resultados do dimensionamento (dois passos no desfazer).");
+
+        quadros.AddPushButton<DiagramasUnifilaresCommand>("Diagramas\nunifilares")
+            .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
+            .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
+            .SetToolTip("Desenha o diagrama unifilar de cada quadro numa vista de desenho, com os valores do dimensionamento, e salva o SVG (um único desfazer).");
     }
 }
