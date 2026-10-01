@@ -16,7 +16,7 @@ public static class PlanilhaDeCircuitos
     private static readonly string[] Cabecalho =
     [
         "Quadro", "Circuito", "Tipo de carga", "Situação", "Potência (VA)", "IB (A)", "FCT", "FCA", "Seção (mm²)", "Neutro (mm²)", "PE (mm²)", "IZ (A)",
-        "Disjuntor (A)", "Icn mín. (kA)", "k²S² (A²s)", "IDR In (A)", "IDR IΔn (mA)", "Queda de tensão (%)", "Eletroduto", "Ocupação (%)", "Motivo", "Avisos",
+        "Disjuntor (A)", "Interrupção mín. (kA)", "k²S² (A²s)", "IDR In (A)", "IDR IΔn (mA)", "Queda de tensão (%)", "Eletroduto", "Ocupação (%)", "Motivo", "Avisos",
         "Memória"
     ];
 

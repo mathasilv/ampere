@@ -50,6 +50,22 @@ public class PlanejadorDeCircuitos_Teste
     }
 
     [Test]
+    [Property("Fonte", "NBR 5410:2004, item 9.5.3.1")]
+    public async Task Equipamento_independente_no_meio_do_grupo_nao_separa_os_demais()
+    {
+        // 4, 6 e 8 seguem juntos; 5 (24,55 A) sozinho; 8 sem tensão: não dá para julgar, fica no grupo com aviso.
+        var divisao = new DivisaoDaInstalacao(new HashSet<long> { 4, 5, 6, 8 }, new HashSet<long>(), 10m, "NBR 5410:2004, item 9.5.3");
+        PontoDeCarga Tue(long id, decimal va) => Ponto(id, TipoDeCarga.TUE, va, A220) with { TensaoV = 220m, Fases = "2F" };
+
+        var plano = PlanejadorDeCircuitos.Planejar([Tue(4, 1000m), Tue(5, 5400m), Tue(6, 1200m), Ponto(8, TipoDeCarga.TUE, 2000m, A220)],
+            SemRegras, ConfiguracaoDeNumeracao.Padrao, [], divisao);
+
+        await Assert.That(Resumo(plano)).IsEquivalentTo(["TUE-01: 4,6,8", "TUE-02: 5"], CollectionOrdering.Matching);
+        await Assert.That(plano.Avisos[^1]).IsEqualTo(
+            "ponto 8 (TUE) sem potência, tensão (AMP_TensaoCircuitoV) ou fases: não deu para ver se passa de 10 A e vai em circuito independente (NBR 5410:2004, item 9.5.3)");
+    }
+
+    [Test]
     public async Task Maximo_de_pontos_divide_o_grupo()
     {
         var regras = Regras(TipoDeCarga.TUG, new RegraDeAgrupamento(MaximoDePontos: 2));

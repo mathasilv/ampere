@@ -104,9 +104,7 @@ internal sealed record ConteudoDoRelatorio(
             throw new InvalidOperationException("Os DPS não foram selecionados (veja os problemas): relatório só de seleção feita.");
 
         var quadro = dps.Quadro;
-        var tensoes = quadro.TensaoEntreFasesV is { } entreFases && quadro.Esquema != "F+N"
-            ? $"{Quantidade(entreFases, string.Empty)}/{Quantidade(quadro.TensaoFaseNeutroV!.Value, "V")}"
-            : Quantidade(quadro.TensaoFaseNeutroV!.Value, "V");
+        var tensoes = Surtos.SelecaoDeDps.Tensoes(quadro);
         var escolha = dps.Escolha;
         var localizacao = new List<Campo> { new("Referência", norma.ReferenciaDaLocalizacao) };
         if (escolha.Finalidade is not Surtos.FinalidadeDoDps.DescargasDiretas)

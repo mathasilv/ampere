@@ -91,7 +91,7 @@ public sealed record ListaDeMateriais(IReadOnlyList<ItemDeMaterial> Itens, IRead
         itens.AddRange(disjuntores
             .OrderBy(par => par.Key.Polos).ThenBy(par => par.Key.Corrente).ThenBy(par => par.Key.Interrupcao ?? 0m)
             .Select(par => new ItemDeMaterial(Disjuntores,
-                $"Disjuntor {par.Key.Polos}P {Numero(par.Key.Corrente)} A" + (par.Key.Interrupcao is { } icn ? $", Icn ≥ {Numero(icn)} kA" : string.Empty),
+                $"Disjuntor {par.Key.Polos}P {Numero(par.Key.Corrente)} A" + (par.Key.Interrupcao is { } capacidade ? $", capacidade de interrupção ≥ {Numero(capacidade)} kA" : string.Empty),
                 par.Value.Quantidade, "un", par.Value.Circuitos,
                 par.Key.Interrupcao is null
                     ? "curva e capacidade de interrupção a definir (sem a corrente de curto-circuito presumida nas condições)"

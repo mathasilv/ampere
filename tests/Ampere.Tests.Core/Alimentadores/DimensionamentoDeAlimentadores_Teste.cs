@@ -69,6 +69,22 @@ public class DimensionamentoDeAlimentadores_Teste
     }
 
     [Test]
+    [Property("Fonte", "NBR 5410:2004, item 5.3.5.5.1")]
+    public async Task Com_a_Icc_da_entrada_o_alimentador_tambem_leva_a_capacidade_de_interrupcao()
+    {
+        var cenario = new CenarioDeAlimentador();
+        cenario.Documento.Condicoes = CenarioDeAlimentador.Condicoes with { CorrenteDeCurtoCircuitoKa = 4m };
+
+        var calculo = Executar(cenario).Single().Circuito!.Dimensionamento!;
+
+        await Assert.That(calculo.CapacidadeDeInterrupcaoKa).IsEqualTo(4m);
+        await Assert.That(Passo(calculo.Memoria!, "Capacidade de interrupção mínima do disjuntor").Resultado).IsEqualTo(4m);
+        // Perfil fictício sem a Tabela 30: a integral de Joule fica de fora, com aviso.
+        await Assert.That(calculo.IntegralDeJouleA2s).IsNull();
+        await Assert.That(calculo.Avisos).Contains("perfil sem a tabela do fator k (Tabela 30): a integral de Joule do condutor não foi verificada");
+    }
+
+    [Test]
     public async Task Circuito_sem_fase_identificada_soma_na_fase_de_maior_corrente()
     {
         var cenario = new CenarioDeAlimentador(semFaseNoTue: true);

@@ -35,7 +35,7 @@ namespace Ampere.Core.Dimensionamento;
 ///         seção sobe até IZ ≥ In. Seção fora das nominais ou In fora da série ou abaixo de IB interrompe o cálculo. A
 ///         memória registra cada decisão com a justificativa.</item>
 ///         <item>Curto-circuito, só com a Icc presumida das condições: capacidade de interrupção mínima do disjuntor
-///         (Icn ≥ Icc) e k²S² do condutor (Tabela 30), a integral de Joule que o disjuntor pode deixar passar com essa
+///         (capacidade de interrupção ≥ Icc) e k²S² do condutor (Tabela 30), a integral de Joule que o disjuntor pode deixar passar com essa
 ///         corrente (6.3.4.3.2-b, conferida no catálogo). A corrente mínima no ponto mais distante (6.3.4.3.2-a) depende da
 ///         impedância da fonte e não é verificada.</item>
 ///         <item>Aritmética em <c>decimal</c> e memória determinística.</item>
@@ -407,9 +407,10 @@ public static class DimensionamentoDeCircuito
         {
             if (entrada.CorrenteDeCurtoCircuitoKa is not { } icc) return;
 
-            Passo(perfil.ReferenciaDaRegra(RegraNormativa.CapacidadeDeInterrupcao), "Capacidade de interrupção mínima do disjuntor", "Icn ≥ Icc",
-                [new ValorDoPasso("Icc", icc, "kA")], icc, "kA",
-                "Icc presumida no quadro de origem, das condições do projeto (a do ponto de entrada vale a favor da segurança)");
+            Passo(perfil.ReferenciaDaRegra(RegraNormativa.CapacidadeDeInterrupcao), "Capacidade de interrupção mínima do disjuntor",
+                "capacidade de interrupção ≥ Icc", [new ValorDoPasso("Icc", icc, "kA")], icc, "kA",
+                "Icc presumida das condições do projeto, a do ponto de entrada (a maior da instalação: a favor da segurança nos quadros a jusante); " +
+                "Icn nos minidisjuntores (NBR NM 60898), Icu nos disjuntores da IEC 60947-2");
             _capacidadeDeInterrupcao = icc;
 
             if (perfil.FatorKDeCurtoCircuito(entrada.Material, entrada.Isolacao, secao) is not { } dadoDeK)
@@ -424,10 +425,15 @@ public static class DimensionamentoDeCircuito
             var integral = k * k * secao * secao;
             var correnteA = icc * 1000m;
             var tempo = integral / (correnteA * correnteA);
+            // Abaixo de 0,1 s o tempo não diz nada útil (o curto dura poucos ciclos): vale a integral de Joule do fabricante.
+            var duracao = tempo >= 0.1m
+                ? $"com Icc = {Numero(icc)} kA, o condutor suporta o curto por até {Numero(tempo)} s (Icc² · t ≤ k² · S²); "
+                : string.Empty;
             Passo(dadoDeK.Referencia, "Integral de Joule suportável pelo condutor", "I²t ≤ k² · S²",
                 [new ValorDoPasso("k", k, string.Empty), new ValorDoPasso("S", secao, "mm²")], integral, "A²s",
-                $"o disjuntor pode deixar passar no máximo isso com Icc = {Numero(icc)} kA: confira a curva I²t do fabricante (6.3.4.3.2-b); "
-                + $"em curtos de 0,1 s a 5 s, equivale a eliminar o curto em até {Numero(tempo)} s (Icc² · t ≤ k² · S²)");
+                $"a integral de Joule que o disjuntor deixa passar com Icc = {Numero(icc)} kA não pode passar disso: confira a característica I²t do fabricante "
+                + $"(6.3.4.3.2-b e nota 1 de 6.3.4.3); {duracao}não verificado pelo Ampere: a atuação do disjuntor com a corrente de curto mínima, "
+                + "no ponto mais distante do circuito (6.3.4.3.2-a), que depende da impedância da fonte");
             _integralDeJoule = integral;
         }
 

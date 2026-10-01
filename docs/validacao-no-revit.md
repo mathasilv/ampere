@@ -62,9 +62,10 @@ Use um projeto de teste com arquitetura vinculada ou com ambientes (Rooms/Spaces
      `materiais.csv`. Abra os CSV no Excel e confira os acentos. `circuitos.csv` traz as seções do neutro e do PE; num
      circuito de 50 mm², o PE deve ser 25 mm², também em `materiais.csv`.
    - Sem o "Curto-circuito presumido", o resumo deve avisar que a capacidade de interrupção e a integral de Joule não
-     foram verificadas. Com 5 kA, a memória de um circuito de 1,5 mm² (cobre, PVC) deve trazer "Icn ≥ Icc" = 5 kA, k = 115
-     (Tabela 30) e k²S² = 29.756,25 A²s; `circuitos.csv` ganha as colunas "Icn mín. (kA)" e "k²S² (A²s)", e
-     `materiais.csv` lista "Disjuntor 1P 10 A, Icn ≥ 5 kA". Reabra o diálogo: o valor deve voltar.
+     foram verificadas. Com 5 kA, a memória de um circuito de 1,5 mm² (cobre, PVC) deve trazer "capacidade de interrupção ≥
+     Icc" = 5 kA, k = 115 (Tabela 30) e k²S² = 29.756,25 A²s; `circuitos.csv` ganha as colunas "Interrupção mín. (kA)" e
+     "k²S² (A²s)", e `materiais.csv` lista "Disjuntor 1P 10 A, capacidade de interrupção ≥ 5 kA". Reabra o diálogo: o
+     valor deve voltar.
 7. **Decisões do projetista.** Num circuito, preencha `AMP_SecaoMinimaProjetistaMm2` = 6 e
    `AMP_JustificativaProjetista`, e rode o dimensionamento selecionando só esse circuito.
    - O resumo deve dizer "rodada só da seleção".

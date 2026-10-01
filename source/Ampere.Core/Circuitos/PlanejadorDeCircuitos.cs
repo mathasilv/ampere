@@ -63,6 +63,13 @@ public static class PlanejadorDeCircuitos
                 avisos.Add(string.Create(CultureInfo.InvariantCulture,
                     $"ponto {ponto.Id} ({NumeroEmTexto.FormatarParaLeitura(Math.Round(Previsao.PrevisaoDeCargas.CorrenteA(ponto.PotenciaVA, ponto.TensaoV, ponto.Fases)!.Value, 2, MidpointRounding.AwayFromZero))} A) em circuito independente, acima de {NumeroEmTexto.Formatar(divisao.CorrenteIndependenteAcimaDeA)} A ({divisao.Referencia})"));
             }
+
+            // Sem a corrente, o equipamento não pode ser julgado: fica no grupo, e o projetista é avisado.
+            foreach (var ponto in validos.Where(ponto => divisao.SemCorrente(ponto.Id, ponto.Tipo!.Value, ponto.PotenciaVA, ponto.TensaoV, ponto.Fases)))
+            {
+                avisos.Add($"ponto {ponto.Id} ({CodigosDeTipoDeCarga.Codigo(ponto.Tipo!.Value)}) sem potência, tensão (AMP_TensaoCircuitoV) ou fases: " +
+                           $"não deu para ver se passa de {NumeroEmTexto.Formatar(divisao.CorrenteIndependenteAcimaDeA)} A e vai em circuito independente ({divisao.Referencia})");
+            }
         }
 
         var grupos = validos
@@ -109,18 +116,9 @@ public static class PlanejadorDeCircuitos
         var circuitos = new List<List<PontoDeCarga>>();
         var atual = new List<PontoDeCarga>();
         var soma = 0m;
-        foreach (var ponto in pontos)
+        // Independente vai sozinho; os demais seguem juntos pelos limites, como se ele não estivesse no grupo.
+        foreach (var ponto in pontos.Where(ponto => !independentes.Contains(ponto.Id)))
         {
-            // Sozinho no seu circuito, na ordem dos Ids: o circuito em formação fecha antes dele.
-            if (independentes.Contains(ponto.Id))
-            {
-                if (atual.Count > 0) circuitos.Add(atual);
-                circuitos.Add([ponto]);
-                atual = [];
-                soma = 0m;
-                continue;
-            }
-
             var potencia = ponto.PotenciaVA ?? 0m;
             var estouraPontos = regra.MaximoDePontos is { } maximo && atual.Count + 1 > maximo;
             var estouraPotencia = regra.MaximaPotenciaVA is { } limite && soma + potencia > limite;
@@ -142,6 +140,8 @@ public static class PlanejadorDeCircuitos
         }
 
         if (atual.Count > 0) circuitos.Add(atual);
-        return circuitos;
+        circuitos.AddRange(pontos.Where(ponto => independentes.Contains(ponto.Id)).Select(ponto => new List<PontoDeCarga> { ponto }));
+        // Na ordem do menor Id de cada circuito: a numeração segue a dos pontos.
+        return circuitos.OrderBy(circuito => circuito[0].Id).ToList();
     }
 }

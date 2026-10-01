@@ -84,9 +84,9 @@ public sealed record DecisoesDoProjetista(
 /// <param name="TemperaturaDoSoloC">Temperatura do solo, em °C, para as linhas enterradas (método D); sem ela, o circuito enterrado precisa de AMP_TemperaturaAmbienteC.</param>
 /// <param name="CircuitosAgrupadosNoSolo">Circuitos agrupados das linhas enterradas (a tabela é outra); sem ele, o circuito enterrado precisa de AMP_CircuitosAgrupados.</param>
 /// <param name="CorrenteDeCurtoCircuitoKa">
-///     Corrente de curto-circuito presumida no quadro de origem dos circuitos, em kA (determinada pelo projetista ou pela
-///     distribuidora, por cálculo ou medição); a do ponto de entrada vale a favor da segurança. Sem ela, a capacidade de
-///     interrupção e a integral de Joule não são verificadas.
+///     Corrente de curto-circuito presumida, em kA (por cálculo ou medição, 5.3.5.1): a do ponto de entrada, a maior da
+///     instalação, vale para todos os quadros a favor da segurança — os alimentadores também saem de quadros a montante.
+///     Sem ela, a capacidade de interrupção e a integral de Joule não são verificadas.
 /// </param>
 public sealed record CondicoesDoProjeto(
     decimal TemperaturaAmbienteC,

@@ -10,7 +10,7 @@ public class SelecaoDeDps_Teste
     private static readonly NormaDeDps Norma = NormaDeDps.NBR5410_2004;
 
     /// <summary>QD1 trifásico 220/127 V com neutro.</summary>
-    public static QuadroParaDps Trifasico(string esquema = "3F+N", decimal uo = 127m, decimal? u = 220m) =>
+    public static QuadroParaDps Trifasico(string esquema = "3F+N", decimal? uo = 127m, decimal? u = 220m) =>
         new(1, "QD1", esquema, uo, u, "sistema de distribuição '220/127 Y' do quadro");
 
     /// <summary>O caso dos golden files: TT, 3F+N 220/127 V, DPS a montante do DR contra as duas finalidades.</summary>
@@ -115,15 +115,75 @@ public class SelecaoDeDps_Teste
     }
 
     [Test]
-    public async Task Duas_fases_tomadas_como_rede_trifasica_no_neutro_PE()
+    public async Task Duas_fases_de_rede_trifasica_tomadas_como_trifasica_no_neutro_PE()
     {
-        var resultado = SelecaoDeDps.Selecionar(Trifasico("2F+N", 127m, 254m),
+        var resultado = SelecaoDeDps.Selecionar(Trifasico("2F+N", 127m, 220m),
             new EscolhaDoDps(EsquemasDeAterramento.TnS, FinalidadeDoDps.LinhaExterna, 3), Norma);
 
         var neutroPe = resultado.Ligacoes.Single(ligacao => ligacao.Ligacao == LigacoesDoDps.NeutroPe);
         await Assert.That(neutroPe.InMinimoKa).IsEqualTo(20m);
         await Assert.That(resultado.Memoria!.Passos.Single(passo => passo.Descricao == "Corrente nominal de descarga mínima (In) — neutro–PE").Observacao!)
             .Contains("critério do Ampere");
+    }
+
+    [Test]
+    [Arguments("2F+N", 127, 254)]
+    [Arguments("F+N", 127, null)]
+    public async Task Rede_monofasica_pede_10_kA_no_neutro_PE_do_esquema_3(string esquema, int uo, int? u)
+    {
+        // 127-254 é sistema monofásico com neutro na Tabela 31.
+        var resultado = SelecaoDeDps.Selecionar(Trifasico(esquema, uo, u), new EscolhaDoDps(EsquemasDeAterramento.TnS, FinalidadeDoDps.LinhaExterna, 3), Norma);
+
+        var neutroPe = resultado.Ligacoes.Single(ligacao => ligacao.Ligacao == LigacoesDoDps.NeutroPe);
+        await Assert.That(neutroPe.InMinimoKa).IsEqualTo(10m);
+        await Assert.That(resultado.Memoria!.Passos.Single(passo => passo.Descricao == "Corrente nominal de descarga mínima (In) — neutro–PE").Expressao)
+            .Contains("rede monofásica");
+    }
+
+    [Test]
+    public async Task TN_C_liga_cada_fase_ao_PEN_e_recusa_DR_antes_dos_DPS()
+    {
+        var semDr = SelecaoDeDps.Selecionar(Trifasico("F+N", 127m, null), new EscolhaDoDps(EsquemasDeAterramento.TnC, FinalidadeDoDps.LinhaExterna), Norma);
+        var comDr = SelecaoDeDps.Selecionar(Trifasico(), new EscolhaDoDps(EsquemasDeAterramento.TnC, FinalidadeDoDps.LinhaExterna, AJusanteDeDr: true), Norma);
+
+        await Assert.That(semDr.EsquemaDeConexao).IsEqualTo(1);
+        await Assert.That(semDr.Ligacoes.Single().Ligacao).IsEqualTo(LigacoesDoDps.FasePen);
+        await Assert.That(semDr.Ligacoes.Single().Quantidade).IsEqualTo(1);
+        await Assert.That(semDr.Memoria!.Passos[0].Observacao!).DoesNotContain("nota b");
+        await Assert.That(comDr.Memoria).IsNull();
+        await Assert.That(comDr.Problemas.Single()).Contains("5.1.2.2.4.2, alínea f");
+    }
+
+    [Test]
+    public async Task IT_sem_neutro_sem_Uo_acha_a_linha_da_tabela_31_por_U()
+    {
+        var resultado = SelecaoDeDps.Selecionar(new QuadroParaDps(4, "QF", "3F", null, 380m, "teste"),
+            new EscolhaDoDps(EsquemasDeAterramento.ItSemNeutro, FinalidadeDoDps.LinhaExterna), Norma);
+        var semUo = SelecaoDeDps.Selecionar(new QuadroParaDps(4, "QF", "3F", null, 380m, "teste"), new EscolhaDoDps(EsquemasDeAterramento.TnS, FinalidadeDoDps.LinhaExterna), Norma);
+
+        await Assert.That(resultado.Problemas).IsEmpty();
+        await Assert.That(resultado.UpMaximoKv).IsEqualTo(2.5m);
+        await Assert.That(resultado.Memoria!.Passos.Single(passo => passo.Descricao == "Nível de proteção máximo (Up)").Expressao).IsEqualTo("Up ≤ tabela (U), categoria II");
+        await Assert.That(semUo.Problemas.Single()).Contains("sem a tensão fase-neutro (Uo)");
+        await Assert.That(SelecaoDeDps.Tensoes(new QuadroParaDps(4, "QF", "3F", null, 380m, "teste"))).IsEqualTo("380 V");
+    }
+
+    [Test]
+    [Arguments("3F+N", "TN-S", false, true)]
+    [Arguments("3F+N", "IT com neutro", false, true)]
+    [Arguments("3F+N", "TT", false, false)]
+    [Arguments("3F+N", "TT", true, true)]
+    [Arguments("3F+N", "TN-C-S", false, false)]
+    [Arguments("3F+N", "TN-C", false, false)]
+    [Arguments("3F", "TN-S", false, false)]
+    [Arguments(null, "TN-S", false, false)]
+    public async Task O_dialogo_deixa_escolher_a_conexao_so_quando_a_figura_13_admite_2_e_3(string? esquema, string aterramento, bool aJusanteDeDr, bool escolhe)
+    {
+        await Assert.That(SelecaoDeDps.EscolheOEsquemaDeConexao(esquema, aterramento, aJusanteDeDr)).IsEqualTo(escolhe);
+        if (esquema is null) return;
+        // O que o diálogo deixa escolher é o que o Core pede: sem escolha, falta só ela.
+        var semEscolha = SelecaoDeDps.Selecionar(Trifasico(esquema), new EscolhaDoDps(aterramento, FinalidadeDoDps.LinhaExterna, AJusanteDeDr: aJusanteDeDr), Norma);
+        await Assert.That(semEscolha.Memoria is null).IsEqualTo(escolhe);
     }
 
     [Test]

@@ -136,7 +136,7 @@ public class ListaDeMateriais_Teste
         var lista = ListaDeMateriais.Montar(DimensionamentoDoProjeto.Executar([1, 2], comCurto, Ficticio, Catalogos, new DocumentoFalso(TresCircuitos[..2])));
 
         var disjuntor = lista.Itens.Single(item => item.Grupo == ListaDeMateriais.Disjuntores);
-        await Assert.That(disjuntor.Item).IsEqualTo("Disjuntor 1P 10 A, Icn ≥ 6 kA");
+        await Assert.That(disjuntor.Item).IsEqualTo("Disjuntor 1P 10 A, capacidade de interrupção ≥ 6 kA");
         await Assert.That(disjuntor.Observacao).StartsWith("curva a definir");
     }
 

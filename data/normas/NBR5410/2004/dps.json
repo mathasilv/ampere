@@ -1,6 +1,6 @@
 {
   "$meta": {
-    "fonte": "ABNT NBR 5410:2004 Versão Corrigida 17.03.2008, itens 6.3.5.2.1 a 6.3.5.2.9, Figura 13 e Tabelas 31 e 49 (texto oficial anexado pelo usuário na conversa, não versionado; só os valores transcritos, com o item); conferido visualmente nas páginas 71, 131 a 136 em 01/10/2026",
+    "fonte": "ABNT NBR 5410:2004 Versão Corrigida 17.03.2008, itens 5.1.2.2.4.2-f, 6.3.5.2.1 a 6.3.5.2.9, Figura 13 e Tabelas 31 e 49 (texto oficial anexado pelo usuário na conversa, não versionado; só os valores transcritos, com o item); conferido visualmente nas páginas 39, 71 e 131 a 136 em 01/10/2026",
     "versao": "2004",
     "data": "2026-10-01",
     "ficticio": false,
@@ -86,6 +86,9 @@
   "imunidade_do_dr": {
     "ref": "NBR 5410:2004, item 6.3.5.2.6, alínea b (DR a montante dos DPS; nota: DR tipo S conforme a IEC 61008-2-1 e a IEC 61009-2-1 é um exemplo)",
     "minima_ka": 3
+  },
+  "dr_no_tn_c": {
+    "ref": "NBR 5410:2004, item 5.1.2.2.4.2, alínea f (na variante TN-C, o seccionamento automático não é atribuído ao DR) e nota 1 (o TN-C é convertido em TN-C-S imediatamente a montante do DR)"
   },
   "a_conferir": [
     {

@@ -72,8 +72,9 @@ public sealed record UcDaTabela(string Texto, decimal Fator, bool EntreFases)
 /// <summary>Uma linha da Tabela 31: as tensões nominais da linha e a tensão de impulso por categoria, em kV.</summary>
 /// <param name="Sistemas">Como impresso: trifásicos "Uo/U" e monofásicos com neutro "Uo-U".</param>
 /// <param name="TensoesFaseNeutroV">Uo de cada sistema da linha (as linhas da tabela não repetem Uo).</param>
-public sealed record LinhaDaTabela31(IReadOnlyList<string> Sistemas, IReadOnlyList<decimal> TensoesFaseNeutroV, decimal CategoriaIKv, decimal CategoriaIiKv,
-    decimal CategoriaIiiKv, decimal CategoriaIvKv);
+/// <param name="TensoesEntreFasesV">U de cada sistema da linha (também sem repetição entre as linhas).</param>
+public sealed record LinhaDaTabela31(IReadOnlyList<string> Sistemas, IReadOnlyList<decimal> TensoesFaseNeutroV, IReadOnlyList<decimal> TensoesEntreFasesV,
+    decimal CategoriaIKv, decimal CategoriaIiKv, decimal CategoriaIiiKv, decimal CategoriaIvKv);
 
 /// <summary>Os valores mínimos de corrente de um DPS: por modo de proteção e, no esquema 3, o do neutro–PE.</summary>
 public sealed record CorrenteDoDps(string Referencia, decimal PorModoKa, decimal NeutroPeTrifasicaKa, decimal NeutroPeMonofasicaKa);
@@ -112,6 +113,7 @@ public sealed class NormaDeDps
         SecaoDoCondutorDeConexaoDescargasDiretasMm2 = arquivo.CondutorDeConexao.SecaoMinimaCobreDescargasDiretasMm2!.Value;
         ComprimentoMaximoDaConexaoM = arquivo.CondutorDeConexao.ComprimentoMaximoM!.Value;
         ReferenciaDaImunidadeDoDr = arquivo.ImunidadeDoDr!.Ref!;
+        ReferenciaDoDrNoTnC = arquivo.DrNoTnC!.Ref!;
         ImunidadeDoDrKa = arquivo.ImunidadeDoDr.MinimaKa!.Value;
         AConferir = arquivo.AConferir!.Select(item => new ExigenciaAConferir(item.Ref!.Trim(), item.Texto!.Trim())).ToList();
     }
@@ -165,6 +167,9 @@ public sealed class NormaDeDps
 
     public decimal ImunidadeDoDrKa { get; }
 
+    /// <summary>Onde a norma diz que, no TN-C, o DR não faz o seccionamento automático (o PEN é separado antes dele).</summary>
+    public string ReferenciaDoDrNoTnC { get; }
+
     public IReadOnlyList<ExigenciaAConferir> AConferir { get; }
 
     /// <summary>A linha da Tabela 31 da tensão fase-neutro (arredondada ao volt), ou nula.</summary>
@@ -172,6 +177,13 @@ public sealed class NormaDeDps
     {
         var uo = Math.Round(tensaoFaseNeutroV, 0, MidpointRounding.AwayFromZero);
         return Tabela31.FirstOrDefault(linha => linha.TensoesFaseNeutroV.Contains(uo));
+    }
+
+    /// <summary>A linha da Tabela 31 da tensão entre fases (arredondada ao volt), para quadro sem Uo; ou nula.</summary>
+    public LinhaDaTabela31? LinhaDaTensaoEntreFases(decimal tensaoEntreFasesV)
+    {
+        var u = Math.Round(tensaoEntreFasesV, 0, MidpointRounding.AwayFromZero);
+        return Tabela31.FirstOrDefault(linha => linha.TensoesEntreFasesV.Contains(u));
     }
 
     /// <exception cref="NormaDeDpsInvalidaException">Com todos os problemas encontrados.</exception>
@@ -220,13 +232,15 @@ public sealed class NormaDeDps
                 .Concat((linha.SistemasMonofasicos ?? []).Select(sistema => (Texto: sistema, Separador: '-')))
                 .ToList();
             var onde = $"nivel_de_protecao, {string.Join(", ", sistemas.Select(sistema => sistema.Texto))}";
-            var tensoes = sistemas.Select(sistema => FaseNeutro(sistema.Texto, sistema.Separador)).ToList();
+            var tensoes = sistemas.Select(sistema => Tensoes(sistema.Texto, sistema.Separador)).ToList();
             if (sistemas.Count == 0 || tensoes.Any(tensao => tensao is null)) problemas.Add($"{onde}: sistemas ausentes ou ilegíveis (\"Uo/U\" ou \"Uo-U\")");
             if (linha.CategoriaIKv is not > 0m || linha.CategoriaIiKv is not > 0m || linha.CategoriaIiiKv is not > 0m || linha.CategoriaIvKv is not > 0m)
                 problemas.Add($"{onde}: tensões de impulso precisam ser positivas");
-            var uos = tensoes.OfType<decimal>().Distinct().ToList();
+            var uos = tensoes.OfType<(decimal Uo, decimal U)>().Select(tensao => tensao.Uo).Distinct().ToList();
+            var us = tensoes.OfType<(decimal Uo, decimal U)>().Select(tensao => tensao.U).Distinct().ToList();
             if (tabela31.SelectMany(lida => lida.TensoesFaseNeutroV).Intersect(uos).Any()) problemas.Add($"{onde}: Uo repetido em outra linha");
-            tabela31.Add(new LinhaDaTabela31(sistemas.Select(sistema => sistema.Texto.Trim()).ToList(), uos, linha.CategoriaIKv ?? 0m, linha.CategoriaIiKv ?? 0m,
+            if (tabela31.SelectMany(lida => lida.TensoesEntreFasesV).Intersect(us).Any()) problemas.Add($"{onde}: U repetido em outra linha");
+            tabela31.Add(new LinhaDaTabela31(sistemas.Select(sistema => sistema.Texto.Trim()).ToList(), uos, us, linha.CategoriaIKv ?? 0m, linha.CategoriaIiKv ?? 0m,
                 linha.CategoriaIiiKv ?? 0m, linha.CategoriaIvKv ?? 0m));
         }
 
@@ -241,6 +255,7 @@ public sealed class NormaDeDps
             problemas.Add("condutor_de_conexao sem ref ou sem valores positivos");
         if (string.IsNullOrWhiteSpace(arquivo.ImunidadeDoDr?.Ref) || arquivo.ImunidadeDoDr.MinimaKa is not > 0m)
             problemas.Add("imunidade_do_dr sem ref ou sem valor positivo");
+        if (string.IsNullOrWhiteSpace(arquivo.DrNoTnC?.Ref)) problemas.Add("dr_no_tn_c sem ref");
         if (arquivo.AConferir is not { Count: > 0 } || arquivo.AConferir.Any(item => string.IsNullOrWhiteSpace(item.Ref) || string.IsNullOrWhiteSpace(item.Texto)))
             problemas.Add("a_conferir vazio ou com item sem ref ou sem texto");
 
@@ -249,7 +264,7 @@ public sealed class NormaDeDps
         [
             arquivo.Localizacao?.Ref, arquivo.EsquemaDeConexao?.Ref, arquivo.EsquemaDeConexao?.Esquema3Obrigatorio, arquivo.UcMinimo?.Ref,
             arquivo.NivelDeProtecao?.Ref, arquivo.CorrenteNominalDeDescarga?.Ref, arquivo.CorrenteDeImpulso?.Ref, arquivo.CorrenteSubsequenteNeutroPe?.Ref,
-            arquivo.CondutorDeConexao?.Ref, arquivo.ImunidadeDoDr?.Ref, .. (arquivo.AConferir ?? []).Select(item => item.Ref)
+            arquivo.CondutorDeConexao?.Ref, arquivo.ImunidadeDoDr?.Ref, arquivo.DrNoTnC?.Ref, .. (arquivo.AConferir ?? []).Select(item => item.Ref)
         ];
         if (referencias.Any(referencia => referencia?.Trim() == "TODO_NORMA")) problemas.Add("referência TODO_NORMA (valor sem fonte)");
         if (arquivo.Meta?.Ficticio == false && referencias.Any(referencia => referencia is not null && Normalizar(referencia).Contains("FICTICIO")))
@@ -263,13 +278,13 @@ public sealed class NormaDeDps
         new(texto.Normalize(NormalizationForm.FormD).Where(caractere => CharUnicodeInfo.GetUnicodeCategory(caractere) != UnicodeCategory.NonSpacingMark)
             .Select(char.ToUpperInvariant).ToArray());
 
-    private static decimal? FaseNeutro(string sistema, char separador)
+    private static (decimal Uo, decimal U)? Tensoes(string sistema, char separador)
     {
         var partes = sistema.Split(separador);
         return partes.Length == 2
                && decimal.TryParse(partes[0].Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var uo)
                && decimal.TryParse(partes[1].Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var u) && uo > 0m && u > uo
-            ? uo
+            ? (uo, u)
             : null;
     }
 
@@ -312,7 +327,10 @@ internal sealed record ArquivoDeDps(
     CorrenteSubsequenteJson? CorrenteSubsequenteNeutroPe,
     CondutorDeConexaoJson? CondutorDeConexao,
     ImunidadeDoDrJson? ImunidadeDoDr,
+    [property: JsonPropertyName("dr_no_tn_c")] ReferenciaJson? DrNoTnC,
     List<ExigenciaJson>? AConferir);
+
+internal sealed record ReferenciaJson(string? Ref);
 
 internal sealed record MetaDeDps(string? Fonte, string? Versao, string? Data, bool? Ficticio, string? Situacao);
 

@@ -106,13 +106,19 @@ public static class SelecaoDeDps
                 : $"quadro {quadro.Nome} com alimentação '{quadro.Esquema}' fora de F+N, 2F, 2F+N, 3F e 3F+N");
         if (aterramento == EsquemasDeAterramento.ItSemNeutro && neutro)
             problemas.Add($"quadro {quadro.Nome} com neutro ({quadro.Esquema}) no esquema IT sem neutro distribuído");
-        if (quadro.TensaoFaseNeutroV is not > 0m)
+        // O Uc pede Uo, menos no IT sem neutro (U); a linha da Tabela 31 sai de Uo ou, sem ele, de U.
+        var uo = quadro.TensaoFaseNeutroV is > 0m and var uoLido ? uoLido : (decimal?)null;
+        var u = quadro.TensaoEntreFasesV is > 0m and var uLido ? uLido : (decimal?)null;
+        if (aterramento != EsquemasDeAterramento.ItSemNeutro && uo is null)
             problemas.Add($"quadro {quadro.Nome} sem a tensão fase-neutro (Uo) no sistema de distribuição");
-        if (aterramento == EsquemasDeAterramento.ItSemNeutro && quadro.TensaoEntreFasesV is not > 0m)
+        if (aterramento == EsquemasDeAterramento.ItSemNeutro && u is null)
             problemas.Add($"quadro {quadro.Nome} sem a tensão entre fases (U), que o Uc do esquema IT sem neutro pede");
-        var linha31 = quadro.TensaoFaseNeutroV is > 0m and var uoLido ? norma.LinhaDaTensao(uoLido) : null;
-        if (quadro.TensaoFaseNeutroV is > 0m && linha31 is null)
-            problemas.Add($"tensão fase-neutro de {N(quadro.TensaoFaseNeutroV.Value)} V fora da Tabela 31 ({string.Join(", ", norma.Tabela31.SelectMany(linha => linha.Sistemas))})");
+        var linha31 = uo is { } faseNeutro ? norma.LinhaDaTensao(faseNeutro) : u is { } entreFases ? norma.LinhaDaTensaoEntreFases(entreFases) : null;
+        if ((uo ?? u) is { } lida && linha31 is null)
+            problemas.Add($"tensão {(uo is null ? "entre fases" : "fase-neutro")} de {N(lida)} V fora da Tabela 31 ({string.Join(", ", norma.Tabela31.SelectMany(linha => linha.Sistemas))})");
+        // TN-C não admite o DR no seccionamento automático: o PEN precisa ser separado antes dele (TN-C-S).
+        if (aterramento == EsquemasDeAterramento.TnC && escolha.AJusanteDeDr)
+            problemas.Add($"esquema TN-C com DR antes dos DPS: o DR pede o PEN separado em neutro e PE antes dele — escolha TN-C-S ({norma.ReferenciaDoDrNoTnC})");
         if (problemas.Count > 0) return Falha(quadro, escolha, problemas);
 
         // Figura 13: sem neutro, ou com o neutro de entrada (PEN) aterrado no BEP, esquema 1; senão 2 ou 3.
@@ -172,8 +178,9 @@ public static class SelecaoDeDps
 
         if (problemas.Count > 0) return Falha(quadro, escolha, problemas);
 
-        var uo = quadro.TensaoFaseNeutroV!.Value;
-        var monofasica = fases == 1;
+        // Rede monofásica: uma fase, ou duas com neutro e U = 2 · Uo (monofásico a três condutores, ex.: 127-254 na Tabela 31).
+        var monofasicaComNeutro = fases == 2 && neutro && uo is { } uoDaRede && u is { } uDaRede && uDaRede >= 1.9m * uoDaRede;
+        var monofasica = fases == 1 || monofasicaComNeutro;
         var linhaExterna = escolha.Finalidade is FinalidadeDoDps.LinhaExterna or FinalidadeDoDps.Ambas;
         var descargasDiretas = escolha.Finalidade is FinalidadeDoDps.DescargasDiretas or FinalidadeDoDps.Ambas;
         var passos = new List<PassoDeCalculo>
@@ -187,7 +194,7 @@ public static class SelecaoDeDps
         foreach (var (ligacao, _) in ligacoes)
         {
             var uc = norma.Uc[(ligacao, coluna)];
-            var tensao = uc.EntreFases ? quadro.TensaoEntreFasesV!.Value : uo;
+            var tensao = uc.EntreFases ? u!.Value : uo!.Value;
             var ucMinimo = uc.Fator * tensao;
             string? observacao = null;
             if (ligacao != LigacoesDoDps.NeutroPe)
@@ -201,12 +208,13 @@ public static class SelecaoDeDps
 
         var up = esquema == 3 ? "nível global, entre fase e PE (esquema 3); " : string.Empty;
         passos.Add(new PassoDeCalculo($"{norma.ReferenciaDoNivelDeProtecao}; linha {string.Join(", ", linha31!.Sistemas)}", "Nível de proteção máximo (Up)",
-            "Up ≤ tabela (Uo), categoria II", [new ValorDoPasso("Uo", uo, "V")], linha31.CategoriaIiKv, "kV",
+            uo is null ? "Up ≤ tabela (U), categoria II" : "Up ≤ tabela (Uo), categoria II",
+            [uo is { } uoDoUp ? new ValorDoPasso("Uo", uoDoUp, "V") : new ValorDoPasso("U", u!.Value, "V")], linha31.CategoriaIiKv, "kV",
             $"{up}proteção de modo comum; DPS adicionais para equipamentos entre fase e neutro precisam de nível menor (alínea a, nota 1)"));
 
-        var duasFases = fases == 2
-            ? "rede com duas fases tomada como trifásica, o valor maior (critério do Ampere: a norma só distingue as redes trifásicas e as monofásicas)"
-            : null;
+        var duasFases = fases != 2 ? null
+            : monofasicaComNeutro ? "duas fases com neutro e U = 2 · Uo: sistema monofásico com neutro (Tabela 31)"
+            : "rede com duas fases tomada como trifásica, o valor maior (critério do Ampere: a norma só distingue as redes trifásicas e as monofásicas)";
         decimal? Corrente(CorrenteDoDps corrente, string ligacao, string simbolo, string descricao, string? observacao)
         {
             var neutroPeDoEsquema3 = esquema == 3 && ligacao == LigacoesDoDps.NeutroPe;
@@ -260,13 +268,22 @@ public static class SelecaoDeDps
         foreach (var (ligacao, quantidade) in ligacoes)
         {
             var uc = norma.Uc[(ligacao, coluna)];
-            resultado.Add(new LigacaoDoDps(ligacao, quantidade, uc.Fator * (uc.EntreFases ? quadro.TensaoEntreFasesV!.Value : uo),
+            resultado.Add(new LigacaoDoDps(ligacao, quantidade, uc.Fator * (uc.EntreFases ? u!.Value : uo!.Value),
                 correntes[ligacao].In, correntes[ligacao].Iimp));
         }
 
         return new ResultadoDoDps(quadro, escolha, esquema, resultado, linha31.CategoriaIiKv, secao,
             new MemoriaDeCalculo($"{Nome} {quadro.Nome}", norma.Nome, passos), []);
     }
+
+    /// <summary>As tensões do quadro para leitura (ex.: "220/127 V", "127 V", "380 V"); "tensão desconhecida" sem nenhuma.</summary>
+    public static string Tensoes(QuadroParaDps quadro) => (quadro.TensaoEntreFasesV, quadro.TensaoFaseNeutroV) switch
+    {
+        ({ } u, { } uo) => $"{N(u)}/{N(uo)} V",
+        ({ } u, null) => $"{N(u)} V",
+        (null, { } uo) => $"{N(uo)} V",
+        _ => "tensão desconhecida"
+    };
 
     /// <summary>Se a Figura 13 deixa o projetista escolher entre os esquemas 2 e 3 (para o diálogo).</summary>
     public static bool EscolheOEsquemaDeConexao(string? esquemaDoQuadro, string esquemaDeAterramento, bool aJusanteDeDr) =>

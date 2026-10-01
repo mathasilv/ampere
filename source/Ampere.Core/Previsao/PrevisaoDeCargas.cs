@@ -66,6 +66,10 @@ public sealed record DivisaoDaInstalacao(
     public bool Independente(long id, TipoDeCarga tipo, decimal? potenciaVA, decimal? tensaoV, string? fases) =>
         PontosNaHabitacao.Contains(id) && PrevisaoDeCargas.Equipamentos.Contains(tipo)
                                        && PrevisaoDeCargas.CorrenteA(potenciaVA, tensaoV, fases) > CorrenteIndependenteAcimaDeA;
+
+    /// <summary>O ponto é equipamento de habitação sem a corrente (sem potência, tensão ou fases): a regra não dá para aplicar.</summary>
+    public bool SemCorrente(long id, TipoDeCarga tipo, decimal? potenciaVA, decimal? tensaoV, string? fases) =>
+        PontosNaHabitacao.Contains(id) && PrevisaoDeCargas.Equipamentos.Contains(tipo) && PrevisaoDeCargas.CorrenteA(potenciaVA, tensaoV, fases) is null;
 }
 
 /// <summary>O que a previsão fez.</summary>

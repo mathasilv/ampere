@@ -126,8 +126,7 @@ public sealed class DpsViewModel : ObservableObject
     // Na lista: o nome e a alimentação (ex.: "QD1 — 3F+N 220/127 V").
     private static string Descrever(QuadroParaDps quadro)
     {
-        if (quadro.Esquema is null || quadro.TensaoFaseNeutroV is not { } uo) return $"{quadro.Nome} — sem sistema de distribuição";
-        var tensoes = quadro.TensaoEntreFasesV is { } u ? $"{NumeroEmTexto.FormatarParaLeitura(u)}/{NumeroEmTexto.FormatarParaLeitura(uo)}" : NumeroEmTexto.FormatarParaLeitura(uo);
-        return $"{quadro.Nome} — {quadro.Esquema} {tensoes} V";
+        if (quadro.Esquema is null) return $"{quadro.Nome} — sem sistema de distribuição";
+        return $"{quadro.Nome} — {quadro.Esquema} {SelecaoDeDps.Tensoes(quadro)}";
     }
 }

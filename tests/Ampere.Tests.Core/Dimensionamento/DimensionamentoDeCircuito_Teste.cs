@@ -517,19 +517,32 @@ public class DimensionamentoDeCircuito_Teste
         await Assert.That(resultado.CapacidadeDeInterrupcaoKa).IsEqualTo(5m);
         var capacidade = PassoDe(resultado, "Capacidade de interrupção mínima do disjuntor");
         await Assert.That(capacidade.Referencia).StartsWith("NBR 5410:2004, item 5.3.5.5.1");
-        await Assert.That(capacidade.Expressao).IsEqualTo("Icn ≥ Icc");
+        await Assert.That(capacidade.Expressao).IsEqualTo("capacidade de interrupção ≥ Icc");
         var k = PassoDe(resultado, "Fator k do condutor");
         await Assert.That(k.Resultado).IsEqualTo(115m);
         await Assert.That(k.Expressao).IsEqualTo("k = tabela (Cobre; PVC; S ≤ 300 mm²)");
         await Assert.That(k.Observacao!).Contains("abaixo de 10 mm²");
-        // 1,5 mm² de cobre com PVC: k²S² = 115² · 1,5² = 29 756,25 A²s; com 5 kA, t = 29 756,25 / 5000² = 0,00119 s.
+        // 1,5 mm² de cobre com PVC: k²S² = 115² · 1,5² = 29 756,25 A²s; com 5 kA, t = 0,00119 s, abaixo de 0,1 s: vale o I²t do
+        // fabricante, e o tempo não aparece.
         await Assert.That(resultado.IntegralDeJouleA2s).IsEqualTo(29756.25m);
         var integral = PassoDe(resultado, "Integral de Joule suportável pelo condutor");
         await Assert.That(integral.Expressao).IsEqualTo("I²t ≤ k² · S²");
-        await Assert.That(integral.Observacao!).Contains("em até 0,00119 s");
+        await Assert.That(integral.Observacao!).Contains("característica I²t do fabricante");
+        await Assert.That(integral.Observacao!).DoesNotContain("suporta o curto por até");
+        await Assert.That(integral.Observacao!).Contains("6.3.4.3.2-a");
         // O curto vem antes do eletroduto na memória.
         var descricoes = resultado.Memoria!.Passos.Select(passo => passo.Descricao).ToList();
         await Assert.That(descricoes.IndexOf("Integral de Joule suportável pelo condutor")).IsLessThan(descricoes.IndexOf("Eletroduto adotado"));
+    }
+
+    [Test]
+    [Property("Fonte", "NBR 5410:2004, 5.3.5.5.2 e Tabela 30")]
+    public async Task Curto_de_longa_duracao_mostra_o_tempo_que_o_condutor_suporta()
+    {
+        // 1,5 mm² com 0,1 kA: t = 29 756,25 / 100² = 2,9756 s, dentro da faixa em que Icc² · t ≤ k² · S² diz algo.
+        var resultado = NoPerfilOficial("B1", Superastic, curtoCircuitoKa: 0.1m);
+
+        await Assert.That(PassoDe(resultado, "Integral de Joule suportável pelo condutor").Observacao!).Contains("suporta o curto por até 2,9756 s");
     }
 
     [Test]
