@@ -35,18 +35,18 @@ public class Application : ExternalApplication
             .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
             .SetToolTip("Agrupa os pontos selecionados em circuitos numerados no quadro escolhido (um único desfazer).");
 
-        var quadros = Application.CreatePanel("Quadros", "Ampere");
-
-        quadros.AddPushButton<MontarQuadroDeCargasCommand>("Montar quadro\nde cargas")
-            .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
-            .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
-            .SetToolTip("Monta demanda por tipo de carga e corrente de demanda dos quadros com circuitos; grava potência e fator nos circuitos e a memória no quadro e cria as tabelas (dois passos no desfazer).");
-
         var dimensionamento = Application.CreatePanel("Dimensionamento", "Ampere");
 
         dimensionamento.AddPushButton<DimensionarCircuitosCommand>("Dimensionar\ncircuitos")
             .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
             .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
             .SetToolTip("Dimensiona os circuitos do Ampere pela NBR 5410 (IB, seção, disjuntor, queda de tensão, IDR e eletroduto) com memória de cálculo; grava os resultados nos circuitos (um único desfazer).");
+
+        var quadros = Application.CreatePanel("Quadros", "Ampere");
+
+        quadros.AddPushButton<MontarQuadroDeCargasCommand>("Montar quadro\nde cargas")
+            .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
+            .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
+            .SetToolTip("Monta demanda por tipo de carga e corrente de demanda dos quadros com circuitos; grava potência e fator nos circuitos e a memória no quadro e cria as tabelas, com os resultados do dimensionamento (dois passos no desfazer).");
     }
 }

@@ -92,9 +92,17 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
 
         var campo = Campo(definicao, ParametrosAmpere.NumeroCircuito, "Nº");
         definicao.AddSortGroupField(new ScheduleSortGroupField(campo.FieldId, ScheduleSortOrder.Ascending));
+        // Descrição = o "Nome da carga" nativo do circuito: o projetista edita no Revit, o Ampere não escreve.
+        CampoNativo(definicao, BuiltInParameter.RBS_ELEC_CIRCUIT_NAME, "Descrição");
         Campo(definicao, ParametrosAmpere.TipoCarga, "Tipo de carga");
         Campo(definicao, ParametrosAmpere.PotenciaInstaladaVA, "Potência instalada (VA)");
         Campo(definicao, ParametrosAmpere.FatorDemanda, "Fator de demanda");
+        // Resultados do 'Dimensionar circuitos', lidos ao vivo dos parâmetros do circuito.
+        Campo(definicao, ParametrosAmpere.CorrenteProjetoA, "IB (A)");
+        Campo(definicao, ParametrosAmpere.BitolaCondutorMm2, "Seção (mm²)");
+        Campo(definicao, ParametrosAmpere.DisjuntorNominalA, "Disjuntor (A)");
+        Campo(definicao, ParametrosAmpere.IdrSensibilidadeMa, "IDR (mA)");
+        Campo(definicao, ParametrosAmpere.QuedaTensaoPct, "Queda (%)");
         Campo(definicao, ParametrosAmpere.MemoriaCalculoId, "Memória do circuito");
 
         var doQuadro = Campo(definicao, ParametrosAmpere.Quadro, "Quadro");
@@ -104,12 +112,26 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
         return nome;
     }
 
-    private static readonly string[] Colunas = ["Nº", "Tipo de carga", "Potência instalada (VA)", "Fator de demanda", "Memória do circuito", "Quadro"];
+    private static readonly string[] Colunas =
+    [
+        "Nº", "Descrição", "Tipo de carga", "Potência instalada (VA)", "Fator de demanda",
+        "IB (A)", "Seção (mm²)", "Disjuntor (A)", "IDR (mA)", "Queda (%)", "Memória do circuito", "Quadro"
+    ];
 
     private static bool ColunasAtuais(ScheduleDefinition definicao) =>
         definicao.GetFilterCount() == 1 &&
         definicao.GetSortGroupFieldCount() == 1 &&
         Enumerable.Range(0, definicao.GetFieldCount()).Select(indice => definicao.GetField(indice).ColumnHeading).SequenceEqual(Colunas);
+
+    private static ScheduleField CampoNativo(ScheduleDefinition definicao, BuiltInParameter parametro, string titulo)
+    {
+        var campoSchedulavel = definicao.GetSchedulableFields()
+                                   .FirstOrDefault(campo => campo.FieldType == ScheduleFieldType.Instance && campo.ParameterId == new ElementId(parametro))
+                               ?? throw new InvalidOperationException($"O parâmetro nativo {parametro} não aparece como campo de tabela para circuitos.");
+        var campo = definicao.AddField(campoSchedulavel);
+        campo.ColumnHeading = titulo;
+        return campo;
+    }
 
     private ScheduleField Campo(ScheduleDefinition definicao, DefinicaoDeParametro definicaoDoParametro, string titulo)
     {

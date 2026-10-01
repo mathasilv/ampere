@@ -199,10 +199,10 @@ public sealed class QuadroDeCargasNoRevit_Teste : TesteComProjetoEletrico
         await Assert.That(tabela.IsValidObject).IsTrue();
         await Assert.That(naPrancha.IsValidObject).IsTrue();
         await Assert.That(tabela.Definition.CategoryId).IsEqualTo(new ElementId(BuiltInCategory.OST_ElectricalCircuit));
-        await Assert.That(tabela.Definition.GetFieldCount()).IsEqualTo(6);
+        await Assert.That(tabela.Definition.GetFieldCount()).IsEqualTo(12);
         await Assert.That(string.Join(",", Enumerable.Range(0, tabela.Definition.GetFieldCount())
             .Select(indice => tabela.Definition.GetField(indice).ColumnHeading))).IsEqualTo(
-            "Nº,Tipo de carga,Potência instalada (VA),Fator de demanda,Memória do circuito,Quadro");
+            "Nº,Descrição,Tipo de carga,Potência instalada (VA),Fator de demanda,IB (A),Seção (mm²),Disjuntor (A),IDR (mA),Queda (%),Memória do circuito,Quadro");
         await Assert.That(tabela.Definition.GetSortGroupFields().Count).IsEqualTo(1);
         await Assert.That(tabela.Definition.GetFilters().Count).IsEqualTo(1);
     }
