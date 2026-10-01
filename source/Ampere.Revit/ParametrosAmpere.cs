@@ -75,9 +75,15 @@ internal static class ParametrosAmpere
         if (!parametro.Set(valor ?? string.Empty)) throw Recusado(elemento, definicao);
     }
 
-    private static Parameter Exigir(Element elemento, DefinicaoDeParametro definicao) =>
-        Ler(elemento, definicao) ?? throw new InvalidOperationException(
+    // Somente leitura vira a nossa exceção antes do Set: o Revit lançaria Autodesk.Revit.Exceptions.InvalidOperationException,
+    // que não é a do .NET e escaparia dos tratamentos dos comandos.
+    private static Parameter Exigir(Element elemento, DefinicaoDeParametro definicao)
+    {
+        var parametro = Ler(elemento, definicao) ?? throw new InvalidOperationException(
             $"{definicao.Nome} não existe em {elemento.Id} ({elemento.Category?.Name}). Rode 'Injetar parâmetros'.");
+        if (parametro.IsReadOnly) throw Recusado(elemento, definicao);
+        return parametro;
+    }
 
     private static InvalidOperationException Recusado(Element elemento, DefinicaoDeParametro definicao) =>
         new($"O Revit recusou gravar {definicao.Nome} em {elemento.Id} ({elemento.Category?.Name}); o elemento pode estar em grupo ou vínculo.");

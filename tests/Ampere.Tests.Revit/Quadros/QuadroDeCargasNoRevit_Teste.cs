@@ -5,6 +5,7 @@ using Ampere.Core.Normas;
 using Ampere.Core.Quadros;
 using Ampere.Revit.Quadros;
 using Ampere.Tests.Revit.Circuitos;
+using Ampere.Tests.Revit.Parametros;
 
 namespace Ampere.Tests.Revit.Quadros;
 
@@ -17,6 +18,7 @@ namespace Ampere.Tests.Revit.Quadros;
 ///     TODO_NORMA e o quadro precisa ficar incompleto com o motivo.
 /// </remarks>
 [Property("Fonte", "TODO_NORMA")]
+[DependsOn(typeof(DesempenhoDaInjecao_Teste), ProceedOnFailure = true)]
 public sealed class QuadroDeCargasNoRevit_Teste : TesteComProjetoEletrico
 {
     private static readonly IReadOnlyDictionary<TipoDeCarga, RegraDeAgrupamento> RegrasDoCenario = new Dictionary<TipoDeCarga, RegraDeAgrupamento>
@@ -87,9 +89,10 @@ public sealed class QuadroDeCargasNoRevit_Teste : TesteComProjetoEletrico
         var resultados = QuadroDeCargasDoProjeto.Executar(porta, PerfilNormativo.NBR5410_2004,
             new Dictionary<TipoDeCarga, decimal> { [TipoDeCarga.Iluminacao] = 1m, [TipoDeCarga.TUG] = 0.5m });
 
-        var atualizados = QuadroDeCargasDoProjeto.Gravar(resultados, porta);
+        var gravacao = QuadroDeCargasDoProjeto.Gravar(resultados, porta);
 
-        await Assert.That(atualizados).IsEqualTo(2);
+        await Assert.That(gravacao.CircuitosAtualizados).IsEqualTo(2);
+        await Assert.That(gravacao.QuadrosSemMemoria).IsEmpty();
         var problemas = new List<string>();
         foreach (var sistema in Cenario.Quadro.MEPModel.GetAssignedElectricalSystems())
         {
@@ -121,6 +124,31 @@ public sealed class QuadroDeCargasNoRevit_Teste : TesteComProjetoEletrico
         var fatores = Cenario.Quadro.MEPModel.GetAssignedElectricalSystems().Select(sistema => Parametro(sistema, "AMP_FatorDemanda").AsDouble()).ToList();
         await Assert.That(fatores.All(fator => fator == 0d)).IsTrue();
         await Assert.That(Texto(Cenario.Quadro, "AMP_MemoriaCalculoId") ?? string.Empty).IsEqualTo(string.Empty);
+    }
+
+    [Test]
+    public async Task Circuito_que_sai_do_quadro_perde_o_fator_da_montagem_anterior()
+    {
+        MontarQuadroComDoisCircuitos();
+        var porta = new DocumentoDeQuadrosRevit(Cenario.Documento);
+        var fatores = new Dictionary<TipoDeCarga, decimal> { [TipoDeCarga.Iluminacao] = 1m, [TipoDeCarga.TUG] = 0.5m };
+        QuadroDeCargasDoProjeto.Gravar(QuadroDeCargasDoProjeto.Executar(porta, PerfilNormativo.NBR5410_2004, fatores), porta);
+        var tomadas = Cenario.Quadro.MEPModel.GetAssignedElectricalSystems().Single(sistema => Texto(sistema, "AMP_NumeroCircuito") == "TUG-01");
+        using (var transacao = new Transaction(Cenario.Documento, "Preparação do teste"))
+        {
+            transacao.Start();
+            Parametro(tomadas, "AMP_TipoCarga").Set(string.Empty);
+            transacao.Commit();
+        }
+
+        var resultados = QuadroDeCargasDoProjeto.Executar(porta, PerfilNormativo.NBR5410_2004, fatores);
+        QuadroDeCargasDoProjeto.Gravar(resultados, porta);
+
+        await Assert.That(string.Join("\n", resultados[0].Quadro.Problemas)).Contains("circuito TUG-01: sem AMP_TipoCarga reconhecido");
+        await Assert.That(Parametro(tomadas, "AMP_FatorDemanda").AsDouble()).IsEqualTo(0d);
+        await Assert.That(UnitUtils.ConvertFromInternalUnits(Parametro(tomadas, "AMP_PotenciaInstaladaVA").AsDouble(), UnitTypeId.VoltAmperes))
+            .IsEqualTo(720d).Within(1e-6);
+        await Assert.That(Texto(Cenario.Quadro, "AMP_MemoriaCalculoId")).IsEqualTo(resultados[0].Quadro.Memoria!.Hash());
     }
 
     [Test]

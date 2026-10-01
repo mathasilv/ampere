@@ -18,32 +18,39 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
 
     public void GravarLinhas(IReadOnlyList<LinhaParaGravar> linhas)
     {
-        var sistemasPorQuadro = new Dictionary<long, Dictionary<string, ElectricalSystem>>();
-        foreach (var grupo in linhas.GroupBy(linha => linha.QuadroId))
-        {
-            var painel = documento.GetElement(new ElementId(grupo.Key)) as FamilyInstance
-                         ?? throw new InvalidOperationException($"O quadro {grupo.Key} não existe no documento.");
-            sistemasPorQuadro[grupo.Key] = SistemasDeForca(painel).Where(sistema =>
-                    ParametrosAmpere.LerTexto(sistema, ParametrosAmpere.NumeroCircuito) is { Length: > 0 } numero)
-                .ToDictionary(sistema => ParametrosAmpere.LerTexto(sistema, ParametrosAmpere.NumeroCircuito)!, StringComparer.Ordinal);
-        }
-
         foreach (var linha in linhas)
         {
-            if (!sistemasPorQuadro[linha.QuadroId].TryGetValue(linha.NumeroDoCircuito, out var sistema))
-                throw new InvalidOperationException($"Circuito {linha.NumeroDoCircuito} não encontrado no quadro para gravar o resultado.");
+            var sistema = documento.GetElement(new ElementId(linha.CircuitoId)) as ElectricalSystem
+                          ?? throw new InvalidOperationException($"Circuito {linha.NumeroDoCircuito} não encontrado no documento para gravar o resultado.");
 
-            ParametrosAmpere.GravarNumero(sistema, ParametrosAmpere.PotenciaInstaladaVA,
-                UnitUtils.ConvertToInternalUnits((double)linha.PotenciaVA, UnitTypeId.VoltAmperes));
+            ParametrosAmpere.GravarNumeroOuApagar(sistema, ParametrosAmpere.PotenciaInstaladaVA,
+                linha.PotenciaVA is { } potencia ? UnitUtils.ConvertToInternalUnits((double)potencia, UnitTypeId.VoltAmperes) : null);
             ParametrosAmpere.GravarNumeroOuApagar(sistema, ParametrosAmpere.FatorDemanda, (double?)linha.Fator);
         }
     }
 
-    public void GravarMemoriaDoQuadro(long quadroId, string? hashDaMemoria)
+    public bool GravarMemoriaDoQuadro(long quadroId, string? hashDaMemoria)
     {
         var painel = documento.GetElement(new ElementId(quadroId)) as FamilyInstance
                      ?? throw new InvalidOperationException($"O quadro {quadroId} não existe no documento.");
+        // Quadro em grupo de modelo (ou vínculo): o parâmetro não é editável fora do grupo.
+        if (ParametrosAmpere.Ler(painel, ParametrosAmpere.MemoriaCalculoId) is { IsReadOnly: true }) return false;
+
         ParametrosAmpere.GravarTextoOuApagar(painel, ParametrosAmpere.MemoriaCalculoId, hashDaMemoria);
+        return true;
+    }
+
+    public void ApagarMemoriaDosOutrosQuadros(IReadOnlyCollection<long> montados)
+    {
+        var ignorar = montados.ToHashSet();
+        foreach (var painel in new FilteredElementCollector(documento)
+                     .OfCategory(BuiltInCategory.OST_ElectricalEquipment)
+                     .OfClass(typeof(FamilyInstance))
+                     .Where(painel => !ignorar.Contains(painel.Id.Value)))
+        {
+            if (ParametrosAmpere.Ler(painel, ParametrosAmpere.MemoriaCalculoId) is { IsReadOnly: false } parametro && !string.IsNullOrEmpty(parametro.AsString()))
+                ParametrosAmpere.GravarTextoOuApagar(painel, ParametrosAmpere.MemoriaCalculoId, null);
+        }
     }
 
     public string CriarTabelaDoQuadro(string nomeDoQuadro)
@@ -105,6 +112,7 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
     {
         var membros = sistema.Elements.Cast<Element>().ToList();
         return new CircuitoLido(
+            sistema.Id.Value,
             ParametrosAmpere.LerTexto(sistema, ParametrosAmpere.NumeroCircuito) is { Length: > 0 } numero ? numero : sistema.Name,
             ParametrosAmpere.LerTexto(sistema, ParametrosAmpere.TipoCarga),
             PotenciaDosMembros(membros),

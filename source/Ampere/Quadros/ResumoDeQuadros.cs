@@ -13,7 +13,7 @@ internal static class ResumoDeQuadros
     public static string Montagem(
         IReadOnlyList<ResultadoDoQuadro> resultados, PerfilNormativo perfil, TimeSpan tempo,
         string? pastaDosRelatorios = null, int relatoriosGerados = 0, IReadOnlyList<string>? errosDeGravacao = null,
-        int circuitosAtualizados = 0, IReadOnlyList<string>? tabelasCriadas = null)
+        int circuitosAtualizados = 0, IReadOnlyList<string>? tabelasCriadas = null, IReadOnlyList<string>? quadrosSemMemoria = null)
     {
         var texto = new StringBuilder();
         if (resultados.Count == 0)
@@ -51,6 +51,8 @@ internal static class ResumoDeQuadros
         }
 
         if (circuitosAtualizados > 0) texto.AppendLine($"Circuitos atualizados: {circuitosAtualizados} (um único desfazer)").AppendLine();
+        if (quadrosSemMemoria is { Count: > 0 })
+            texto.AppendLine($"Memória não gravada no quadro (em grupo ou vínculo): {string.Join(", ", quadrosSemMemoria)}").AppendLine();
 
         if (tabelasCriadas is { Count: > 0 })
         {

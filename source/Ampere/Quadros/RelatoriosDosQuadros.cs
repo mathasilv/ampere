@@ -21,15 +21,18 @@ internal static class RelatoriosDosQuadros
         try
         {
             Directory.CreateDirectory(pasta);
+            var pdfDisponivel = true;
             foreach (var resultado in resultados.Where(resultado => resultado.Quadro.Memoria is not null))
             {
                 var memoria = resultado.Quadro.Memoria!;
                 var baseNome = $"{PastaDeRelatorios.NomeDeArquivo(resultado.Nome)}-{PastaDeRelatorios.Prefixo(memoria.Hash())}";
+                var pdf = pdfDisponivel ? RelatorioEmPdf.Gerar(() => RelatorioDeMemoria.PdfDoQuadro(resultado.Quadro), erros) : null;
+                pdfDisponivel = pdf is not null;
                 try
                 {
                     File.WriteAllText(Path.Combine(pasta, baseNome + ".json"), memoria.JsonCanonico(), new UTF8Encoding(false));
                     File.WriteAllText(Path.Combine(pasta, baseNome + ".md"), RelatorioDeMemoria.MarkdownDoQuadro(resultado.Quadro), new UTF8Encoding(false));
-                    File.WriteAllBytes(Path.Combine(pasta, baseNome + ".pdf"), RelatorioDeMemoria.PdfDoQuadro(resultado.Quadro));
+                    if (pdf is not null) File.WriteAllBytes(Path.Combine(pasta, baseNome + ".pdf"), pdf);
                     gerados++;
                 }
                 catch (Exception excecao) when (excecao is IOException or UnauthorizedAccessException or System.Security.SecurityException)

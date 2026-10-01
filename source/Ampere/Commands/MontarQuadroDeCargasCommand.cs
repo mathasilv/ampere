@@ -15,8 +15,8 @@ namespace Ampere.Commands;
 
 /// <summary>
 ///     Monta o quadro de cargas de todos os quadros com circuitos do projeto: demanda por tipo de carga, corrente de
-///     demanda e memória de cálculo. Grava potência e fator aplicado nos circuitos e o hash da memória no quadro (um
-///     único desfazer) e salva os relatórios em Documentos\Ampere\{projeto}.
+///     demanda e memória de cálculo. Grava potência e fator aplicado nos circuitos e o hash da memória no quadro, cria as
+///     tabelas (dois passos no desfazer: valores e tabelas) e salva os relatórios em Documentos\Ampere\{projeto}.
 /// </summary>
 [UsedImplicitly]
 [Transaction(TransactionMode.Manual)]
@@ -53,12 +53,12 @@ public class MontarQuadroDeCargasCommand : ExternalCommand
 
         var cronometro = Stopwatch.StartNew();
         var resultados = QuadroDeCargasDoProjeto.Executar(porta, PerfilNormativo.NBR5410_2004, fatores);
-        int circuitosAtualizados;
+        GravacaoDosQuadros gravacao;
         try
         {
-            circuitosAtualizados = QuadroDeCargasDoProjeto.Gravar(resultados, porta);
+            gravacao = QuadroDeCargasDoProjeto.Gravar(resultados, porta);
         }
-        catch (InvalidOperationException excecao)
+        catch (Exception excecao) when (excecao is InvalidOperationException or Autodesk.Revit.Exceptions.ApplicationException)
         {
             Cancelar($"Nada foi gravado (a operação foi desfeita):{Environment.NewLine}{excecao.Message}");
             return;
@@ -69,7 +69,8 @@ public class MontarQuadroDeCargasCommand : ExternalCommand
         cronometro.Stop();
 
         TaskDialog.Show(TituloDaJanela, ResumoDeQuadros.Montagem(
-            resultados, PerfilNormativo.NBR5410_2004, cronometro.Elapsed, pasta, gerados, errosDeDisco, circuitosAtualizados, tabelas));
+            resultados, PerfilNormativo.NBR5410_2004, cronometro.Elapsed, pasta, gerados, errosDeDisco, gravacao.CircuitosAtualizados, tabelas,
+            gravacao.QuadrosSemMemoria));
     }
 
     private void Cancelar(string mensagem)

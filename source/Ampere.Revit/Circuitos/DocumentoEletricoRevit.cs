@@ -62,7 +62,9 @@ public sealed class DocumentoEletricoRevit(Document documento) : IDocumentoEletr
             if (classificacao.FatorDePotencia is { } fator) ParametrosAmpere.GravarNumero(elemento, ParametrosAmpere.FatorPotencia, (double)fator);
             if (classificacao.TensaoV is { } tensao) ParametrosAmpere.GravarNumero(elemento, ParametrosAmpere.TensaoCircuitoV, (double)tensao);
             if (classificacao.Fases is { } fases) ParametrosAmpere.GravarTexto(elemento, ParametrosAmpere.Fases, fases);
-            if (classificacao.Local is { } local) ParametrosAmpere.GravarTexto(elemento, ParametrosAmpere.Local, local);
+            // O local é do ponto: num circuito selecionado junto (AMP_Local não vai em circuitos), fica de fora.
+            if (classificacao.Local is { } local && ParametrosAmpere.Ler(elemento, ParametrosAmpere.Local) is not null)
+                ParametrosAmpere.GravarTexto(elemento, ParametrosAmpere.Local, local);
         }
     }
 

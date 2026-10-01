@@ -34,7 +34,7 @@ public class ClassificarCargasCommand : ExternalCommand
         var porta = new DocumentoEletricoRevit(documento);
         if (!porta.ParametrosInjetados())
         {
-            Cancelar("Os parâmetros Ampere ainda não estão neste projeto. Rode 'Injetar parâmetros' primeiro.");
+            Cancelar("Os parâmetros Ampere deste projeto estão incompletos ou são de uma versão anterior do catálogo. Rode 'Injetar parâmetros' primeiro.");
             return;
         }
 
@@ -54,7 +54,17 @@ public class ClassificarCargasCommand : ExternalCommand
             return;
         }
 
-        var resultado = ClassificacaoEmLote.Executar(ids, viewModel.Classificacao, porta);
+        ResultadoDaClassificacao resultado;
+        try
+        {
+            resultado = ClassificacaoEmLote.Executar(ids, viewModel.Classificacao, porta);
+        }
+        catch (Exception excecao) when (excecao is InvalidOperationException or Autodesk.Revit.Exceptions.ApplicationException)
+        {
+            Cancelar($"Nada foi classificado (a operação foi desfeita):{Environment.NewLine}{excecao.Message}");
+            return;
+        }
+
         TaskDialog.Show(TituloDaJanela, ResumoDeCircuitos.Classificacao(resultado));
     }
 
