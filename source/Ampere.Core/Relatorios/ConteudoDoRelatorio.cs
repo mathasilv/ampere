@@ -31,7 +31,8 @@ internal sealed record ConteudoDoRelatorio(
     private static readonly Dictionary<string, string> Singulares = new(StringComparer.Ordinal)
     {
         ["condutores"] = "condutor",
-        ["pontos"] = "ponto"
+        ["pontos"] = "ponto",
+        ["aparelhos"] = "aparelho"
     };
 
     public static ConteudoDoRelatorio De(MemoriaDeCalculo memoria, string? identificadorGravado) =>
@@ -53,6 +54,26 @@ internal sealed record ConteudoDoRelatorio(
         if (quadro.Problemas.Count > 0)
             abertura.Add(new SecaoDePasso("Pendências", quadro.Problemas.Select(problema => new Campo("Aviso", problema)).ToList()));
         return Montar(memoria, null, $"Memória de cálculo — quadro {quadro.Nome}", abertura);
+    }
+
+    /// <summary>Relatório da demanda da entrada: o documento da distribuidora e as parcelas antes dos passos da memória.</summary>
+    /// <exception cref="InvalidOperationException">Demanda sem cálculo (sem memória) não gera relatório.</exception>
+    public static ConteudoDoRelatorio DeDemanda(Demanda.ResultadoDaDemanda demanda, Demanda.PerfilDeDemanda perfil)
+    {
+        if (demanda.Memoria is not { } memoria)
+            throw new InvalidOperationException("A demanda não foi calculada (veja os problemas): relatório só de demanda calculada.");
+
+        var parcelas = demanda.Parcelas
+            .Select(parcela => new Campo($"{parcela.Codigo} — {parcela.Descricao}",
+                $"{Contagem(parcela.Pontos, "ponto", "pontos")} · instalada {Quantidade(parcela.PotenciaInstaladaVA, "VA")} · demanda {Quantidade(parcela.DemandaVA, "VA")}"))
+            .Append(new Campo("Total", $"instalada {Quantidade(demanda.PotenciaInstaladaVA, "VA")} · demanda {Quantidade(demanda.DemandaVA!.Value, "VA")}"))
+            .ToList();
+        var abertura = new List<SecaoDePasso>
+        {
+            new("Documento da distribuidora", [new Campo("Fonte", perfil.Fonte), new Campo("Situação", perfil.Situacao)]),
+            new("Parcelas", parcelas)
+        };
+        return Montar(memoria, null, $"Memória de cálculo — {memoria.Circuito.ToLowerInvariant()} ({perfil.Nome})", abertura);
     }
 
     private static ConteudoDoRelatorio Montar(MemoriaDeCalculo memoria, string? identificadorGravado, string titulo, IReadOnlyList<SecaoDePasso> abertura)

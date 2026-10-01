@@ -58,7 +58,8 @@ public sealed class PerfilDeDemanda
         LimiteDosFornosKw = arquivo.FornosEFogoes!.LimiteKw!.Value;
         FornosAteOLimite = Tabela(arquivo.FornosEFogoes.Ref!, arquivo.FornosEFogoes.AteOLimite!);
         FornosAcimaDoLimite = Tabela(arquivo.FornosEFogoes.Ref!, arquivo.FornosEFogoes.AcimaDoLimite!);
-        Motores = new RegraDosMotores(arquivo.Motores!.Ref!, arquivo.Motores.Aplicacao!, arquivo.Motores.MaiorPct!.Value, arquivo.Motores.DemaisPct!.Value);
+        Motores = new RegraDosMotores(arquivo.Motores!.Ref!, arquivo.Motores.Aplicacao!, arquivo.Motores.MaiorPct!.Value, arquivo.Motores.DemaisPct!.Value,
+            arquivo.Motores.RefDoProjetista!);
         MaquinasDeSolda = new RegraDasMaquinasDeSolda(arquivo.MaquinasDeSolda!.Ref!, arquivo.MaquinasDeSolda.PorOrdemPct!, arquivo.MaquinasDeSolda.DemaisPct!.Value);
     }
 
@@ -132,8 +133,8 @@ public sealed class PerfilDeDemanda
         if (arquivo.FornosEFogoes is not { Ref.Length: > 0, LimiteKw: > 0m }) problemas.Add("fornos e fogões sem ref ou sem limite de potência positivo");
         Faixas("fornos e fogões até o limite", arquivo.FornosEFogoes?.AteOLimite, problemas);
         Faixas("fornos e fogões acima do limite", arquivo.FornosEFogoes?.AcimaDoLimite, problemas);
-        if (arquivo.Motores is not { Ref.Length: > 0, Aplicacao.Length: > 0 } || !Fator(arquivo.Motores.MaiorPct) || !Fator(arquivo.Motores.DemaisPct))
-            problemas.Add("motores sem ref, aplicação ou fatores em (0; 100]");
+        if (arquivo.Motores is not { Ref.Length: > 0, Aplicacao.Length: > 0, RefDoProjetista.Length: > 0 } || !Fator(arquivo.Motores.MaiorPct) || !Fator(arquivo.Motores.DemaisPct))
+            problemas.Add("motores sem ref, aplicação, ref do fator do projetista ou fatores em (0; 100]");
         if (arquivo.MaquinasDeSolda is not { Ref.Length: > 0, PorOrdemPct.Count: > 0 } || !arquivo.MaquinasDeSolda.PorOrdemPct.All(pct => Fator(pct))
             || !Fator(arquivo.MaquinasDeSolda.DemaisPct))
             problemas.Add("máquinas de solda sem ref ou com fatores fora de (0; 100]");
@@ -257,7 +258,8 @@ public sealed class PerfilDeDemanda
 
 /// <summary>Motores pela regra do documento (ex.: d.1 da CT 04/18: 80% no maior, 50% nos demais).</summary>
 /// <param name="Aplicacao">Onde o documento manda aplicar (ex.: edifícios residenciais de uso coletivo).</param>
-public sealed record RegraDosMotores(string Referencia, string Aplicacao, decimal MaiorPct, decimal DemaisPct);
+/// <param name="ReferenciaDoProjetista">Onde o documento deixa o fator ao projetista (ex.: d.2 da CT 04/18).</param>
+public sealed record RegraDosMotores(string Referencia, string Aplicacao, decimal MaiorPct, decimal DemaisPct, string ReferenciaDoProjetista);
 
 /// <summary>Máquinas de solda a transformador: fator por ordem de potência (maior, segundo, terceiro) e o dos demais.</summary>
 public sealed record RegraDasMaquinasDeSolda(string Referencia, IReadOnlyList<decimal> PorOrdemPct, decimal DemaisPct);
@@ -291,7 +293,7 @@ internal sealed record ArCondicionadoJson(string? Ref, List<List<decimal?>>? Res
 
 internal sealed record FornosJson(string? Ref, decimal? LimiteKw, List<List<decimal?>>? AteOLimite, List<List<decimal?>>? AcimaDoLimite);
 
-internal sealed record MotoresJson(string? Ref, string? Aplicacao, decimal? MaiorPct, decimal? DemaisPct);
+internal sealed record MotoresJson(string? Ref, string? Aplicacao, decimal? MaiorPct, decimal? DemaisPct, string? RefDoProjetista);
 
 internal sealed record SoldaJson(string? Ref, List<decimal>? PorOrdemPct, decimal? DemaisPct);
 

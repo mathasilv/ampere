@@ -59,6 +59,7 @@
   "motores": {
     "ref": "CELG CT 04/18, item 10, d.1 (p. 11)",
     "aplicacao": "edifícios residenciais de uso coletivo",
+    "ref_do_projetista": "CELG CT 04/18, item 10, d.2 (p. 11): indústrias e outros, fator compatível com a atividade, de responsabilidade do projetista",
     "maior_pct": 80,
     "demais_pct": 50
   },

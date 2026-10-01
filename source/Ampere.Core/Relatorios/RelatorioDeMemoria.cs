@@ -32,6 +32,16 @@ public static class RelatorioDeMemoria
     public static string MarkdownDoQuadro(ResultadoDoQuadroDeCargas quadro, BalancoDasFases? fases = null, SugestaoDeFases? sugestao = null) =>
         Renderizar(ConteudoDoRelatorio.DeQuadro(quadro, fases, sugestao));
 
+    /// <summary>O relatório da demanda da entrada: documento da distribuidora e parcelas antes dos passos da memória.</summary>
+    /// <exception cref="InvalidOperationException">Demanda sem cálculo não gera relatório.</exception>
+    public static string MarkdownDaDemanda(Demanda.ResultadoDaDemanda demanda, Demanda.PerfilDeDemanda perfil) =>
+        Renderizar(ConteudoDoRelatorio.DeDemanda(demanda, perfil));
+
+    /// <summary>A demanda da entrada em PDF, com o identificador da memória como Assunto.</summary>
+    /// <exception cref="InvalidOperationException">Demanda sem cálculo não gera relatório.</exception>
+    public static byte[] PdfDaDemanda(Demanda.ResultadoDaDemanda demanda, Demanda.PerfilDeDemanda perfil) =>
+        PdfDoRelatorio.Gerar(ConteudoDoRelatorio.DeDemanda(demanda, perfil), demanda.Memoria!.Hash());
+
     private static string Renderizar(ConteudoDoRelatorio conteudo)
     {
         var texto = new StringBuilder();

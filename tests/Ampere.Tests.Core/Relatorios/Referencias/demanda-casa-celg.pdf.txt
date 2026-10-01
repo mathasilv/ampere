@@ -1,0 +1,97 @@
+== página 1 de 2
+56,7 [Titulo 56,7] Memória de cálculo — demanda da entrada (CELG CT
+74,2 [Titulo 56,7] 04/18)
+97,6 [Rotulo 56,7] Perfil normativo: [Texto 150,4] CELG CT 04/18
+108,7 [Rotulo 56,7] Identificador (AMP_MemoriaCalculoId):
+119,7 [Codigo 56,7] sha256:9aab5da4927028684cc5b8f350a6b6f9bc28ccb98d0dcfe69a37bd48709f878e
+130,2 [Rotulo 56,7] Esquema do documento: [Texto 191,8] 1
+141,3 [Rotulo 56,7] Situação: [Texto 109,9] cálculo completo (9 passos)
+160,3 [Nota 56,7] Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O
+170,2 [Nota 56,7] documento JSON da memória guarda os valores completos.
+198,1 [TituloDoPasso 56,7] Documento da distribuidora
+212,3 [Rotulo 68,7] Fonte: [Texto 106,3] CELG Distribuição S.A. (grupo Enel; hoje Equatorial Goiás), Comunicado Técnico nº 04/18
+223,4 [Texto 68,7] – Fornecimento de Energia Elétrica em Tensão Secundária de Distribuição – Projeto Cabo
+234,5 [Texto 68,7] Concêntrico, jan/2018: item 10 (cálculo da demanda) e Anexo A, Tabelas 2 a 5
+245,5 [Rotulo 68,7] Situação: [Texto 121,9] Transcrita pelo usuário e conferida contra o PDF em 01/10/2026 (todos os valores das
+256,6 [Texto 68,7] Tabelas 2 a 5 conferem). Vigência a conferir: o Grupo Equatorial publica a NT.00001.EQTL
+267,6 [Texto 68,7] (fornecimento em baixa tensão); esta fica em uso até ela ser anexada (decisão do usuário,
+278,7 [Texto 68,7] 01/10/2026).
+297,8 [TituloDoPasso 56,7] Parcelas
+312 [Rotulo 68,7] a — iluminação e TUG: [Texto 191,3] 33 pontos · instalada 4800 VA · demanda 2496 VA
+323 [Rotulo 68,7] b1 — chuveiros: [Texto 157] 2 pontos · instalada 10800 VA · demanda 7344 VA
+334,1 [Rotulo 68,7] b2 — torneiras: [Texto 154] 1 ponto · instalada 3000 VA · demanda 3000 VA
+345,2 [Rotulo 68,7] b6b — fornos e fogões acima de 3,5 kW: [Texto 287] 1 ponto · instalada 4000 VA · demanda 3200 VA
+356,2 [Rotulo 68,7] b8 — micro-ondas: [Texto 171,1] 1 ponto · instalada 1200 VA · demanda 1200 VA
+367,3 [Rotulo 68,7] c — ar-condicionado: [Texto 183,2] 2 pontos · instalada 3300 VA · demanda 3300 VA
+378,3 [Rotulo 68,7] d — motores: [Texto 142,7] 1 ponto · instalada 750 VA · demanda 750 VA
+389,4 [Rotulo 68,7] f — outros aparelhos: [Texto 186,7] 1 ponto · instalada 2000 VA · demanda 2000 VA
+400,4 [Rotulo 68,7] Total: [Texto 102,7] instalada 29850 VA · demanda 23290 VA
+411,5 [Secao 56,7] Passos
+433,5 [TituloDoPasso 56,7] 1. a — iluminação e TUG
+447,7 [Rotulo 68,7] Referência: [Texto 133] CELG CT 04/18, Anexo A, Tabela 2 (p. 15)
+458,8 [Rotulo 68,7] Expressão: [Codigo 132,7] a = P · fd(P)
+469,8 [Rotulo 68,7] Valores: [Texto 115,8] P = 4,8 kVA; fd = 0,52
+480,9 [Rotulo 68,7] Resultado: [Texto 129,2] 2,496 kVA
+491,9 [Rotulo 68,7] Observação: [Texto 138,3] Residências; P: 33 pontos de iluminação e TUG, potência instalada em kVA tomada
+503 [Texto 68,7] como kW (decisão do usuário, 01/10/2026); a carga mínima de 30 W/m² não é conferida (o
+514 [Texto 68,7] Ampere não lê a área); faixa 4 < P ≤ 5 kW: 52%: o fator vale para P inteira, como impresso
+533,1 [TituloDoPasso 56,7] 2. b1 — chuveiros
+547,3 [Rotulo 68,7] Referência: [Texto 133] CELG CT 04/18, Anexo A, Tabela 3 (p. 16)
+558,4 [Rotulo 68,7] Expressão: [Codigo 132,7] b1 = fd(n) · P
+569,4 [Rotulo 68,7] Valores: [Texto 115,8] n = 2 aparelhos; P = 10,8 kVA; fd = 0,68
+580,5 [Rotulo 68,7] Resultado: [Texto 129,2] 7,344 kVA
+591,6 [Rotulo 68,7] Observação: [Texto 138,3] coluna "Chuveiro elétrico"; faixa 1 < n ≤ 2: 68%; P: potência instalada em kVA
+602,6 [Texto 68,7] tomada como kW (decisão do usuário, 01/10/2026)
+621,7 [TituloDoPasso 56,7] 3. b2 — torneiras
+635,9 [Rotulo 68,7] Referência: [Texto 133] CELG CT 04/18, Anexo A, Tabela 3 (p. 16)
+647 [Rotulo 68,7] Expressão: [Codigo 132,7] b2 = fd(n) · P
+658 [Rotulo 68,7] Valores: [Texto 115,8] n = 1 aparelho; P = 3 kVA; fd = 1
+669,1 [Rotulo 68,7] Resultado: [Texto 129,2] 3 kVA
+680,1 [Rotulo 68,7] Observação: [Texto 138,3] coluna "Torneira elétrica, máquina de lavar louça e aquecedor de passagem"; faixa
+691,2 [Texto 68,7] n ≤ 1: 100%; P: potência instalada em kVA tomada como kW (decisão do usuário, 01/10/2026)
+776 [Rodape 144,1] Memória de cálculo — demanda da entrada (CELG CT 04/18) · página 1 de 2
+== página 2 de 2
+56,7 [TituloDoPasso 56,7] 4. b6b — fornos e fogões acima de 3,5 kW
+70,9 [Rotulo 68,7] Referência: [Texto 133] CELG CT 04/18, Anexo A, Tabela 5 (p. 18)
+82 [Rotulo 68,7] Expressão: [Codigo 132,7] b6b = fd(n) · P
+93 [Rotulo 68,7] Valores: [Texto 115,8] n = 1 aparelho; P = 4 kVA; fd = 0,8
+104,1 [Rotulo 68,7] Resultado: [Texto 129,2] 3,2 kVA
+115,2 [Rotulo 68,7] Observação: [Texto 138,3] coluna "superior a 3,5 kW" (cada aparelho pela sua potência); faixa n ≤ 1: 80%; P:
+126,2 [Texto 68,7] potência instalada em kVA tomada como kW (decisão do usuário, 01/10/2026)
+145,3 [TituloDoPasso 56,7] 5. b8 — micro-ondas
+159,5 [Rotulo 68,7] Referência: [Texto 133] CELG CT 04/18, Anexo A, Tabela 3 (p. 16)
+170,6 [Rotulo 68,7] Expressão: [Codigo 132,7] b8 = fd(n) · P
+181,6 [Rotulo 68,7] Valores: [Texto 115,8] n = 1 aparelho; P = 1,2 kVA; fd = 1
+192,7 [Rotulo 68,7] Resultado: [Texto 129,2] 1,2 kVA
+203,7 [Rotulo 68,7] Observação: [Texto 138,3] coluna "Forno de micro-ondas"; faixa n ≤ 1: 100%; P: potência instalada em kVA
+214,8 [Texto 68,7] tomada como kW (decisão do usuário, 01/10/2026)
+233,8 [TituloDoPasso 56,7] 6. c — ar-condicionado
+248,1 [Rotulo 68,7] Referência: [Texto 133] CELG CT 04/18, Anexo A, Tabela 4 (p. 17)
+259,1 [Rotulo 68,7] Expressão: [Codigo 132,7] c = fd(n) · P
+270,2 [Rotulo 68,7] Valores: [Texto 115,8] n = 2 aparelhos; P = 3,3 kVA; fd = 1
+281,2 [Rotulo 68,7] Resultado: [Texto 129,2] 3,3 kVA
+292,3 [Rotulo 68,7] Observação: [Texto 138,3] coluna residencial (Residências); faixa n ≤ 10: 100%; unidade central de
+303,4 [Texto 68,7] condicionamento entra com 100% (classifique-a como TUE, aparelho Outro)
+322,4 [TituloDoPasso 56,7] 7. d — motores
+336,6 [Rotulo 68,7] Referência: [Texto 133] CELG CT 04/18, item 10, d.2 (p. 11): indústrias e outros, fator compatível com a
+347,7 [Texto 68,7] atividade, de responsabilidade do projetista
+358,8 [Rotulo 68,7] Expressão: [Codigo 132,7] d = fd · P
+369,8 [Rotulo 68,7] Valores: [Texto 115,8] P = 0,75 kVA; fd = 1
+380,9 [Rotulo 68,7] Resultado: [Texto 129,2] 0,75 kVA
+391,9 [Rotulo 68,7] Observação: [Texto 138,3] fator do projetista (bomba de recalque, uso contínuo); 1 ponto
+411 [TituloDoPasso 56,7] 8. f — outros aparelhos
+425,2 [Rotulo 68,7] Referência: [Texto 133] Critério do Ampere, não item do documento: aparelho fora das tabelas entra sem
+436,3 [Texto 68,7] fator (a favor da segurança)
+447,3 [Rotulo 68,7] Expressão: [Codigo 132,7] f = P
+458,4 [Rotulo 68,7] Valores: [Texto 115,8] P = 2 kVA
+469,5 [Rotulo 68,7] Resultado: [Texto 129,2] 2 kVA
+480,5 [Rotulo 68,7] Observação: [Texto 138,3] aparelho 'Outro' (fora das tabelas do documento); 1 ponto
+499,6 [TituloDoPasso 56,7] 9. Demanda total
+513,8 [Rotulo 68,7] Referência: [Texto 133] CELG CT 04/18, item 10 (pp. 10-11)
+524,9 [Rotulo 68,7] Expressão: [Codigo 132,7] D = a + b1 + b2 + b6b + b8 + c + d + f
+535,9 [Rotulo 68,7] Valores: [Texto 115,8] a = 2,496 kVA; b1 = 7,344 kVA; b2 = 3 kVA; b6b = 3,2 kVA; b8 = 1,2 kVA; c = 3,3 kVA;
+547 [Texto 68,7] d = 0,75 kVA; f = 2 kVA
+558 [Rotulo 68,7] Resultado: [Texto 129,2] 23,29 kVA
+569,1 [Rotulo 68,7] Observação: [Texto 138,3] fórmula do documento: D = a + (b1 + b2 + b3 + b4 + b5 + b6 + b7 + b8) + c + d
+580,1 [Texto 68,7] + e; parcelas sem pontos ficam de fora; reservas não entram
+776 [Rodape 144,1] Memória de cálculo — demanda da entrada (CELG CT 04/18) · página 2 de 2
