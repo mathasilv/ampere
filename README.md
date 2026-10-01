@@ -1,5 +1,42 @@
 # Ampere
 
+Add-in do Revit para projeto de instalações elétricas de baixa tensão pela ABNT NBR 5410:2004, com memória de cálculo
+auditável: cada resultado gravado no modelo tem um passo da memória com a expressão, os valores e o item da norma (ou do
+catálogo, ou da distribuidora) que o justifica, e um hash (`AMP_MemoriaCalculoId`) que o "Verificar projeto" confere.
+Desenvolvimento e testes no Revit 2027; compila também para 2025 e 2026.
+
+## Fluxo no Revit (aba Ampere)
+
+| Painel | Comando | O que faz |
+|---|---|---|
+| Parâmetros | Injetar parâmetros | Cria os parâmetros compartilhados `AMP_*` (GUIDs congelados) nas categorias do projeto |
+| Circuitos | Classificar cargas | Tipo de carga, potência, tensão, fases, local (IDR) e aparelho (TUE) dos pontos |
+| | Locais pelos ambientes | O local de IDR (5.1.3.2.2) de todos os pontos de cada ambiente (Room/Space, inclusive de vínculo) |
+| | Previsão de cargas | Confere cada cômodo de habitação contra a previsão mínima (9.5.2) e a divisão dos circuitos (9.5.3) |
+| | Criar circuitos | Agrupa os pontos em circuitos numerados no quadro escolhido |
+| Dimensionamento | Dimensionar circuitos | IB, seção (Tabelas 36 a 39, fatores das Tabelas 40, 42 e 44), disjuntor, queda de tensão, IDR, neutro, PE (Tabela 58) e eletroduto, com memória, planilha e lista de materiais |
+| | Verificar projeto | Lista o que falta ou mudou, sem alterar o modelo, e seleciona os elementos de cada pendência |
+| Quadros | Montar quadro de cargas | Demanda por tipo de carga, cargas por fase e distribuição de fases sugerida |
+| | Dimensionar alimentadores | O circuito que alimenta cada quadro, pela demanda e pela queda que sobra do limite total |
+| | Demanda da entrada | Demanda pela norma da distribuidora (hoje a CELG CT 04/18), com memória |
+| | Diagramas unifilares | Um diagrama por quadro numa vista de desenho, com os valores do dimensionamento |
+
+Relatórios em `Documentos\Ampere\{projeto}`. Roteiro de conferência no Revit: [docs/validacao-no-revit.md](docs/validacao-no-revit.md).
+
+## Organização
+
+- `source/Ampere.Core` — motor de cálculo puro (sem API do Revit), coberto por testes em `tests/Ampere.Tests.Core`.
+- `source/Ampere.Revit` — adapters sobre a API do Revit, com testes de integração em `tests/Ampere.Tests.Revit`.
+- `source/Ampere` — o add-in: faixa de opções, comandos e diálogos.
+- `data/` — tabelas da norma, catálogos de fabricantes e regras de distribuidoras em JSON, cada valor com a referência.
+  O que ainda não tem fonte oficial fica como `TODO_NORMA` e está em [data/DATA_GAPS.md](data/DATA_GAPS.md).
+
+Regras para quem desenvolve (arquitetura, comandos de build e teste, armadilhas): [AGENTS.md](AGENTS.md).
+
+---
+
+The sections below come from the Nice3point template: building, installer and release.
+
 Autodesk Revit plugin project organized into multiple solution files that target versions 2023 - 2027.
 
 ## Table of content
