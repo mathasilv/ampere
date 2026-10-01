@@ -11,7 +11,8 @@ namespace Ampere.Revit.Locais;
 /// <remarks>
 ///     Ordem de busca do ambiente, parando no primeiro que achar: Room e Space do próprio elemento (o Revit usa o ponto
 ///     de cálculo da família); depois um ponto 10 cm para dentro do ambiente, na normal da face hospedeira (tomada na
-///     parede, luminária no forro), e 10 cm abaixo do ponto (luminária acima do limite do ambiente); por fim os Rooms dos
+///     parede, luminária no forro) ou na frente da família (hospedada em parede sem ser por face), e 10 cm abaixo do ponto
+///     (luminária acima do limite do ambiente); por fim os Rooms dos
 ///     modelos vinculados (arquitetura em vínculo, o caso comum), com o ponto levado para as coordenadas do vínculo.
 ///     O nome é o parâmetro "Nome" do ambiente, sem o número.
 /// </remarks>
@@ -62,7 +63,13 @@ public sealed class DocumentoDeAmbientesRevit(Document documento) : IDocumentoDe
         if ((Nome(ponto.Room) ?? Nome(ponto.Space)) is { } direto) return direto;
         if (ponto.Location is not LocationPoint { Point: var origem }) return null;
 
-        XYZ[] candidatos = [origem + ponto.GetTotalTransform().BasisZ * Deslocamento, origem - XYZ.BasisZ * Deslocamento];
+        // Normal da face (família baseada em face), frente da família (hospedada em parede sem ser por face) e abaixo.
+        XYZ[] candidatos =
+        [
+            origem + ponto.GetTotalTransform().BasisZ * Deslocamento,
+            origem + ponto.FacingOrientation * Deslocamento,
+            origem - XYZ.BasisZ * Deslocamento
+        ];
         foreach (var candidato in candidatos)
         {
             if ((Nome(documento.GetRoomAtPoint(candidato)) ?? Nome(documento.GetSpaceAtPoint(candidato))) is { } proximo) return proximo;

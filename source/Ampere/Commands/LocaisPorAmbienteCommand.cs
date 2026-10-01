@@ -66,7 +66,6 @@ public class LocaisPorAmbienteCommand : ExternalCommand
             return;
         }
 
-        foreach (var (ambiente, local) in escolhas) EscolhasAnteriores[ambiente] = local;
         ResultadoDosLocais resultado;
         try
         {
@@ -76,6 +75,11 @@ public class LocaisPorAmbienteCommand : ExternalCommand
         {
             Cancelar($"Nenhum local foi gravado (a operação foi desfeita):{Environment.NewLine}{excecao.Message}");
             return;
+        }
+
+        if (resultado.Problemas.Count == 0)
+        {
+            foreach (var (ambiente, local) in escolhas) EscolhasAnteriores[ambiente] = local;
         }
 
         TaskDialog.Show(TituloDaJanela, ResumoDeCircuitos.Locais(resultado));

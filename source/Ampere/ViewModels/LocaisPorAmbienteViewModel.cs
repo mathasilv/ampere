@@ -14,9 +14,11 @@ public sealed class LocaisPorAmbienteViewModel : ObservableObject
         IReadOnlyDictionary<string, string> escolhasAnteriores)
     {
         IReadOnlyList<string> opcoes = [string.Empty, .. locaisDoPerfil];
+        // Só pré-preenche com local do perfil: um "Banheiro" digitado à mão ficaria invisível no combo e recusaria tudo.
+        string? DoPerfil(string? local) => local is not null && locaisDoPerfil.Contains(local, StringComparer.Ordinal) ? local : null;
         Linhas = ambientes
             .Select(ambiente => new LinhaDeAmbiente(ambiente.Nome, ambiente.Pontos, opcoes,
-                ambiente.LocalComum ?? escolhasAnteriores.GetValueOrDefault(ambiente.Nome) ?? string.Empty))
+                DoPerfil(ambiente.LocalComum) ?? DoPerfil(escolhasAnteriores.GetValueOrDefault(ambiente.Nome)) ?? string.Empty))
             .ToList();
         Titulo = $"{ambientes.Sum(ambiente => ambiente.Pontos)} ponto(s) em {ambientes.Count} ambiente(s)";
         var avisos = new List<string>();

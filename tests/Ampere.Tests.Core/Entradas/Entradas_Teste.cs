@@ -113,6 +113,15 @@ public class EntradaDeClassificacao_Teste
     }
 
     [Test]
+    public async Task Potencia_em_W_que_estoura_o_VA_vira_problema_e_nao_excecao()
+    {
+        var entrada = EntradaDeClassificacao.Interpretar(TipoDeCarga.TUE, "", "0,0000000000000000000000000001", "", "", PtBr, potenciaW: "10");
+
+        await Assert.That(entrada.Classificacao).IsNull();
+        await Assert.That(string.Join("\n", entrada.Problemas)).Contains("potência em W fora do intervalo");
+    }
+
+    [Test]
     public async Task Potencia_em_W_sem_fator_de_potencia_e_recusada()
     {
         var entrada = EntradaDeClassificacao.Interpretar(TipoDeCarga.TUE, "", "", "", "", PtBr, potenciaW: "5500");
@@ -131,9 +140,12 @@ public class EntradaDeClassificacao_Teste
     }
 
     [Test]
-    public async Task Fator_de_potencia_invalido_com_potencia_em_W_cai_na_regra_de_dominio()
+    [Arguments("1,5")]
+    [Arguments("0")]
+    [Arguments("-0,9")]
+    public async Task Fator_de_potencia_invalido_com_potencia_em_W_cai_na_regra_de_dominio(string fator)
     {
-        var entrada = EntradaDeClassificacao.Interpretar(TipoDeCarga.TUE, "", "1,5", "", "", PtBr, potenciaW: "5500");
+        var entrada = EntradaDeClassificacao.Interpretar(TipoDeCarga.TUE, "", fator, "", "", PtBr, potenciaW: "5500");
 
         await Assert.That(entrada.Classificacao).IsNull();
         await Assert.That(string.Join("\n", entrada.Problemas)).Contains("fator de potência deve estar em (0; 1]");

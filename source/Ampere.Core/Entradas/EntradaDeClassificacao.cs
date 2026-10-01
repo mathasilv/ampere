@@ -29,8 +29,9 @@ public static class EntradaDeClassificacao
         if (potenciaAtiva is { } ativa)
         {
             if (potencia is not null) problemas.Add("informe a potência em VA ou em W, não as duas");
-            else if (fator is not { } fp || fp <= 0m) problemas.Add("potência em W exige o fator de potência (VA = W / FP)");
-            else potencia = Math.Round(ativa / fp, 2, MidpointRounding.AwayFromZero);
+            else if (fator is null) problemas.Add("potência em W exige o fator de potência (VA = W / FP)");
+            else if (fator is > 0m and <= 1m) potencia = EmVA(ativa, fator.Value, problemas);
+            // Fator fora de (0; 1]: sem conversão; a regra de domínio recusa o fator com a mensagem dela.
         }
 
         var localEscolhido = string.IsNullOrWhiteSpace(local) ? null : local.Trim();
@@ -41,6 +42,19 @@ public static class EntradaDeClassificacao
         var classificacao = new ClassificacaoDeCarga(tipo!.Value, potencia, fator, tensao, string.IsNullOrWhiteSpace(fases) ? null : fases.Trim(), localEscolhido);
         var deDominio = classificacao.Validar();
         return deDominio.Count > 0 ? new ClassificacaoDigitada(null, deDominio) : new ClassificacaoDigitada(classificacao, []);
+    }
+
+    private static decimal? EmVA(decimal watts, decimal fatorDePotencia, List<string> problemas)
+    {
+        try
+        {
+            return Math.Round(watts / fatorDePotencia, 2, MidpointRounding.AwayFromZero);
+        }
+        catch (OverflowException)
+        {
+            problemas.Add("potência em W fora do intervalo (confira a potência e o fator de potência)");
+            return null;
+        }
     }
 
     private static decimal? Campo(string nome, string? texto, CultureInfo cultura, List<string> problemas)
