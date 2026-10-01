@@ -1,15 +1,18 @@
 using System.Globalization;
 using Ampere.Core.Cargas;
 using Ampere.Core.Entradas;
+using Ampere.Core.Normas;
 
 namespace Ampere.ViewModels;
 
 /// <summary>
-///     Diálogo "Classificar cargas". Os campos ficam em texto; a interpretação e a validação são do Core.
+///     Diálogo "Classificar cargas". Os campos ficam em texto; a interpretação e a validação são do Core. Os locais são
+///     os da tabela de proteção diferencial do perfil.
 /// </summary>
-public sealed class ClassificacaoViewModel(int quantidadeSelecionada) : ObservableObject
+public sealed class ClassificacaoViewModel(int quantidadeSelecionada, PerfilNormativo perfil) : ObservableObject
 {
     private OpcaoDeTipo? _tipo;
+    private string _local = string.Empty;
     private string _potenciaVA = string.Empty;
     private string _fatorDePotencia = string.Empty;
     private string _tensaoV = string.Empty;
@@ -24,6 +27,9 @@ public sealed class ClassificacaoViewModel(int quantidadeSelecionada) : Observab
     public IReadOnlyList<OpcaoDeTipo> Tipos { get; } = OpcaoDeTipo.ParaPontos();
 
     public IReadOnlyList<string> OpcoesDeFases { get; } = [string.Empty, .. ClassificacaoDeCarga.FasesValidas];
+
+    /// <summary>Locais do perfil; o primeiro, vazio, não altera o local atual.</summary>
+    public IReadOnlyList<string> OpcoesDeLocal { get; } = [string.Empty, .. perfil.Vocabulario.Locais];
 
     public OpcaoDeTipo? Tipo
     {
@@ -55,6 +61,12 @@ public sealed class ClassificacaoViewModel(int quantidadeSelecionada) : Observab
         set => SetProperty(ref _fases, value);
     }
 
+    public string Local
+    {
+        get => _local;
+        set => SetProperty(ref _local, value);
+    }
+
     public string Problemas
     {
         get => _problemas;
@@ -67,7 +79,8 @@ public sealed class ClassificacaoViewModel(int quantidadeSelecionada) : Observab
     /// <summary>Interpreta os campos; em caso de problema, mostra-os e mantém o diálogo aberto.</summary>
     public bool Confirmar()
     {
-        var entrada = EntradaDeClassificacao.Interpretar(Tipo?.Tipo, PotenciaVA, FatorDePotencia, TensaoV, Fases, CultureInfo.CurrentCulture);
+        var entrada = EntradaDeClassificacao.Interpretar(
+            Tipo?.Tipo, PotenciaVA, FatorDePotencia, TensaoV, Fases, CultureInfo.CurrentCulture, Local, perfil.Vocabulario.Locais);
         Classificacao = entrada.Classificacao;
         Problemas = string.Join(Environment.NewLine, entrada.Problemas);
         return Classificacao is not null;

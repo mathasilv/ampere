@@ -1,5 +1,6 @@
 using Ampere.Core.Cargas;
 using Ampere.Core.Normas;
+using TUnit.Assertions.Enums;
 
 namespace Ampere.Tests.Core.Normas;
 
@@ -60,6 +61,42 @@ public class PerfilNormativo_Teste
         await Assert.That(Ficticio.ResistividadeOhmMm2PorM("Cobre").Valor).IsEqualTo(0.02m);
         await Assert.That(Ficticio.CorrentesNominaisDeIdrA().Valor).IsEquivalentTo([25m, 40m, 63m]);
         await Assert.That(Ficticio.ProtecaoDiferencialPorLocal().Valor.Count).IsEqualTo(4);
+    }
+
+    [Test]
+    public async Task Vocabulario_do_perfil_oficial_na_ordem_do_arquivo()
+    {
+        var vocabulario = PerfilNormativo.NBR5410_2004.Vocabulario;
+
+        await Assert.That(vocabulario.MetodosDeInstalacao).IsEquivalentTo(["A1", "A2", "B1", "B2", "C", "D"], CollectionOrdering.Matching);
+        await Assert.That(vocabulario.Isolacoes).IsEquivalentTo(["PVC", "EPR ou XLPE"], CollectionOrdering.Matching);
+        await Assert.That(vocabulario.Materiais).IsEquivalentTo(["Cobre", "Alumínio"], CollectionOrdering.Matching);
+        await Assert.That(vocabulario.Locais).IsEquivalentTo(
+            ["Local com banheira ou chuveiro", "Area externa", "Cozinha, lavanderia, area de servico ou garagem", "Demais locais internos"],
+            CollectionOrdering.Matching);
+    }
+
+    [Test]
+    public async Task Vocabulario_do_perfil_ficticio_traz_o_que_o_motor_encontra()
+    {
+        var vocabulario = Ficticio.Vocabulario;
+
+        await Assert.That(vocabulario.MetodosDeInstalacao).IsEquivalentTo(["B1"]);
+        await Assert.That(vocabulario.Isolacoes).IsEquivalentTo(["PVC"]);
+        await Assert.That(vocabulario.Materiais).IsEquivalentTo(["Cobre"]);
+        await Assert.That(vocabulario.Locais).IsEquivalentTo(["LOCAL-SECO", "LOCAL-MOLHADO", "LOCAL-EXTERNO", "LOCAL-ESPECIAL"], CollectionOrdering.Matching);
+    }
+
+    [Test]
+    public async Task Tabela_sem_dados_oficiais_deixa_o_vocabulario_vazio()
+    {
+        var json = PerfilFicticio.Json[..PerfilFicticio.Json.IndexOf("\"protecao_diferencial_por_local\"", StringComparison.Ordinal)]
+                   + "\"protecao_diferencial_por_local\": { \"ref\": \"TODO_NORMA\", \"valores\": [] } } }";
+
+        var perfil = PerfilNormativo.Carregar(json);
+
+        await Assert.That(perfil.Vocabulario.Locais).IsEmpty();
+        await Assert.That(perfil.Vocabulario.MetodosDeInstalacao).IsEquivalentTo(["B1"]);
     }
 
     [Test]

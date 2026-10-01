@@ -25,6 +25,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <TextBlock Grid.Row="0" Text="Tipo de carga" VerticalAlignment="Center" />
@@ -42,6 +43,10 @@
 
             <TextBlock Grid.Row="4" Text="Fases" VerticalAlignment="Center" />
             <ComboBox Grid.Row="4" Grid.Column="1" Margin="0,4" ItemsSource="{Binding OpcoesDeFases}" SelectedItem="{Binding Fases}" />
+
+            <TextBlock Grid.Row="5" Text="Local (IDR)" VerticalAlignment="Center"
+                       ToolTip="Local do ponto na tabela de proteção diferencial do perfil (NBR 5410, 5.1.3.2.2)" />
+            <ComboBox Grid.Row="5" Grid.Column="1" Margin="0,4" ItemsSource="{Binding OpcoesDeLocal}" SelectedItem="{Binding Local}" />
         </Grid>
 
         <TextBlock Margin="0,10,0,0" TextWrapping="Wrap" Foreground="Gray" Text="{Binding Dica}" />

@@ -62,6 +62,7 @@ public sealed class DocumentoEletricoRevit(Document documento) : IDocumentoEletr
             if (classificacao.FatorDePotencia is { } fator) ParametrosAmpere.GravarNumero(elemento, ParametrosAmpere.FatorPotencia, (double)fator);
             if (classificacao.TensaoV is { } tensao) ParametrosAmpere.GravarNumero(elemento, ParametrosAmpere.TensaoCircuitoV, (double)tensao);
             if (classificacao.Fases is { } fases) ParametrosAmpere.GravarTexto(elemento, ParametrosAmpere.Fases, fases);
+            if (classificacao.Local is { } local) ParametrosAmpere.GravarTexto(elemento, ParametrosAmpere.Local, local);
         }
     }
 
@@ -126,8 +127,9 @@ public sealed class DocumentoEletricoRevit(Document documento) : IDocumentoEletr
     }
 
     /// <summary>Os parâmetros Ampere usados pela classificação e pelos circuitos já estão no documento?</summary>
+    /// <remarks>AMP_Local entrou no catálogo 0.2: projeto injetado antes precisa de nova injeção.</remarks>
     public bool ParametrosInjetados() =>
-        new[] { ParametrosAmpere.TipoCarga, ParametrosAmpere.PotenciaInstaladaVA, ParametrosAmpere.NumeroCircuito, ParametrosAmpere.Quadro }
+        new[] { ParametrosAmpere.TipoCarga, ParametrosAmpere.PotenciaInstaladaVA, ParametrosAmpere.NumeroCircuito, ParametrosAmpere.Quadro, ParametrosAmpere.Local }
             .All(definicao => ParametrosAmpere.Injetado(documento, definicao));
 
     /// <summary>Quadros do documento (equipamento elétrico com conector de força), para o projetista escolher.</summary>

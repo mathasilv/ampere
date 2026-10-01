@@ -9,17 +9,23 @@ namespace Ampere.Core.Entradas;
 /// </summary>
 public static class EntradaDeClassificacao
 {
+    /// <param name="local">Local escolhido (vazio = não alterar).</param>
+    /// <param name="locaisDoPerfil">Locais da tabela de proteção diferencial do perfil: o local precisa ser um deles.</param>
     public static ClassificacaoDigitada Interpretar(
-        TipoDeCarga? tipo, string? potenciaVA, string? fatorDePotencia, string? tensaoV, string? fases, CultureInfo cultura)
+        TipoDeCarga? tipo, string? potenciaVA, string? fatorDePotencia, string? tensaoV, string? fases, CultureInfo cultura,
+        string? local = null, IReadOnlyCollection<string>? locaisDoPerfil = null)
     {
         var problemas = new List<string>();
         if (tipo is null) problemas.Add("escolha o tipo de carga");
         var potencia = Campo("potência", potenciaVA, cultura, problemas);
         var fator = Campo("fator de potência", fatorDePotencia, cultura, problemas);
         var tensao = Campo("tensão", tensaoV, cultura, problemas);
+        var localEscolhido = string.IsNullOrWhiteSpace(local) ? null : local.Trim();
+        if (localEscolhido is not null && locaisDoPerfil?.Contains(localEscolhido, StringComparer.Ordinal) != true)
+            problemas.Add($"local '{localEscolhido}' fora da tabela de proteção diferencial do perfil");
         if (problemas.Count > 0) return new ClassificacaoDigitada(null, problemas);
 
-        var classificacao = new ClassificacaoDeCarga(tipo!.Value, potencia, fator, tensao, string.IsNullOrWhiteSpace(fases) ? null : fases.Trim());
+        var classificacao = new ClassificacaoDeCarga(tipo!.Value, potencia, fator, tensao, string.IsNullOrWhiteSpace(fases) ? null : fases.Trim(), localEscolhido);
         var deDominio = classificacao.Validar();
         return deDominio.Count > 0 ? new ClassificacaoDigitada(null, deDominio) : new ClassificacaoDigitada(classificacao, []);
     }

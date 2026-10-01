@@ -62,6 +62,7 @@ public class NumeroDigitado_Teste
 public class EntradaDeClassificacao_Teste
 {
     private static readonly CultureInfo PtBr = CultureInfo.GetCultureInfo("pt-BR");
+    private static readonly string[] Locais = ["Area externa", "Demais locais internos"];
 
     [Test]
     public async Task Campos_validos_viram_classificacao()
@@ -98,6 +99,34 @@ public class EntradaDeClassificacao_Teste
         var problemas = string.Join("\n", entrada.Problemas);
         await Assert.That(problemas).Contains("potência: número sem separador de milhar");
         await Assert.That(problemas).Contains("tensão: número inválido: 'abc'");
+    }
+
+    [Test]
+    public async Task Local_da_tabela_do_perfil_entra_na_classificacao()
+    {
+        var entrada = EntradaDeClassificacao.Interpretar(TipoDeCarga.TUG, "", "", "", "", PtBr, " Area externa ", Locais);
+
+        await Assert.That(entrada.Problemas).IsEmpty();
+        await Assert.That(entrada.Classificacao).IsEqualTo(new ClassificacaoDeCarga(TipoDeCarga.TUG, Local: "Area externa"));
+    }
+
+    [Test]
+    public async Task Local_vazio_nao_altera_o_elemento()
+    {
+        var entrada = EntradaDeClassificacao.Interpretar(TipoDeCarga.TUG, "", "", "", "", PtBr, "  ", Locais);
+
+        await Assert.That(entrada.Classificacao).IsEqualTo(new ClassificacaoDeCarga(TipoDeCarga.TUG));
+    }
+
+    [Test]
+    public async Task Local_fora_da_tabela_do_perfil_e_recusado()
+    {
+        var entrada = EntradaDeClassificacao.Interpretar(TipoDeCarga.TUG, "", "", "", "", PtBr, "Banheiro", Locais);
+        var semTabela = EntradaDeClassificacao.Interpretar(TipoDeCarga.TUG, "", "", "", "", PtBr, "Area externa");
+
+        await Assert.That(entrada.Classificacao).IsNull();
+        await Assert.That(string.Join("\n", entrada.Problemas)).Contains("local 'Banheiro' fora da tabela de proteção diferencial do perfil");
+        await Assert.That(semTabela.Classificacao).IsNull();
     }
 
     [Test]

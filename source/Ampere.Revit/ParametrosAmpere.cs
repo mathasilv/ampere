@@ -16,6 +16,7 @@ internal static class ParametrosAmpere
     public static readonly DefinicaoDeParametro Quadro = Definicao("AMP_Quadro");
     public static readonly DefinicaoDeParametro FatorDemanda = Definicao("AMP_FatorDemanda");
     public static readonly DefinicaoDeParametro MemoriaCalculoId = Definicao("AMP_MemoriaCalculoId");
+    public static readonly DefinicaoDeParametro Local = Definicao("AMP_Local");
 
     /// <summary>O parâmetro existe no documento (a injeção já foi feita)?</summary>
     public static bool Injetado(Document documento, DefinicaoDeParametro definicao) =>

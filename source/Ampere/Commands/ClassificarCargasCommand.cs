@@ -1,6 +1,7 @@
 using System.Windows.Interop;
 using Ampere.Circuitos;
 using Ampere.Core.Cargas;
+using Ampere.Core.Normas;
 using Ampere.Revit.Circuitos;
 using Ampere.ViewModels;
 using Ampere.Views;
@@ -11,7 +12,7 @@ using Nice3point.Revit.Toolkit.External;
 namespace Ampere.Commands;
 
 /// <summary>
-///     Grava tipo de carga, potência e fatores nos elementos selecionados, com um único desfazer.
+///     Grava tipo de carga, potência, fatores e local nos elementos selecionados, com um único desfazer.
 /// </summary>
 [UsedImplicitly]
 [Transaction(TransactionMode.Manual)]
@@ -44,7 +45,7 @@ public class ClassificarCargasCommand : ExternalCommand
             return;
         }
 
-        var viewModel = new ClassificacaoViewModel(ids.Count);
+        var viewModel = new ClassificacaoViewModel(ids.Count, PerfilNormativo.NBR5410_2004);
         var janela = new ClassificacaoView(viewModel);
         _ = new WindowInteropHelper(janela) { Owner = Application.MainWindowHandle };
         if (janela.ShowDialog() != true || viewModel.Classificacao is null)

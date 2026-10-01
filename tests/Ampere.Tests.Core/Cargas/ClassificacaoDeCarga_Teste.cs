@@ -76,6 +76,20 @@ public class ClassificacaoDeCarga_Teste
     }
 
     [Test]
+    public async Task Local_e_gravado_como_veio_da_tabela()
+    {
+        await Assert.That(new ClassificacaoDeCarga(TipoDeCarga.TUG, Local: "Area externa").Validar()).IsEmpty();
+    }
+
+    [Test]
+    [Arguments("")]
+    [Arguments(" Area externa")]
+    public async Task Local_vazio_ou_com_espacos_nas_pontas_e_rejeitado(string local)
+    {
+        await Assert.That(string.Join("\n", new ClassificacaoDeCarga(TipoDeCarga.TUG, Local: local).Validar())).Contains("local inválido");
+    }
+
+    [Test]
     public async Task Todos_os_problemas_sao_relatados_juntos()
     {
         var problemas = new ClassificacaoDeCarga(TipoDeCarga.Reserva, PotenciaVA: -1m, FatorDePotencia: 2m).Validar();

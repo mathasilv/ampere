@@ -75,7 +75,25 @@ public sealed class PerfilNormativo
             "protecao_diferencial_por_local", tabelas.ProtecaoDiferencialPorLocal, valores => valores.Count == 0, leitor.ProtecaoDiferencial);
         _fatorDeDemanda = leitor.Ler<Dictionary<string, decimal>, IReadOnlyDictionary<string, decimal>>(
             "fator_de_demanda_por_tipo", tabelas.FatorDeDemandaPorTipo, valores => valores.Count == 0, leitor.Fracao);
+
+        IReadOnlyList<LinhaDeCapacidade> capacidade = _capacidade.Pendente ? [] : _capacidade.Valores;
+        Vocabulario = new VocabularioDoPerfil(
+            Distintos(capacidade.Select(linha => linha.Metodo)),
+            Distintos(capacidade.Select(linha => linha.Isolacao)),
+            Distintos(capacidade.Select(linha => linha.Material)),
+            // Na ordem do arquivo (o dicionário da tabela não garante ordem).
+            _protecaoDiferencial.Pendente
+                ? []
+                : Distintos((tabelas.ProtecaoDiferencialPorLocal?.Valores ?? [])
+                    .Select(linha => linha.Local?.Trim() ?? string.Empty)
+                    .Where(_protecaoDiferencial.Valores.ContainsKey)));
     }
+
+    /// <summary>
+    ///     Valores que as tabelas do perfil reconhecem, na ordem do arquivo, para os diálogos oferecerem só o que o motor
+    ///     encontra. Tabela sem dados oficiais (TODO_NORMA) dá lista vazia.
+    /// </summary>
+    public VocabularioDoPerfil Vocabulario { get; }
 
     /// <summary>Nome do perfil, gravado em AMP_PerfilNorma (ex.: "NBR5410:2004").</summary>
     public string Nome { get; }
@@ -233,6 +251,9 @@ public sealed class PerfilNormativo
             ? DadoNormativo<TValor>.Com(valor, tabela.Referencia)
             : DadoNormativo<TValor>.Ausente(tabela.Referencia, ausencia);
     }
+
+    private static IReadOnlyList<string> Distintos(IEnumerable<string> valores) =>
+        valores.Where(valor => valor.Length > 0).Distinct(StringComparer.Ordinal).ToList();
 
     private static DadoNormativo<T> Pendente<T>(string nome) =>
         DadoNormativo<T>.Ausente(TodoNorma, $"tabela {nome} sem dados oficiais (TODO_NORMA)");

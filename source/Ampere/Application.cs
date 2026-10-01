@@ -28,7 +28,7 @@ public class Application : ExternalApplication
         circuitos.AddPushButton<ClassificarCargasCommand>("Classificar\ncargas")
             .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
             .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
-            .SetToolTip("Grava tipo de carga, potência e fatores nos elementos selecionados (um único desfazer).");
+            .SetToolTip("Grava tipo de carga, potência, fatores e local (IDR) nos elementos selecionados (um único desfazer).");
 
         circuitos.AddPushButton<CriarCircuitosCommand>("Criar\ncircuitos")
             .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")

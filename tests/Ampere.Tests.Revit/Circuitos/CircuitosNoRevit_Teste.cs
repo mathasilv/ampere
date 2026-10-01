@@ -56,6 +56,21 @@ public sealed class CircuitosNoRevit_Teste : TesteComProjetoEletrico
     }
 
     [Test]
+    public async Task Classifica_o_local_do_ponto_em_luminarias_e_tomadas()
+    {
+        var pontos = Cenario.ColocarLuminarias(2).Concat(Cenario.ColocarTomadas(2)).ToList();
+        const string Local = "Cozinha, lavanderia, area de servico ou garagem";
+
+        var resultado = ClassificacaoEmLote.Executar(pontos, new ClassificacaoDeCarga(TipoDeCarga.TUG, Local: Local), Porta);
+        var semLocal = ClassificacaoEmLote.Executar(pontos, new ClassificacaoDeCarga(TipoDeCarga.TUG, PotenciaVA: 100m), Porta);
+
+        await Assert.That(resultado.Classificados).IsEqualTo(4);
+        await Assert.That(semLocal.Classificados).IsEqualTo(4);
+        var locais = pontos.Select(id => Texto(Cenario.Documento.GetElement(new ElementId(id)), "AMP_Local") ?? "(vazio)").Distinct().ToList();
+        await Assert.That(string.Join("|", locais)).IsEqualTo(Local);
+    }
+
+    [Test]
     public async Task Cria_10_circuitos_mistos_numerados_no_quadro()
     {
         var luminarias = Cenario.ColocarLuminarias(6);
