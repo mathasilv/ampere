@@ -64,6 +64,7 @@ Use um projeto de teste com arquitetura vinculada ou com ambientes (Rooms/Spaces
    - Num projeto em dia, só devem aparecer informações ("Onde o cálculo para").
    - Mude o comprimento de um circuito: a memória deve aparecer como desatualizada. "Selecionar no modelo" deve
      selecionar o circuito.
+   - Mude o `AMP_ComprimentoRotaM` do alimentador: ele deve aparecer em "Alimentadores desatualizados".
 10. **Diagramas unifilares.** Deve sair uma vista de desenho por quadro, com os valores do dimensionamento.
 
 ## 3. O que conferir com a norma (pendências do usuário)

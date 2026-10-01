@@ -1,4 +1,5 @@
 using Ampere.Core.Cargas;
+using Ampere.Core.Alimentadores;
 using Ampere.Core.Catalogos;
 using Ampere.Core.Dimensionamento;
 using Ampere.Core.Normas;
@@ -137,10 +138,15 @@ public static class VerificacaoDoProjeto
     public const string ResultadosEditados = "Resultados editados à mão";
     public const string QuadrosNaoMontados = "Quadros sem quadro de cargas";
     public const string QuadrosDesatualizados = "Quadros de cargas desatualizados";
+    public const string AlimentadoresNaoDimensionados = "Alimentadores não dimensionados";
+    public const string AlimentadoresDesatualizados = "Alimentadores desatualizados";
+    public const string AlimentadoresSemCalculo = "Alimentadores que o Ampere não dimensiona assim";
 
     /// <param name="quadros">Os quadros, para conferir o quadro de cargas de cada um; nulo = não conferir.</param>
+    /// <param name="alimentadores">Os alimentadores dos quadros, para conferir cada um (exige <paramref name="quadros" />); nulo = não conferir.</param>
     public static RelatorioDeVerificacao Executar(
-        IDocumentoDeVerificacao documento, PerfilNormativo perfil, CatalogosDeProduto catalogos, IDocumentoDeQuadros? quadros = null)
+        IDocumentoDeVerificacao documento, PerfilNormativo perfil, CatalogosDeProduto catalogos, IDocumentoDeQuadros? quadros = null,
+        IDocumentoDeAlimentadores? alimentadores = null)
     {
         var pendencias = new List<Pendencia>();
         var pontos = documento.LerPontos();
@@ -157,6 +163,7 @@ public static class VerificacaoDoProjeto
         var conferidas = Circuitos(doAmpere, dados, documento.LerCondicoes(), documento.LerCondicoesDosCircuitos(dados.Keys.ToList()),
             documento.LerResultados(dados.Keys.ToList()), perfil, catalogos, pendencias);
         if (quadros is not null) conferidas &= Quadros(quadros, perfil, pendencias);
+        if (quadros is not null && alimentadores is not null) Alimentadores(alimentadores, quadros, perfil, catalogos, pendencias);
 
         var ordenadas = pendencias
             .OrderBy(pendencia => pendencia.Gravidade)
@@ -169,8 +176,8 @@ public static class VerificacaoDoProjeto
     private static readonly string[] OrdemDosGrupos =
     [
         PontosSemClassificacao, PontosForaDeCircuito, PontosSemLocal, CircuitosForaDoAmpere, CircuitosComDadosFaltando,
-        CircuitosNaoDimensionados, MemoriasDesatualizadas, ResultadosEditados, QuadrosNaoMontados, QuadrosDesatualizados, AvisosDoDimensionamento, CondicoesNaoGuardadas,
-        CalculoInterrompido
+        CircuitosNaoDimensionados, MemoriasDesatualizadas, ResultadosEditados, QuadrosNaoMontados, QuadrosDesatualizados, AlimentadoresNaoDimensionados,
+        AlimentadoresDesatualizados, AvisosDoDimensionamento, CondicoesNaoGuardadas, CalculoInterrompido, AlimentadoresSemCalculo
     ];
 
     // Cada quadro de cargas é refeito com os fatores guardados na montagem e comparado com o hash gravado no quadro.
@@ -204,6 +211,49 @@ public static class VerificacaoDoProjeto
         AdicionarQuadros(pendencias, GravidadeDaPendencia.Informacao, CondicoesNaoGuardadas, semFatores,
             quantos => $"{quantos} quadro(s) montado(s) sem os fatores guardados (montagem anterior a esta versão): não conferidos — rode 'Montar quadro de cargas' para conferi-los depois");
         return semFatores.Count == 0;
+    }
+
+    // Cada alimentador refeito sem gravar, para cada origem da instalação (a escolhida na rodada não fica no modelo): em dia
+    // se a memória gravada confere com a de alguma origem. Sem memória gravada: não dimensionado, se algum cálculo sai, ou
+    // sem cálculo (o motivo da primeira origem).
+    private static void Alimentadores(
+        IDocumentoDeAlimentadores alimentadores, IDocumentoDeQuadros quadros, PerfilNormativo perfil, CatalogosDeProduto catalogos, List<Pendencia> pendencias)
+    {
+        var porOrigem = DimensionamentoDeAlimentadores.Origens.Keys
+            .Select(origem => DimensionamentoDeAlimentadores.Calcular(origem, perfil, catalogos, alimentadores, quadros))
+            .ToList();
+        var comCircuito = porOrigem[0].Where(resultado => resultado.Circuito is not null).ToList();
+        if (comCircuito.Count == 0) return;
+
+        var gravados = alimentadores.LerResultados(comCircuito.Select(resultado => resultado.Circuito!.Id).ToList());
+        var naoDimensionados = new List<(long Id, string Nome)>();
+        var desatualizados = new List<(long Id, string Nome)>();
+        var semCalculo = new List<(long Id, string Nome, string Motivo)>();
+        foreach (var resultado in comCircuito)
+        {
+            var id = resultado.Circuito!.Id;
+            var calculadas = porOrigem
+                .Select(resultados => resultados.Single(outro => outro.QuadroId == resultado.QuadroId).Circuito?.Memoria?.Hash())
+                .OfType<string>()
+                .ToList();
+            var nome = $"alimentador do {resultado.Quadro}";
+            if (gravados.GetValueOrDefault(id)?.MemoriaCalculoId?.Trim() is not { Length: > 0 } gravada)
+            {
+                if (calculadas.Count > 0) naoDimensionados.Add((id, nome));
+                else semCalculo.Add((id, nome, resultado.Problemas.FirstOrDefault() ?? "sem cálculo"));
+            }
+            else if (!calculadas.Contains(gravada, StringComparer.Ordinal))
+            {
+                desatualizados.Add((id, nome));
+            }
+        }
+
+        AdicionarQuadros(pendencias, GravidadeDaPendencia.Aviso, AlimentadoresNaoDimensionados, naoDimensionados,
+            quantos => $"{quantos} alimentador(es) que o Ampere pode dimensionar e ainda sem resultado: rode 'Dimensionar alimentadores'");
+        AdicionarQuadros(pendencias, GravidadeDaPendencia.Aviso, AlimentadoresDesatualizados, desatualizados,
+            quantos => $"{quantos} alimentador(es) com a memória gravada diferente da que o modelo dá hoje (quadro, terminais ou o próprio alimentador mudaram): rode 'Dimensionar alimentadores' de novo");
+        foreach (var (id, nome, motivo) in semCalculo)
+            pendencias.Add(new Pendencia(GravidadeDaPendencia.Informacao, AlimentadoresSemCalculo, $"{nome}: {motivo}", [id]));
     }
 
     private static void AdicionarQuadros(List<Pendencia> pendencias, GravidadeDaPendencia gravidade, string grupo, List<(long Id, string Nome)> quadros, Func<int, string> descricao)

@@ -96,14 +96,8 @@ public static class DimensionamentoDeAlimentadores
     public static IReadOnlyList<ResultadoDoAlimentador> Executar(
         string origemDaInstalacao, PerfilNormativo perfil, CatalogosDeProduto catalogos, IDocumentoDeAlimentadores documento, IDocumentoDeQuadros quadros)
     {
-        if (!Origens.ContainsKey(origemDaInstalacao))
-            throw new ArgumentOutOfRangeException(nameof(origemDaInstalacao), origemDaInstalacao, "origem da instalação desconhecida");
-
         var condicoes = documento.LerCondicoes();
-        var lidos = quadros.LerQuadrosComCircuitos().ToDictionary(quadro => quadro.Id);
-        var resultados = documento.LerAlimentadores()
-            .Select(quadro => Alimentador(quadro, origemDaInstalacao, condicoes, lidos, perfil, catalogos, documento, quadros))
-            .ToList();
+        var resultados = Calcular(origemDaInstalacao, perfil, catalogos, documento, quadros);
 
         var paraGravar = resultados.Select(resultado => resultado.Circuito).OfType<ResultadoDoCircuito>().ToList();
         if (paraGravar.Count > 0)
@@ -117,6 +111,20 @@ public static class DimensionamentoDeAlimentadores
         }
 
         return resultados;
+    }
+
+    /// <summary>O mesmo cálculo do <see cref="Executar" />, sem gravar nada (a verificação confere as memórias gravadas).</summary>
+    public static IReadOnlyList<ResultadoDoAlimentador> Calcular(
+        string origemDaInstalacao, PerfilNormativo perfil, CatalogosDeProduto catalogos, IDocumentoDeAlimentadores documento, IDocumentoDeQuadros quadros)
+    {
+        if (!Origens.ContainsKey(origemDaInstalacao))
+            throw new ArgumentOutOfRangeException(nameof(origemDaInstalacao), origemDaInstalacao, "origem da instalação desconhecida");
+
+        var condicoes = documento.LerCondicoes();
+        var lidos = quadros.LerQuadrosComCircuitos().ToDictionary(quadro => quadro.Id);
+        return documento.LerAlimentadores()
+            .Select(quadro => Alimentador(quadro, origemDaInstalacao, condicoes, lidos, perfil, catalogos, documento, quadros))
+            .ToList();
     }
 
     private static ResultadoDoAlimentador Alimentador(

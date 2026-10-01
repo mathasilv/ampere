@@ -6,9 +6,11 @@ using Ampere.Core.Dimensionamento;
 using Ampere.Core.Normas;
 using Ampere.Core.Parametros;
 using Ampere.Core.Quadros;
+using Ampere.Core.Verificacao;
 using Ampere.Revit.Alimentadores;
 using Ampere.Revit.Dimensionamento;
 using Ampere.Revit.Quadros;
+using Ampere.Revit.Verificacao;
 using Ampere.Tests.Revit.Circuitos;
 using Ampere.Tests.Revit.Parametros;
 using Autodesk.Revit.DB.Electrical;
@@ -86,6 +88,25 @@ public sealed class AlimentadoresNoRevit_Teste : TesteComProjetoEletrico
         await Assert.That(resultados.Single(resultado => resultado.Quadro == "QD1").Problemas.Single()).StartsWith("quadro de cargas desatualizado");
         await Assert.That(Parametro(alimentador, "AMP_DisjuntorNominalA").AsDouble()).IsEqualTo(0d);
         await Assert.That(Parametro(alimentador, "AMP_MemoriaCalculoId").AsString() ?? string.Empty).IsEqualTo(string.Empty);
+    }
+
+    [Test]
+    public async Task Verificacao_confere_o_alimentador_gravado()
+    {
+        var (_, alimentador) = MontarQd1AlimentadoPeloQgbt();
+        var porta = new DocumentoDeAlimentadoresRevit(Cenario.Documento);
+        var quadros = new DocumentoDeQuadrosRevit(Cenario.Documento);
+        var verificacao = new DocumentoDeVerificacaoRevit(Cenario.Documento);
+        string Grupos() => string.Join("|", VerificacaoDoProjeto.Executar(verificacao, PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao, quadros, porta)
+            .Pendencias.Where(pendencia => pendencia.Grupo.StartsWith("Alimentadores", StringComparison.Ordinal))
+            .Select(pendencia => $"{pendencia.Grupo}:{string.Join(";", pendencia.Elementos)}"));
+
+        var antes = Grupos();
+        DimensionamentoDeAlimentadores.Executar("ponto_de_entrega", PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao, porta, quadros);
+        var depois = Grupos();
+
+        await Assert.That(antes).IsEqualTo($"{VerificacaoDoProjeto.AlimentadoresNaoDimensionados}:{alimentador.Id.Value}");
+        await Assert.That(depois).IsEqualTo(string.Empty);
     }
 
     [Test]

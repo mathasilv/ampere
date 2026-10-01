@@ -5,6 +5,7 @@ using Ampere.Core.Dimensionamento;
 using Ampere.Core.Memoria;
 using Ampere.Core.Normas;
 using Ampere.Core.Quadros;
+using Ampere.Core.Verificacao;
 using Ampere.Tests.Core.Catalogos;
 using Ampere.Tests.Core.Normas;
 
@@ -277,6 +278,54 @@ public class DimensionamentoDeAlimentadores_Teste
         await Assert.That(lista.Itens.Single(item => item.Grupo == Ampere.Core.Relatorios.ListaDeMateriais.Disjuntores).Item).IsEqualTo("Disjuntor 3P 16 A");
     }
 
+    [Test]
+    public async Task Verificacao_confere_o_alimentador_gravado_com_o_que_o_modelo_da_hoje()
+    {
+        var cenario = new CenarioDeAlimentador();
+        var antes = Verificar(cenario);
+        Executar(cenario);
+        var emDia = Verificar(cenario);
+        cenario.ComprimentoDoAlimentadorM = 45m;
+        var depois = Verificar(cenario);
+
+        await Assert.That(Grupos(antes)).IsEqualTo($"Aviso|{VerificacaoDoProjeto.AlimentadoresNaoDimensionados}|900");
+        await Assert.That(emDia.Pendencias).IsEmpty();
+        await Assert.That(Grupos(depois)).IsEqualTo($"Aviso|{VerificacaoDoProjeto.AlimentadoresDesatualizados}|900");
+    }
+
+    [Test]
+    public async Task Verificacao_diz_por_que_o_alimentador_nao_tem_calculo()
+    {
+        var cenario = new CenarioDeAlimentador { OrigemAlimentada = true };
+
+        var pendencia = Verificar(cenario).Pendencias.Single();
+
+        await Assert.That(pendencia.Grupo).IsEqualTo(VerificacaoDoProjeto.AlimentadoresSemCalculo);
+        await Assert.That(pendencia.Descricao).StartsWith("alimentador do QD1: alimentação em cascata");
+    }
+
+    private static RelatorioDeVerificacao Verificar(CenarioDeAlimentador cenario) =>
+        VerificacaoDoProjeto.Executar(new SemPontos(), CenarioDeAlimentador.Perfil, Catalogos, cenario.Quadros, cenario.Documento);
+
+    private static string Grupos(RelatorioDeVerificacao relatorio) =>
+        string.Join("\n", relatorio.Pendencias.Select(pendencia => $"{pendencia.Gravidade}|{pendencia.Grupo}|{string.Join(";", pendencia.Elementos)}"));
+
+    // Só os alimentadores: pontos e circuitos terminais ficam com os testes da verificação.
+    private sealed class SemPontos : IDocumentoDeVerificacao
+    {
+        public IReadOnlyList<PontoVerificado> LerPontos() => [];
+
+        public IReadOnlyList<CircuitoVerificado> LerCircuitosDeForca() => [];
+
+        public IReadOnlyList<DadosDoCircuito> LerCircuitos(IReadOnlyCollection<long> ids) => [];
+
+        public CondicoesDoProjeto? LerCondicoes() => CenarioDeAlimentador.Condicoes;
+
+        public IReadOnlyDictionary<long, CondicoesDoProjeto> LerCondicoesDosCircuitos(IReadOnlyCollection<long> ids) => new Dictionary<long, CondicoesDoProjeto>();
+
+        public IReadOnlyDictionary<long, ResultadosNoCircuito> LerResultados(IReadOnlyCollection<long> ids) => new Dictionary<long, ResultadosNoCircuito>();
+    }
+
     private static IReadOnlyList<ResultadoDoAlimentador> Executar(CenarioDeAlimentador cenario) => cenario.Executar();
 
     private static PassoDeCalculo Passo(MemoriaDeCalculo memoria, string descricao) => memoria.Passos.Single(passo => passo.Descricao == descricao);
@@ -335,6 +384,8 @@ internal sealed class CenarioDeAlimentador
 
     public DecisoesDoProjetista? Decisoes { get; init; }
 
+    public decimal ComprimentoDoAlimentadorM { get; set; } = 30m;
+
     public QuadroLido Quadro => new(1, "QD1", Circuitos.ToList(), new AlimentacaoDoQuadro("3F+N", 220m, "teste", ["A", "B", "C"]));
 
     public static PerfilNormativo ComQuedaTotal(decimal total) =>
@@ -371,7 +422,7 @@ internal sealed class CenarioDeAlimentador
         public IReadOnlyList<QuadroComAlimentador> LerAlimentadores() =>
         [
             new(1, "QD1",
-                cenario.SemAlimentador ? null : new DadosDoAlimentador(900, 30m, null, null, null, cenario.Decisoes),
+                cenario.SemAlimentador ? null : new DadosDoAlimentador(900, cenario.ComprimentoDoAlimentadorM, null, null, null, cenario.Decisoes),
                 "QGBT", cenario.OrigemAlimentada, cenario.AlimentaQuadros, cenario.Impedimento)
         ];
 
@@ -383,13 +434,21 @@ internal sealed class CenarioDeAlimentador
 
         public IReadOnlyDictionary<long, ResultadosNoCircuito> LerResultados(IReadOnlyCollection<long> ids) =>
             LerCircuitos(ids).ToDictionary(dados => dados.Id, dados =>
-            {
-                var emDia = ResultadosNoCircuito.De(DimensionamentoDoProjeto.Calcular(dados, Condicoes ?? CenarioDeAlimentador.Condicoes, Perfil, Catalogos));
-                return MemoriasGravadas.TryGetValue(dados.Id, out var gravada) ? emDia with { MemoriaCalculoId = gravada } : emDia;
-            });
+                {
+                    var emDia = ResultadosNoCircuito.De(DimensionamentoDoProjeto.Calcular(dados, Condicoes ?? CenarioDeAlimentador.Condicoes, Perfil, Catalogos));
+                    return MemoriasGravadas.TryGetValue(dados.Id, out var gravada) ? emDia with { MemoriaCalculoId = gravada } : emDia;
+                })
+                .Concat(Gravados.Where(par => ids.Contains(par.Key)))
+                .ToDictionary(par => par.Key, par => par.Value);
 
-        public void GravarResultados(IReadOnlyList<ResultadoDoCircuito> resultados) =>
+        /// <summary>Os AMP_* de resultado que os alimentadores gravaram.</summary>
+        public Dictionary<long, ResultadosNoCircuito> Gravados { get; } = [];
+
+        public void GravarResultados(IReadOnlyList<ResultadoDoCircuito> resultados)
+        {
             Chamadas.Add($"gravar:{string.Join(",", resultados.Select(resultado => resultado.Id))}");
+            foreach (var resultado in resultados) Gravados[resultado.Id] = ResultadosNoCircuito.De(resultado);
+        }
 
         public void GravarCondicoes(CondicoesDoProjeto condicoes, IReadOnlyCollection<long> circuitos, bool doProjetoTodo)
         {
