@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using Ampere.Core.Cargas;
+using Ampere.Tests.Core.Alimentadores;
 using Ampere.Core.Catalogos;
 using Ampere.Core.Dimensionamento;
 using Ampere.Core.Normas;
@@ -35,6 +36,7 @@ public class ReferenciasDeMemoria_Teste
     [Arguments("perfil-oficial-completo")]
     [Arguments("parado-catalogo-vazio")]
     [Arguments("decisoes-do-projetista")]
+    [Arguments("alimentador-3fn")]
     public async Task Memoria_e_relatorio_iguais_aos_de_referencia(string cenario)
     {
         var memoria = Dimensionar(cenario).Memoria!;
@@ -61,6 +63,7 @@ public class ReferenciasDeMemoria_Teste
         "parado-catalogo-vazio" => DimensionamentoDeCircuito.Dimensionar(
             Entrada("TUG-03", TipoDeCarga.TUG, 1270m, "F+N", 127m, 10m, ["LOCAL-SECO"]), Ficticio, CatalogosDeProduto.Padrao),
         "decisoes-do-projetista" => DimensionamentoDeCircuito.Dimensionar(ComDecisoesDoProjetista(), Ficticio, CatalogosDeTeste),
+        "alimentador-3fn" => new CenarioDeAlimentador().Executar().Single().Circuito!.Dimensionamento!,
         _ => throw new ArgumentOutOfRangeException(nameof(cenario), cenario, "cenário sem definição")
     };
 

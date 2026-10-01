@@ -149,7 +149,7 @@ public static class EntradaDoCircuito
         return new EntradaMontada(entrada, []);
     }
 
-    private sealed record DecisoesMontadas(
+    internal sealed record DecisoesMontadas(
         decimal? SecaoMinimaMm2,
         decimal? DisjuntorA,
         DecisaoDeIdr? Idr,
@@ -161,7 +161,7 @@ public static class EntradaDoCircuito
 
     // Numérico 0 = sem decisão (o Revit não esvazia parâmetro numérico). Decisão incoerente é problema de dados, nunca
     // interpretada: o projetista corrige o parâmetro e roda de novo.
-    private static DecisoesMontadas Decisoes(DecisoesDoProjetista decisoes, CondicoesDoProjeto condicoes, List<string> problemas)
+    internal static DecisoesMontadas Decisoes(DecisoesDoProjetista decisoes, CondicoesDoProjeto condicoes, List<string> problemas)
     {
         var justificativa = string.IsNullOrWhiteSpace(decisoes.Justificativa) ? null : decisoes.Justificativa.Trim();
         var secao = Positivo(decisoes.SecaoMinimaMm2, "AMP_SecaoMinimaProjetistaMm2", problemas);
@@ -235,17 +235,20 @@ public static class EntradaDoCircuito
     // AMP_ComprimentoRotaM = 0 conta como vazio: o Revit não devolve parâmetro numérico a "sem valor", então zerar é o
     // único jeito de o projetista voltar ao comprimento do Revit — e L = 0 daria queda de tensão zero sem aviso.
     // Negativo segue como informado, para a validação da entrada recusá-lo.
-    private static (decimal? Metros, string? Origem) Comprimento(DadosDoCircuito dados, List<string> problemas)
+    private static (decimal? Metros, string? Origem) Comprimento(DadosDoCircuito dados, List<string> problemas) =>
+        Comprimento(dados.ComprimentoM, dados.ComprimentoNoRevit, problemas);
+
+    internal static (decimal? Metros, string? Origem) Comprimento(decimal? comprimentoM, ComprimentoDoRevit? comprimentoNoRevit, List<string> problemas)
     {
-        var informado = dados.ComprimentoM is { } valor ? Milimetro(valor) : (decimal?)null;
+        var informado = comprimentoM is { } valor ? Milimetro(valor) : (decimal?)null;
         if (informado is { } metros and not 0m) return (metros, "AMP_ComprimentoRotaM, informado pelo projetista");
 
         var zerado = informado is not null ? "AMP_ComprimentoRotaM = 0, tratado como vazio; " : string.Empty;
-        if (dados.ComprimentoNoRevit is { } doRevit && Milimetro(doRevit.Metros) > 0)
+        if (comprimentoNoRevit is { } doRevit && Milimetro(doRevit.Metros) > 0)
             return (Milimetro(doRevit.Metros), $"{zerado}calculado pelo Revit ({doRevit.Caminho}), arredondado ao milímetro");
 
         var semInformado = informado is null ? "sem AMP_ComprimentoRotaM" : "AMP_ComprimentoRotaM = 0 (vazio)";
-        problemas.Add(dados.ComprimentoNoRevit is null
+        problemas.Add(comprimentoNoRevit is null
             ? $"{semInformado} e sem comprimento do circuito no Revit"
             : $"{semInformado} e o Revit não calculou o comprimento do circuito (zero): informe o comprimento");
         return (null, null);
@@ -272,14 +275,14 @@ public static class EntradaDoCircuito
 
     private static decimal Milimetro(decimal metros) => Math.Round(metros, 3, MidpointRounding.AwayFromZero);
 
-    private static string? Preencher(string? valor, string? padrao, string parametro, List<string> problemas)
+    internal static string? Preencher(string? valor, string? padrao, string parametro, List<string> problemas)
     {
         var escolhido = Escolher(valor, padrao);
         if (escolhido is null) problemas.Add($"sem {parametro} nem padrão do projeto");
         return escolhido;
     }
 
-    private static string? Escolher(string? valor, string? padrao) =>
+    internal static string? Escolher(string? valor, string? padrao) =>
         !string.IsNullOrWhiteSpace(valor) ? valor : !string.IsNullOrWhiteSpace(padrao) ? padrao : null;
 
     // Lista com "; " porque a vírgula é o separador decimal dos números em texto.
