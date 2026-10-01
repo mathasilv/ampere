@@ -2,49 +2,50 @@
 56,7 [Titulo 56,7] Memória de cálculo — circuito Alimentador QD1
 80,2 [Rotulo 56,7] Perfil normativo: [Texto 150,4] FICTICIO-TESTE
 91,2 [Rotulo 56,7] Identificador (AMP_MemoriaCalculoId):
-102,3 [Codigo 56,7] sha256:aa20c3f8354416a56b670dda9faa662ba5e9cf814eacd402a4e4b01c891de07a
+102,3 [Codigo 56,7] sha256:2ed22f09ec50a4959a909fda1a52b1779e88a54a8a98938d20f1b218580edbe8
 112,8 [Rotulo 56,7] Esquema do documento: [Texto 191,8] 1
-123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo completo (17 passos)
+123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo completo (18 passos)
 134,9 [Rotulo 56,7] Atenção: [Texto 107,2] perfil fictício, só para testes
 153,9 [Nota 56,7] Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O
 163,8 [Nota 56,7] documento JSON da memória guarda os valores completos.
 183,7 [Secao 56,7] Passos
 205,7 [TituloDoPasso 56,7] 1. Corrente de projeto
 219,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra da corrente de projeto
-231 [Rotulo 68,7] Expressão: [Codigo 132,7] IB = S / (√3 · V)
-242 [Rotulo 68,7] Valores: [Texto 115,8] S = 5715,7677 VA; V = 220 V
+231 [Rotulo 68,7] Expressão: [Codigo 132,7] IB = máx(I(A); I(B); I(C))
+242 [Rotulo 68,7] Valores: [Texto 115,8] I(A) = 3,7795 A; I(B) = 15 A; I(C) = 10 A
 253,1 [Rotulo 68,7] Resultado: [Texto 129,2] 15 A
-264,1 [Rotulo 68,7] Observação: [Texto 138,3] S: √3 · V · I da fase de maior corrente do QD1 (B: 15 A, soma das correntes de linha
-275,2 [Texto 68,7] dos circuitos pela demanda; demanda total 3315 VA), para IB ser a corrente dessa fase; quadro
-286,3 [Texto 68,7] de cargas sha256:95c8fa8b9265b8da932d5830d14fcf08d157ce91ff8cf9e025cdbc46f505fc0e
-305,3 [TituloDoPasso 56,7] 2. Condutores carregados
-319,5 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: condutores carregados
-330,6 [Rotulo 68,7] Expressão: [Codigo 132,7] n = condutores carregados (3F+N)
-341,7 [Rotulo 68,7] Resultado: [Texto 129,2] 3 condutores
-360,7 [TituloDoPasso 56,7] 3. Fator de correção de temperatura
-374,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: fator de temperatura
-386 [Rotulo 68,7] Expressão: [Codigo 132,7] FCT = tabela (PVC; 30 °C)
-397,1 [Rotulo 68,7] Valores: [Texto 115,8] θ = 30 °C
-408,1 [Rotulo 68,7] Resultado: [Texto 129,2] 1
-427,2 [TituloDoPasso 56,7] 4. Fator de correção de agrupamento
-441,4 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: fator de agrupamento
-452,5 [Rotulo 68,7] Expressão: [Codigo 132,7] FCA = tabela (1 circuito)
-463,5 [Rotulo 68,7] Valores: [Texto 115,8] circuitos = 1
-474,6 [Rotulo 68,7] Resultado: [Texto 129,2] 1
-493,6 [TituloDoPasso 56,7] 5. Seção mínima
-507,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: seção mínima
-518,9 [Rotulo 68,7] Expressão: [Codigo 132,7] Smín = tabela (Forca)
-530 [Rotulo 68,7] Resultado: [Texto 129,2] 2,5 mm²
-549 [TituloDoPasso 56,7] 6. Seção pela capacidade de condução
-563,3 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: capacidade de condução
-574,3 [Rotulo 68,7] Expressão: [Codigo 132,7] menor S ≥ Smín com IZ₀(S) · FCA · FCT ≥ IB
-585,4 [Rotulo 68,7] Valores: [Texto 115,8] Smín = 2,5 mm²; IB = 15 A; FCA = 1; FCT = 1
-596,4 [Rotulo 68,7] Resultado: [Texto 129,2] 2,5 mm²
-607,5 [Rotulo 68,7] Observação: [Texto 138,3] seções nominais: FICTÍCIO: seções
-626,5 [TituloDoPasso 56,7] 7. Resistividade do condutor
-640,8 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: resistividade
-651,8 [Rotulo 68,7] Expressão: [Codigo 132,7] ρ = tabela (Cobre)
-662,9 [Rotulo 68,7] Resultado: [Texto 129,2] 0,02 Ω·mm²/m
+264,1 [Rotulo 68,7] Observação: [Texto 138,3] corrente de cada fase do QD1: soma das correntes de linha dos circuitos nela, pela
+275,2 [Texto 68,7] demanda (F+N e 2F: S / V; 3F e 3F+N: S / (√3 · V); 2F+N: S / (2 · V fase-neutro)), a favor da
+286,3 [Texto 68,7] segurança; demanda total 3315 VA; quadro de cargas
+297,3 [Texto 68,7] sha256:95c8fa8b9265b8da932d5830d14fcf08d157ce91ff8cf9e025cdbc46f505fc0e
+316,4 [TituloDoPasso 56,7] 2. Condutores carregados
+330,6 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: condutores carregados
+341,7 [Rotulo 68,7] Expressão: [Codigo 132,7] n = condutores carregados (3F+N)
+352,7 [Rotulo 68,7] Resultado: [Texto 129,2] 3 condutores
+371,8 [TituloDoPasso 56,7] 3. Fator de correção de temperatura
+386 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: fator de temperatura
+397,1 [Rotulo 68,7] Expressão: [Codigo 132,7] FCT = tabela (PVC; 30 °C)
+408,1 [Rotulo 68,7] Valores: [Texto 115,8] θ = 30 °C
+419,2 [Rotulo 68,7] Resultado: [Texto 129,2] 1
+438,2 [TituloDoPasso 56,7] 4. Fator de correção de agrupamento
+452,5 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: fator de agrupamento
+463,5 [Rotulo 68,7] Expressão: [Codigo 132,7] FCA = tabela (1 circuito)
+474,6 [Rotulo 68,7] Valores: [Texto 115,8] circuitos = 1
+485,6 [Rotulo 68,7] Resultado: [Texto 129,2] 1
+504,7 [TituloDoPasso 56,7] 5. Seção mínima
+518,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: seção mínima
+530 [Rotulo 68,7] Expressão: [Codigo 132,7] Smín = tabela (Forca)
+541 [Rotulo 68,7] Resultado: [Texto 129,2] 2,5 mm²
+560,1 [TituloDoPasso 56,7] 6. Seção pela capacidade de condução
+574,3 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: capacidade de condução
+585,4 [Rotulo 68,7] Expressão: [Codigo 132,7] menor S ≥ Smín com IZ₀(S) · FCA · FCT ≥ IB
+596,4 [Rotulo 68,7] Valores: [Texto 115,8] Smín = 2,5 mm²; IB = 15 A; FCA = 1; FCT = 1
+607,5 [Rotulo 68,7] Resultado: [Texto 129,2] 2,5 mm²
+618,5 [Rotulo 68,7] Observação: [Texto 138,3] seções nominais: FICTÍCIO: seções
+637,6 [TituloDoPasso 56,7] 7. Resistividade do condutor
+651,8 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: resistividade
+662,9 [Rotulo 68,7] Expressão: [Codigo 132,7] ρ = tabela (Cobre)
+673,9 [Rotulo 68,7] Resultado: [Texto 129,2] 0,02 Ω·mm²/m
 776 [Rodape 169,9] Memória de cálculo — circuito Alimentador QD1 · página 1 de 3
 == página 2 de 3
 56,7 [TituloDoPasso 56,7] 8. Limite de queda de tensão
@@ -53,56 +54,66 @@
 93 [Rotulo 68,7] Valores: [Texto 115,8] ΔV%total = 7%; ΔV%terminal = 1,2598%
 104,1 [Rotulo 68,7] Resultado: [Texto 129,2] 5,7402%
 115,2 [Rotulo 68,7] Observação: [Texto 138,3] total: instalação alimentada em baixa tensão pela distribuidora (a partir do ponto
-126,2 [Texto 68,7] de entrega); terminal: a maior queda dos circuitos do QD1 (TUG-01)
-145,3 [TituloDoPasso 56,7] 9. Capacidade de condução da seção adotada
-159,5 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: capacidade de condução
-170,6 [Rotulo 68,7] Expressão: [Codigo 132,7] IZ = IZ₀(S) · FCA · FCT
-181,6 [Rotulo 68,7] Valores: [Texto 115,8] S = 2,5 mm²; IZ₀ = 18 A; FCA = 1; FCT = 1
-192,7 [Rotulo 68,7] Resultado: [Texto 129,2] 18 A
-211,7 [TituloDoPasso 56,7] 10. Disjuntor
-226 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra de coordenação
-237 [Rotulo 68,7] Expressão: [Codigo 132,7] menor In com IB ≤ In ≤ IZ
-248,1 [Rotulo 68,7] Valores: [Texto 115,8] IB = 15 A; IZ = 18 A
-259,1 [Rotulo 68,7] Resultado: [Texto 129,2] 16 A
-270,2 [Rotulo 68,7] Observação: [Texto 138,3] correntes nominais: FICTÍCIO: disjuntores
-289,2 [TituloDoPasso 56,7] 11. Queda de tensão
-303,5 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra de queda
-314,5 [Rotulo 68,7] Expressão: [Codigo 132,7] ΔV% = k · ρ · L · IB / (S · V) · 100
-325,6 [Rotulo 68,7] Valores: [Texto 115,8] k = 1,7321; ρ = 0,02 Ω·mm²/m; L = 30 m; IB = 15 A; S = 2,5 mm²; V = 220 V
-336,6 [Rotulo 68,7] Resultado: [Texto 129,2] 2,8343%
-347,7 [Rotulo 68,7] Observação: [Texto 138,3] fórmula resistiva (sem reatância), só o circuito terminal; L:
-358,8 [Texto 68,7] AMP_ComprimentoRotaM, informado pelo projetista
-377,8 [TituloDoPasso 56,7] 12. Exigência de IDR
-392 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: IDR por local
-403,1 [Rotulo 68,7] Expressão: [Codigo 132,7] n = 0 (alimentador de quadro)
-414,2 [Rotulo 68,7] Resultado: [Texto 129,2] 0 pontos
-425,2 [Rotulo 68,7] Observação: [Texto 138,3] a tabela de IDR por local vale para os circuitos terminais; IDR no alimentador só
-436,3 [Texto 68,7] por decisão do projetista (AMP_IDR_DecisaoProjetista)
-455,3 [TituloDoPasso 56,7] 13. Condutores no eletroduto
-469,6 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra dos condutores no eletroduto
-480,6 [Rotulo 68,7] Expressão: [Codigo 132,7] n = 3F + N + PE
-491,7 [Rotulo 68,7] Resultado: [Texto 129,2] 5 condutores
-502,7 [Rotulo 68,7] Observação: [Texto 138,3] neutro e proteção com o diâmetro da fase (conservador para a ocupação)
-521,8 [TituloDoPasso 56,7] 14. Diâmetro externo do condutor
-536 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: catálogo de condutores
-547,1 [Rotulo 68,7] Expressão: [Codigo 132,7] d = catálogo (FIO-TESTE; 2,5 mm²)
-558,1 [Rotulo 68,7] Resultado: [Texto 129,2] 4 mm
-577,2 [TituloDoPasso 56,7] 15. Taxa máxima de ocupação
-591,4 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: ocupação
-602,5 [Rotulo 68,7] Expressão: [Codigo 132,7] taxa = tabela (5 condutores: faixa de 3 ou mais)
-613,5 [Rotulo 68,7] Resultado: [Texto 129,2] 40%
-632,6 [TituloDoPasso 56,7] 16. Eletroduto adotado
-646,8 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: catálogo de eletrodutos
-657,9 [Rotulo 68,7] Expressão: [Codigo 132,7] menor Di com n · d² / Di² · 100 ≤ taxa
-668,9 [Rotulo 68,7] Valores: [Texto 115,8] n = 5 condutores; d = 4 mm; taxa = 40%
-680 [Rotulo 68,7] Resultado: [Texto 129,2] 15 mm
-691 [Rotulo 68,7] Observação: [Texto 138,3] tamanho nominal B (ELETRODUTO-TESTE); acima da taxa: A (80%)
+126,2 [Texto 68,7] de entrega), tomado na origem do alimentador (QGBT): o trecho antes dela não está no modelo;
+137,3 [Texto 68,7] terminal: a maior queda dos circuitos do QD1 (TUG-01)
+156,3 [TituloDoPasso 56,7] 9. Corrente para a queda de tensão
+170,6 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra de queda
+181,6 [Rotulo 68,7] Expressão: [Codigo 132,7] IΔV = IB + IN; IN = máx(IFN) − mín(IFN)
+192,7 [Rotulo 68,7] Valores: [Texto 115,8] IB = 15 A; IFN(A) = 3,7795 A; IFN(B) = 5 A; IFN(C) = 0 A
+203,7 [Rotulo 68,7] Resultado: [Texto 129,2] 20 A
+214,8 [Rotulo 68,7] Observação: [Texto 138,3] carga fase-neutro na fase de maior corrente, com o retorno pelo neutro (IFN:
+225,8 [Texto 68,7] corrente dos circuitos F+N e 2F+N em cada fase; IN pela diferença das fases, com as cargas no
+236,9 [Texto 68,7] mesmo fator de potência); k = √3 com V fase-fase dá a queda sobre a tensão fase-neutro; entre
+248 [Texto 68,7] fases, 2 · IB = 30 A, menor que √3 · IΔV
+267 [TituloDoPasso 56,7] 10. Capacidade de condução da seção adotada
+281,2 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: capacidade de condução
+292,3 [Rotulo 68,7] Expressão: [Codigo 132,7] IZ = IZ₀(S) · FCA · FCT
+303,4 [Rotulo 68,7] Valores: [Texto 115,8] S = 2,5 mm²; IZ₀ = 18 A; FCA = 1; FCT = 1
+314,4 [Rotulo 68,7] Resultado: [Texto 129,2] 18 A
+333,5 [TituloDoPasso 56,7] 11. Disjuntor
+347,7 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra de coordenação
+358,8 [Rotulo 68,7] Expressão: [Codigo 132,7] menor In com IB ≤ In ≤ IZ
+369,8 [Rotulo 68,7] Valores: [Texto 115,8] IB = 15 A; IZ = 18 A
+380,9 [Rotulo 68,7] Resultado: [Texto 129,2] 16 A
+391,9 [Rotulo 68,7] Observação: [Texto 138,3] correntes nominais: FICTÍCIO: disjuntores
+411 [TituloDoPasso 56,7] 12. Queda de tensão
+425,2 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra de queda
+436,3 [Rotulo 68,7] Expressão: [Codigo 132,7] ΔV% = k · ρ · L · IΔV / (S · V) · 100
+447,3 [Rotulo 68,7] Valores: [Texto 115,8] k = 1,7321; ρ = 0,02 Ω·mm²/m; L = 30 m; IΔV = 20 A; S = 2,5 mm²; V = 220 V
+458,4 [Rotulo 68,7] Resultado: [Texto 129,2] 3,779%
+469,5 [Rotulo 68,7] Observação: [Texto 138,3] fórmula resistiva (sem reatância), só o alimentador; L: AMP_ComprimentoRotaM,
+480,5 [Texto 68,7] informado pelo projetista
+499,6 [TituloDoPasso 56,7] 13. Exigência de IDR
+513,8 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: IDR por local
+524,9 [Rotulo 68,7] Expressão: [Codigo 132,7] n = 0 (alimentador de quadro)
+535,9 [Rotulo 68,7] Resultado: [Texto 129,2] 0 pontos
+547 [Rotulo 68,7] Observação: [Texto 138,3] a tabela de IDR por local vale para os circuitos terminais; IDR no alimentador só
+558 [Texto 68,7] por decisão do projetista (AMP_IDR_DecisaoProjetista)
+577,1 [TituloDoPasso 56,7] 14. Condutores no eletroduto
+591,3 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: regra dos condutores no eletroduto
+602,4 [Rotulo 68,7] Expressão: [Codigo 132,7] n = 3F + N + PE
+613,4 [Rotulo 68,7] Resultado: [Texto 129,2] 5 condutores
+624,5 [Rotulo 68,7] Observação: [Texto 138,3] neutro e proteção com o diâmetro da fase (conservador para a ocupação)
+643,5 [TituloDoPasso 56,7] 15. Diâmetro externo do condutor
+657,8 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: catálogo de condutores
+668,8 [Rotulo 68,7] Expressão: [Codigo 132,7] d = catálogo (FIO-TESTE; 2,5 mm²)
+679,9 [Rotulo 68,7] Resultado: [Texto 129,2] 4 mm
+698,9 [TituloDoPasso 56,7] 16. Taxa máxima de ocupação
+713,2 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: ocupação
+724,2 [Rotulo 68,7] Expressão: [Codigo 132,7] taxa = tabela (5 condutores: faixa de 3 ou mais)
+735,3 [Rotulo 68,7] Resultado: [Texto 129,2] 40%
 776 [Rodape 169,9] Memória de cálculo — circuito Alimentador QD1 · página 2 de 3
 == página 3 de 3
-56,7 [TituloDoPasso 56,7] 17. Ocupação do eletroduto
-70,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: ocupação
-82 [Rotulo 68,7] Expressão: [Codigo 132,7] ocupação = n · d² / Di² · 100
-93 [Rotulo 68,7] Valores: [Texto 115,8] n = 5 condutores; d = 4 mm; Di = 15 mm
-104,1 [Rotulo 68,7] Resultado: [Texto 129,2] 35,5556%
-115,2 [Rotulo 68,7] Observação: [Texto 138,3] só os condutores deste circuito: outros circuitos na mesma tubulação não entram
+56,7 [TituloDoPasso 56,7] 17. Eletroduto adotado
+70,9 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: catálogo de eletrodutos
+82 [Rotulo 68,7] Expressão: [Codigo 132,7] menor Di com n · d² / Di² · 100 ≤ taxa
+93 [Rotulo 68,7] Valores: [Texto 115,8] n = 5 condutores; d = 4 mm; taxa = 40%
+104,1 [Rotulo 68,7] Resultado: [Texto 129,2] 15 mm
+115,2 [Rotulo 68,7] Observação: [Texto 138,3] tamanho nominal B (ELETRODUTO-TESTE); acima da taxa: A (80%)
+134,2 [TituloDoPasso 56,7] 18. Ocupação do eletroduto
+148,4 [Rotulo 68,7] Referência: [Texto 133] FICTÍCIO: ocupação
+159,5 [Rotulo 68,7] Expressão: [Codigo 132,7] ocupação = n · d² / Di² · 100
+170,6 [Rotulo 68,7] Valores: [Texto 115,8] n = 5 condutores; d = 4 mm; Di = 15 mm
+181,6 [Rotulo 68,7] Resultado: [Texto 129,2] 35,5556%
+192,7 [Rotulo 68,7] Observação: [Texto 138,3] só os condutores deste circuito: outros circuitos na mesma tubulação não entram
 776 [Rodape 169,9] Memória de cálculo — circuito Alimentador QD1 · página 3 de 3

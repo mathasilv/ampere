@@ -41,13 +41,17 @@ public sealed record AlimentacaoDoQuadro(string Esquema, decimal TensaoV, string
 /// <param name="CircuitosDasLinhas">Id do circuito de cada linha de <see cref="ResultadoDoQuadroDeCargas.Linhas" />, na mesma ordem.</param>
 /// <param name="ForaDoQuadro">Circuitos lidos que ficaram fora do quadro (sem tipo ou sem potência), com o motivo nos problemas.</param>
 /// <param name="Fases">Cargas por fase e desequilíbrio (indicador, fora da memória); nulo sem fases conhecidas.</param>
+/// <param name="ProblemasDasFases">
+///     Os problemas do quadro que vêm só da identificação das fases (o alimentador os trata à parte); nulo = nenhum.
+/// </param>
 public sealed record ResultadoDoQuadro(
     long Id,
     string Nome,
     ResultadoDoQuadroDeCargas Quadro,
     IReadOnlyList<long> CircuitosDasLinhas,
     IReadOnlyList<CircuitoLido> ForaDoQuadro,
-    BalancoDasFases? Fases = null);
+    BalancoDasFases? Fases = null,
+    IReadOnlyList<string>? ProblemasDasFases = null);
 
 /// <summary>
 ///     Uma linha a gravar num circuito: potência instalada, fator aplicado e o quadro em que ele está agora (AMP_Quadro, que
@@ -160,9 +164,10 @@ public static class QuadroDeCargasDoProjeto
                 ? alimentacao.Origem
                 : $"{alimentacao.Origem}; corrente média, com as cargas supostas equilibradas entre as fases";
             var pelaAlimentacao = QuadroDeCargas.Montar(quadro.Nome, alimentacao.Esquema, alimentacao.TensaoV, circuitos, perfil, fatoresInformados, origem);
+            var antes = problemas.Count;
             var balanco = Fases(quadro, pelaAlimentacao, idsDasLinhas, alimentacao.Fases, alimentacao.FaseNeutro, problemas);
             if (problemas.Count > 0) pelaAlimentacao = pelaAlimentacao with { Problemas = [.. pelaAlimentacao.Problemas, .. problemas] };
-            return new ResultadoDoQuadro(quadro.Id, quadro.Nome, pelaAlimentacao, idsDasLinhas, foraDoQuadro, balanco);
+            return new ResultadoDoQuadro(quadro.Id, quadro.Nome, pelaAlimentacao, idsDasLinhas, foraDoQuadro, balanco, DasFases(problemas, antes));
         }
 
         // Sem sistema de distribuição no quadro, o par (esquema, tensão) precisa ser único entre os circuitos que o informam.
@@ -192,10 +197,13 @@ public static class QuadroDeCargasDoProjeto
 
         // Montar devolve uma linha por circuito, na ordem recebida: é assim que os ids acompanham as linhas.
         var montado = QuadroDeCargas.Montar(quadro.Nome, esquema, tensao, circuitos, perfil, fatoresInformados);
+        var antesDasFases = problemas.Count;
         var semAlimentacao = Fases(quadro, montado, idsDasLinhas, null, montado.TensaoV > 0m ? CargasPorFase.FaseNeutro(montado.Esquema, montado.TensaoV) : null, problemas);
         if (problemas.Count > 0) montado = montado with { Problemas = [.. montado.Problemas, .. problemas] };
-        return new ResultadoDoQuadro(quadro.Id, quadro.Nome, montado, idsDasLinhas, foraDoQuadro, semAlimentacao);
+        return new ResultadoDoQuadro(quadro.Id, quadro.Nome, montado, idsDasLinhas, foraDoQuadro, semAlimentacao, DasFases(problemas, antesDasFases));
     }
+
+    private static IReadOnlyList<string>? DasFases(List<string> problemas, int antes) => problemas.Count > antes ? problemas.Skip(antes).ToList() : null;
 
     // Folga de 2% para as tensões nominais arredondadas (380/220 V: 380 / √3 = 219,4 V).
     private const decimal Folga = 0.02m;

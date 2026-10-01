@@ -104,8 +104,8 @@ public static class DimensionamentoDeCircuito
             var resistividade = Consultar(perfil.ResistividadeOhmMm2PorM(entrada.Material), "Resistividade do condutor",
                 $"ρ = tabela ({entrada.Material})", [], "Ω·mm²/m");
             var limite = LimiteDeQueda();
+            var (fator, correnteDaQueda, nomeDaCorrente) = BaseDaQueda(ib);
 
-            var fator = entrada.Fases is "3F" or "3F+N" ? Raiz3 : 2m;
             var elevacoes = new List<string>();
             while (true)
             {
@@ -114,7 +114,7 @@ public static class DimensionamentoDeCircuito
                 decimal? disjuntor = disjuntorDoProjetista is { } fixo
                     ? (fixo <= capacidade ? fixo : null)
                     : disjuntores.Where(corrente => corrente >= ib && corrente <= capacidade).Select(corrente => (decimal?)corrente).FirstOrDefault();
-                var queda = fator * resistividade * entrada.ComprimentoM * ib / (secao * entrada.TensaoV) * 100m;
+                var queda = fator * resistividade * entrada.ComprimentoM * correnteDaQueda / (secao * entrada.TensaoV) * 100m;
 
                 var motivo = disjuntor is null
                     ? disjuntorDoProjetista is { } exigido
@@ -135,10 +135,10 @@ public static class DimensionamentoDeCircuito
                         disjuntorDoProjetista is null
                             ? $"correntes nominais: {perfil.CorrentesNominaisDeDisjuntorA().Referencia}"
                             : $"decisão do projetista, verificada ({Justificativa()})");
-                    Passo(perfil.ReferenciaDaRegra(RegraNormativa.QuedaDeTensao), "Queda de tensão", "ΔV% = k · ρ · L · IB / (S · V) · 100",
+                    Passo(perfil.ReferenciaDaRegra(RegraNormativa.QuedaDeTensao), "Queda de tensão", $"ΔV% = k · ρ · L · {nomeDaCorrente} / (S · V) · 100",
                         [new ValorDoPasso("k", fator, string.Empty), new ValorDoPasso("ρ", resistividade, "Ω·mm²/m"), new ValorDoPasso("L", entrada.ComprimentoM, "m"),
-                         new ValorDoPasso("IB", ib, "A"), new ValorDoPasso("S", secao, "mm²"), new ValorDoPasso("V", entrada.TensaoV, "V")],
-                        queda, "%", "fórmula resistiva (sem reatância), só o circuito terminal"
+                         new ValorDoPasso(nomeDaCorrente, correnteDaQueda, "A"), new ValorDoPasso("S", secao, "mm²"), new ValorDoPasso("V", entrada.TensaoV, "V")],
+                        queda, "%", $"fórmula resistiva (sem reatância), só {(entrada.Alimentador ? "o alimentador" : "o circuito terminal")}"
                                     + (entrada.OrigemDoComprimento is { Length: > 0 } origem ? $"; L: {origem}" : string.Empty));
 
                     _secao = secao;
@@ -161,6 +161,15 @@ public static class DimensionamentoDeCircuito
         private decimal CorrenteDeProjeto()
         {
             var referencia = perfil.ReferenciaDaRegra(RegraNormativa.CorrenteDeProjeto);
+            if (entrada.CorrenteDeProjeto is { } calculada)
+            {
+                if (entrada.Fases is not ("F+N" or "2F" or "3F" or "3F+N"))
+                    Parar(referencia, "Corrente de projeto", "IB = ?", "A", $"configuração {entrada.Fases}: use F+N, 2F, 3F ou 3F+N");
+                Passo(referencia, "Corrente de projeto", calculada.Expressao, calculada.Valores, calculada.CorrenteA, "A", calculada.Observacao);
+                _correnteDeProjeto = calculada.CorrenteA;
+                return calculada.CorrenteA;
+            }
+
             var valores = new[] { new ValorDoPasso("S", entrada.PotenciaVA, "VA"), new ValorDoPasso("V", entrada.TensaoV, "V") };
             var (expressao, ib) = entrada.Fases switch
             {
@@ -174,6 +183,17 @@ public static class DimensionamentoDeCircuito
                 entrada.OrigemDaPotencia is { Length: > 0 } origem ? $"S: {origem}" : null);
             _correnteDeProjeto = ib;
             return ib;
+        }
+
+        // k e corrente da queda: os da entrada (com a conta na memória) ou, sem eles, k pela configuração e IB.
+        private (decimal Fator, decimal Corrente, string Nome) BaseDaQueda(decimal ib)
+        {
+            if (entrada.CorrenteDaQueda is not { } informada)
+                return (entrada.Fases is "3F" or "3F+N" ? Raiz3 : 2m, ib, "IB");
+
+            Passo(perfil.ReferenciaDaRegra(RegraNormativa.QuedaDeTensao), "Corrente para a queda de tensão", informada.Expressao, informada.Valores, informada.CorrenteA, "A",
+                informada.Observacao);
+            return (informada.Fator, informada.CorrenteA, "IΔV");
         }
 
         private decimal LimiteDeQueda()
@@ -265,7 +285,8 @@ public static class DimensionamentoDeCircuito
             var total = entrada.LocaisDosPontos.Count;
             var motivo = string.IsNullOrWhiteSpace(decisao.Motivo) ? "sem motivo informado" : $"motivo: {decisao.Motivo.Trim()}";
             var observacao = $"decisão do projetista, prevalece sobre a tabela ({motivo}); pela tabela: {avaliacao.Descrever()}";
-            ValorDoPasso[] valores = [new ValorDoPasso("total", total, "pontos")];
+            // O alimentador não tem pontos: a decisão vale para ele inteiro.
+            ValorDoPasso[] valores = entrada.Alimentador ? [] : [new ValorDoPasso("total", total, "pontos")];
 
             if (!decisao.Exigir)
             {
@@ -276,7 +297,8 @@ public static class DimensionamentoDeCircuito
                 return null;
             }
 
-            Passo(referencia, "Exigência de IDR", "n = todos os pontos (IDR exigido pelo projetista)", valores, total, "pontos", observacao);
+            if (entrada.Alimentador) Passo(referencia, "Exigência de IDR", "IDR no alimentador (exigido pelo projetista)", valores, 1m, "alimentador", observacao);
+            else Passo(referencia, "Exigência de IDR", "n = todos os pontos (IDR exigido pelo projetista)", valores, total, "pontos", observacao);
             var sensibilidade = decisao.SensibilidadeMa!.Value;
             var dadoDaSerie = perfil.SensibilidadesNominaisDeIdrMa();
             var serie = Exigir(dadoDaSerie, "Sensibilidades nominais de IDR", "IΔn ∈ sensibilidades nominais", "mA");

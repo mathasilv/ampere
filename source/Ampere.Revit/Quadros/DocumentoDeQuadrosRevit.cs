@@ -39,13 +39,16 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
     public bool GravarMemoriaDoQuadro(long quadroId, string? hashDaMemoria, IReadOnlyDictionary<TipoDeCarga, decimal>? fatoresInformados)
     {
         var painel = Painel(quadroId);
-        // Quadro em grupo de modelo (ou vínculo): o parâmetro não é editável fora do grupo — só é problema se o valor
-        // gravado não é o que deveria estar. Os fatores vão junto com o hash, ou nenhum dos dois.
+        // Quadro em grupo de modelo (ou vínculo): o parâmetro não é editável fora do grupo — só é problema se o que está
+        // gravado (hash e fatores) não é o que deveria estar. Os fatores vão junto com o hash, ou nenhum dos dois: hash igual
+        // com fatores de outra montagem deixaria o quadro "desatualizado" para o alimentador para sempre.
+        var fatores = FatoresEmJson.Escrever(fatoresInformados);
         if (ParametrosAmpere.Ler(painel, ParametrosAmpere.MemoriaCalculoId) is { IsReadOnly: true } somenteLeitura)
-            return string.Equals(somenteLeitura.AsString() ?? string.Empty, hashDaMemoria ?? string.Empty, StringComparison.Ordinal);
+            return string.Equals(somenteLeitura.AsString() ?? string.Empty, hashDaMemoria ?? string.Empty, StringComparison.Ordinal)
+                   && string.Equals(FatoresEmJson.Escrever(FatoresEmJson.Ler(FatoresDoQuadro.LerDo(painel))), fatores, StringComparison.Ordinal);
 
         ParametrosAmpere.GravarTextoOuApagar(painel, ParametrosAmpere.MemoriaCalculoId, hashDaMemoria);
-        FatoresDoQuadro.GravarEm(painel, FatoresEmJson.Escrever(fatoresInformados));
+        FatoresDoQuadro.GravarEm(painel, fatores);
         return true;
     }
 
@@ -167,7 +170,7 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
             .OfCategory(BuiltInCategory.OST_ElectricalEquipment)
             .OfClass(typeof(FamilyInstance))
             .Cast<FamilyInstance>()
-            .Select(painel => (Painel: painel, Sistemas: SistemasDeForca(painel)))
+            .Select(painel => (Painel: painel, Sistemas: LeituraDoPainel.CircuitosDoQuadro(painel)))
             .Where(par => par.Sistemas.Count > 0)
             .Select(par => new QuadroLido(
                 par.Painel.Id.Value,
@@ -177,10 +180,6 @@ public sealed class DocumentoDeQuadrosRevit(Document documento) : IDocumentoDeQu
             .ToList();
     }
 
-    private static List<ElectricalSystem> SistemasDeForca(FamilyInstance painel) =>
-        painel.MEPModel.GetAssignedElectricalSystems()?
-            .Where(sistema => sistema.SystemType == ElectricalSystemType.PowerCircuit)
-            .ToList() ?? [];
 
     private static CircuitoLido LerCircuito(ElectricalSystem sistema)
     {

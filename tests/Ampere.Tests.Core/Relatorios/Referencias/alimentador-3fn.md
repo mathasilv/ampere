@@ -1,9 +1,9 @@
 # Memória de cálculo — circuito Alimentador QD1
 
 - **Perfil normativo:** FICTICIO-TESTE
-- **Identificador (AMP_MemoriaCalculoId):** `sha256:aa20c3f8354416a56b670dda9faa662ba5e9cf814eacd402a4e4b01c891de07a`
+- **Identificador (AMP_MemoriaCalculoId):** `sha256:2ed22f09ec50a4959a909fda1a52b1779e88a54a8a98938d20f1b218580edbe8`
 - **Esquema do documento:** 1
-- **Situação:** cálculo completo (17 passos)
+- **Situação:** cálculo completo (18 passos)
 - **Atenção:** perfil fictício, só para testes
 
 > Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O documento JSON da memória guarda os valores completos.
@@ -13,10 +13,10 @@
 ### 1. Corrente de projeto
 
 - **Referência:** FICTÍCIO: regra da corrente de projeto
-- **Expressão:** `IB = S / (√3 · V)`
-- **Valores:** S = 5715,7677 VA; V = 220 V
+- **Expressão:** `IB = máx(I(A); I(B); I(C))`
+- **Valores:** I(A) = 3,7795 A; I(B) = 15 A; I(C) = 10 A
 - **Resultado:** 15 A
-- **Observação:** S: √3 · V · I da fase de maior corrente do QD1 (B: 15 A, soma das correntes de linha dos circuitos pela demanda; demanda total 3315 VA), para IB ser a corrente dessa fase; quadro de cargas sha256:95c8fa8b9265b8da932d5830d14fcf08d157ce91ff8cf9e025cdbc46f505fc0e
+- **Observação:** corrente de cada fase do QD1: soma das correntes de linha dos circuitos nela, pela demanda (F+N e 2F: S / V; 3F e 3F+N: S / (√3 · V); 2F+N: S / (2 · V fase-neutro)), a favor da segurança; demanda total 3315 VA; quadro de cargas sha256:95c8fa8b9265b8da932d5830d14fcf08d157ce91ff8cf9e025cdbc46f505fc0e
 
 ### 2. Condutores carregados
 
@@ -64,16 +64,24 @@
 - **Expressão:** `ΔV%máx = ΔV%total − ΔV%terminal`
 - **Valores:** ΔV%total = 7%; ΔV%terminal = 1,2598%
 - **Resultado:** 5,7402%
-- **Observação:** total: instalação alimentada em baixa tensão pela distribuidora (a partir do ponto de entrega); terminal: a maior queda dos circuitos do QD1 (TUG-01)
+- **Observação:** total: instalação alimentada em baixa tensão pela distribuidora (a partir do ponto de entrega), tomado na origem do alimentador (QGBT): o trecho antes dela não está no modelo; terminal: a maior queda dos circuitos do QD1 (TUG-01)
 
-### 9. Capacidade de condução da seção adotada
+### 9. Corrente para a queda de tensão
+
+- **Referência:** FICTÍCIO: regra de queda
+- **Expressão:** `IΔV = IB + IN; IN = máx(IFN) − mín(IFN)`
+- **Valores:** IB = 15 A; IFN(A) = 3,7795 A; IFN(B) = 5 A; IFN(C) = 0 A
+- **Resultado:** 20 A
+- **Observação:** carga fase-neutro na fase de maior corrente, com o retorno pelo neutro (IFN: corrente dos circuitos F+N e 2F+N em cada fase; IN pela diferença das fases, com as cargas no mesmo fator de potência); k = √3 com V fase-fase dá a queda sobre a tensão fase-neutro; entre fases, 2 · IB = 30 A, menor que √3 · IΔV
+
+### 10. Capacidade de condução da seção adotada
 
 - **Referência:** FICTÍCIO: capacidade de condução
 - **Expressão:** `IZ = IZ₀(S) · FCA · FCT`
 - **Valores:** S = 2,5 mm²; IZ₀ = 18 A; FCA = 1; FCT = 1
 - **Resultado:** 18 A
 
-### 10. Disjuntor
+### 11. Disjuntor
 
 - **Referência:** FICTÍCIO: regra de coordenação
 - **Expressão:** `menor In com IB ≤ In ≤ IZ`
@@ -81,41 +89,41 @@
 - **Resultado:** 16 A
 - **Observação:** correntes nominais: FICTÍCIO: disjuntores
 
-### 11. Queda de tensão
+### 12. Queda de tensão
 
 - **Referência:** FICTÍCIO: regra de queda
-- **Expressão:** `ΔV% = k · ρ · L · IB / (S · V) · 100`
-- **Valores:** k = 1,7321; ρ = 0,02 Ω·mm²/m; L = 30 m; IB = 15 A; S = 2,5 mm²; V = 220 V
-- **Resultado:** 2,8343%
-- **Observação:** fórmula resistiva (sem reatância), só o circuito terminal; L: AMP_ComprimentoRotaM, informado pelo projetista
+- **Expressão:** `ΔV% = k · ρ · L · IΔV / (S · V) · 100`
+- **Valores:** k = 1,7321; ρ = 0,02 Ω·mm²/m; L = 30 m; IΔV = 20 A; S = 2,5 mm²; V = 220 V
+- **Resultado:** 3,779%
+- **Observação:** fórmula resistiva (sem reatância), só o alimentador; L: AMP_ComprimentoRotaM, informado pelo projetista
 
-### 12. Exigência de IDR
+### 13. Exigência de IDR
 
 - **Referência:** FICTÍCIO: IDR por local
 - **Expressão:** `n = 0 (alimentador de quadro)`
 - **Resultado:** 0 pontos
 - **Observação:** a tabela de IDR por local vale para os circuitos terminais; IDR no alimentador só por decisão do projetista (AMP_IDR_DecisaoProjetista)
 
-### 13. Condutores no eletroduto
+### 14. Condutores no eletroduto
 
 - **Referência:** FICTÍCIO: regra dos condutores no eletroduto
 - **Expressão:** `n = 3F + N + PE`
 - **Resultado:** 5 condutores
 - **Observação:** neutro e proteção com o diâmetro da fase (conservador para a ocupação)
 
-### 14. Diâmetro externo do condutor
+### 15. Diâmetro externo do condutor
 
 - **Referência:** FICTÍCIO: catálogo de condutores
 - **Expressão:** `d = catálogo (FIO-TESTE; 2,5 mm²)`
 - **Resultado:** 4 mm
 
-### 15. Taxa máxima de ocupação
+### 16. Taxa máxima de ocupação
 
 - **Referência:** FICTÍCIO: ocupação
 - **Expressão:** `taxa = tabela (5 condutores: faixa de 3 ou mais)`
 - **Resultado:** 40%
 
-### 16. Eletroduto adotado
+### 17. Eletroduto adotado
 
 - **Referência:** FICTÍCIO: catálogo de eletrodutos
 - **Expressão:** `menor Di com n · d² / Di² · 100 ≤ taxa`
@@ -123,7 +131,7 @@
 - **Resultado:** 15 mm
 - **Observação:** tamanho nominal B (ELETRODUTO-TESTE); acima da taxa: A (80%)
 
-### 17. Ocupação do eletroduto
+### 18. Ocupação do eletroduto
 
 - **Referência:** FICTÍCIO: ocupação
 - **Expressão:** `ocupação = n · d² / Di² · 100`

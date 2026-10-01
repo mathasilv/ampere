@@ -30,6 +30,8 @@ namespace Ampere.Core.Dimensionamento;
 /// <param name="OrigemDaPotencia">De onde veio a potência quando não é a soma dos pontos (ex.: demanda do quadro), registrado na memória.</param>
 /// <param name="LimiteDeQueda">Limite de queda calculado fora da tabela do circuito terminal (ex.: o que sobra para o alimentador).</param>
 /// <param name="Alimentador">Circuito que alimenta um quadro: a tabela de IDR por local não se aplica (só a decisão do projetista).</param>
+/// <param name="CorrenteDeProjeto">I<sub>B</sub> calculada fora do motor (ex.: a da fase de maior corrente do quadro), no lugar de S / V.</param>
+/// <param name="CorrenteDaQueda">Fator e corrente da queda de tensão calculados fora do motor (ex.: com o retorno pelo neutro), no lugar de k e I<sub>B</sub>.</param>
 public sealed record EntradaDeDimensionamento(
     string Circuito,
     TipoDeCarga Tipo,
@@ -54,7 +56,9 @@ public sealed record EntradaDeDimensionamento(
     string? OrigemDoAgrupamento = null,
     string? OrigemDaPotencia = null,
     LimiteDeQuedaDoCircuito? LimiteDeQueda = null,
-    bool Alimentador = false)
+    bool Alimentador = false,
+    CorrenteCalculada? CorrenteDeProjeto = null,
+    CorrenteDaQuedaDeTensao? CorrenteDaQueda = null)
 {
     /// <summary>Problemas que impedem dimensionar; vazio se a entrada estiver válida.</summary>
     public IReadOnlyList<string> Validar()
@@ -75,6 +79,8 @@ public sealed record EntradaDeDimensionamento(
         if (DisjuntorDoProjetistaA is <= 0m) problemas.Add("disjuntor do projetista deve ser positivo");
         if (LocaisDosPontos.Count == 0) problemas.Add("circuito sem pontos (locais dos pontos vazio)");
         if (LimiteDeQueda is { ValorPct: <= 0m }) problemas.Add("limite de queda de tensão deve ser positivo");
+        if (CorrenteDeProjeto is { CorrenteA: < 0m }) problemas.Add("corrente de projeto não pode ser negativa");
+        if (CorrenteDaQueda is { Fator: <= 0m } or { CorrenteA: < 0m }) problemas.Add("fator e corrente da queda de tensão devem ser positivos");
         if (IdrDoProjetista is { Exigir: true, SensibilidadeMa: not > 0 }) problemas.Add("IDR exigido pelo projetista sem sensibilidade positiva");
         if (IdrDoProjetista is { Exigir: false, SensibilidadeMa: not null }) problemas.Add("IDR dispensado pelo projetista não leva sensibilidade");
         return problemas;
@@ -86,6 +92,20 @@ public sealed record EntradaDeDimensionamento(
 /// <param name="Referencia">Referência da tabela de queda do perfil de onde vêm os limites.</param>
 /// <param name="Expressao">A conta (ex.: "ΔV%máx = ΔV%total − ΔV%terminal").</param>
 public sealed record LimiteDeQuedaDoCircuito(decimal ValorPct, string Referencia, string Expressao, IReadOnlyList<ValorDoPasso> Valores, string? Observacao);
+
+/// <summary>Corrente calculada fora do motor, com a conta para a memória.</summary>
+/// <param name="Expressao">A conta (ex.: "IB = máx(I(A); I(B); I(C))").</param>
+public sealed record CorrenteCalculada(decimal CorrenteA, string Expressao, IReadOnlyList<ValorDoPasso> Valores, string? Observacao);
+
+/// <summary>
+///     Base da queda de tensão calculada fora do motor: ΔV% = k · ρ · L · I<sub>ΔV</sub> / (S · V) · 100, com a conta de
+///     I<sub>ΔV</sub> para a memória.
+/// </summary>
+/// <param name="Fator">k (2 nos circuitos de duas fases ou fase-neutro; √3 nos trifásicos equilibrados).</param>
+/// <param name="CorrenteA">I<sub>ΔV</sub>.</param>
+/// <param name="Expressao">A conta de I<sub>ΔV</sub> (ex.: "IΔV = IB + IN").</param>
+/// <param name="Observacao">Por que esse k e essa corrente (vai para a memória).</param>
+public sealed record CorrenteDaQuedaDeTensao(decimal Fator, decimal CorrenteA, string Expressao, IReadOnlyList<ValorDoPasso> Valores, string Observacao);
 
 /// <summary>
 ///     Decisão do projetista sobre o IDR de um circuito. Prevalece sobre a tabela de proteção diferencial por local; a

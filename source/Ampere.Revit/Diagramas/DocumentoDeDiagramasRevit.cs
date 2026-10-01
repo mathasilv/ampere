@@ -33,7 +33,7 @@ public sealed class DocumentoDeDiagramasRevit(Document documento) : IDocumentoDe
             .OfCategory(BuiltInCategory.OST_ElectricalEquipment)
             .OfClass(typeof(FamilyInstance))
             .Cast<FamilyInstance>()
-            .Select(painel => (Painel: painel, Sistemas: SistemasDeForca(painel)))
+            .Select(painel => (Painel: painel, Sistemas: LeituraDoPainel.CircuitosDoQuadro(painel)))
             .Where(par => par.Sistemas.Count > 0)
             .Select(par => new QuadroDoUnifilar(
                 LeituraDoPainel.Nome(par.Painel),
@@ -56,10 +56,8 @@ public sealed class DocumentoDeDiagramasRevit(Document documento) : IDocumentoDe
     // O circuito de que o quadro é carga, com o que o 'Dimensionar alimentadores' gravou (0 = não calculado).
     private static AlimentadorDoUnifilar? Alimentador(FamilyInstance painel)
     {
-        var alimentador = painel.MEPModel?.GetElectricalSystems()?
-            .Where(sistema => sistema.SystemType == ElectricalSystemType.PowerCircuit)
-            .MinBy(sistema => sistema.Id.Value);
-        if (alimentador is null) return null;
+        // Mais de um alimentador: o 'Dimensionar alimentadores' não calcula; o unifilar mostra o primeiro, sem valores dele.
+        if (LeituraDoPainel.Alimentadores(painel).FirstOrDefault() is not { } alimentador) return null;
 
         return new AlimentadorDoUnifilar(
             alimentador.BaseEquipment is { } origem ? LeituraDoPainel.Nome(origem) : null,
@@ -131,10 +129,6 @@ public sealed class DocumentoDeDiagramasRevit(Document documento) : IDocumentoDe
 
     private static XYZ Ponto(decimal x, decimal y) => new((double)x * Milimetro, (double)y * Milimetro, 0);
 
-    private static List<ElectricalSystem> SistemasDeForca(FamilyInstance painel) =>
-        painel.MEPModel.GetAssignedElectricalSystems()?
-            .Where(sistema => sistema.SystemType == ElectricalSystemType.PowerCircuit)
-            .ToList() ?? [];
 
     private static CircuitoDoUnifilar LerCircuito(ElectricalSystem sistema)
     {

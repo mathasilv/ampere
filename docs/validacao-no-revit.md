@@ -18,7 +18,7 @@ não puderam ser conferidas fora do Revit. Se algum desses testes falhar, envie 
 | `QuadroDeCargasNoRevit_Teste.Le_os_circuitos_do_quadro_com_potencia_esquema_e_tensao` | `ElectricalSystem.PhaseLabel` dá "A", "B" ou "C" para circuitos de 1 polo, e o sistema "120/208 Wye" é lido como 3F+N, 208 V, fase-terra 120 V |
 | `QuadroDeCargasNoRevit_Teste.Monta_quadro_completo_com_fatores_informados` | Cargas por fase sem "circuitos sem fase identificada" |
 | `DimensionamentoNoRevit_Teste.Condicoes_da_rodada_ficam_nos_circuitos…` | Extensible Storage: condições nos circuitos e num `DataStorage` |
-| `AlimentadoresNoRevit_Teste.*` | Quadro ligado a outro quadro por `ElectricalSystem.Create` + `SelectPanel`; leitura de `BaseEquipment` |
+| `AlimentadoresNoRevit_Teste.*` | Quadro ligado a outro quadro por `ElectricalSystem.Create` + `SelectPanel`; o alimentador é o circuito com `BaseEquipment` em outro quadro (o `GetElectricalSystems` do quadro também traz os circuitos dele); IB pela fase do circuito no quadro |
 | `VerificacaoNoRevit_Teste.*` | Pontos com conector de força nas categorias do Ampere; conferência das memórias |
 
 ## 2. Roteiro manual
@@ -55,6 +55,8 @@ Use um projeto de teste com arquitetura vinculada ou com ambientes (Rooms/Spaces
      "fase de maior corrente" e o limite de queda que sobrou.
    - Mude a potência de um ponto e rode de novo: o alimentador deve ficar "quadro de cargas desatualizado", com os
      resultados apagados.
+   - Com tomadas só numa fase, a memória deve trazer o passo "Corrente para a queda de tensão" (IΔV = IB + IN).
+   - Um circuito reserva do Revit (Spare) no quadro não deve impedir o alimentador.
 9. **Verificar projeto.**
    - Num projeto em dia, só devem aparecer informações ("Onde o cálculo para").
    - Mude o comprimento de um circuito: a memória deve aparecer como desatualizada. "Selecionar no modelo" deve

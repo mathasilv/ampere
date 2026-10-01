@@ -39,10 +39,12 @@ public sealed class AlimentadoresNoRevit_Teste : TesteComProjetoEletrico
         await Assert.That(qd1.Origem).IsEqualTo("QGBT");
         await Assert.That(qd1.OrigemAlimentada).IsFalse();
         await Assert.That(qd1.AlimentaQuadros).IsFalse();
+        await Assert.That(qd1.Impedimento).IsNull();
         await Assert.That(Math.Round(qd1.Alimentador.ComprimentoM!.Value, 6)).IsEqualTo(15m);
         var qgbt = quadros.Single(quadro => quadro.Quadro == "QGBT");
         await Assert.That(qgbt.Alimentador).IsNull();
         await Assert.That(qgbt.AlimentaQuadros).IsTrue();
+        await Assert.That(qgbt.Impedimento).IsNull();
     }
 
     [Test]
@@ -61,6 +63,8 @@ public sealed class AlimentadoresNoRevit_Teste : TesteComProjetoEletrico
         await Assert.That(calculo.DisjuntorA).IsNotNull();
         await Assert.That(Parametro(alimentador, "AMP_DisjuntorNominalA").AsDouble()).IsEqualTo((double)calculo.DisjuntorA!.Value);
         await Assert.That(Parametro(alimentador, "AMP_MemoriaCalculoId").AsString()).IsEqualTo(qd1.Circuito.Memoria!.Hash());
+        // QD1 120/208 Y: IB = a corrente da fase da TUG-01 (4 × 180 VA × 0,5 / 120 V), pela fase identificada no Revit.
+        await Assert.That(Math.Round(calculo.CorrenteDeProjetoA!.Value, 6)).IsEqualTo(3m);
         await Assert.That(calculo.Memoria!.Passos[0].Observacao!).Contains("do QD1");
         await Assert.That(resultados.Single(resultado => resultado.Quadro == "QGBT").Problemas.Single()).StartsWith("sem circuito alimentador no Revit");
     }
@@ -71,7 +75,9 @@ public sealed class AlimentadoresNoRevit_Teste : TesteComProjetoEletrico
         var (tomadas, alimentador) = MontarQd1AlimentadoPeloQgbt();
         var porta = new DocumentoDeAlimentadoresRevit(Cenario.Documento);
         var quadros = new DocumentoDeQuadrosRevit(Cenario.Documento);
-        DimensionamentoDeAlimentadores.Executar("ponto_de_entrega", PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao, porta, quadros);
+        var primeira = DimensionamentoDeAlimentadores.Executar("ponto_de_entrega", PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao, porta, quadros);
+        await Assert.That(primeira.Single(resultado => resultado.Quadro == "QD1").Problemas).IsEmpty();
+        await Assert.That(Parametro(alimentador, "AMP_DisjuntorNominalA").AsDouble()).IsGreaterThan(0d);
         Transacionar(() => Parametro(Cenario.Documento.GetElement(new ElementId(tomadas[0])), "AMP_PotenciaInstaladaVA")
             .Set(UnitUtils.ConvertToInternalUnits(600, UnitTypeId.VoltAmperes)));
 
@@ -80,6 +86,20 @@ public sealed class AlimentadoresNoRevit_Teste : TesteComProjetoEletrico
         await Assert.That(resultados.Single(resultado => resultado.Quadro == "QD1").Problemas.Single()).StartsWith("quadro de cargas desatualizado");
         await Assert.That(Parametro(alimentador, "AMP_DisjuntorNominalA").AsDouble()).IsEqualTo(0d);
         await Assert.That(Parametro(alimentador, "AMP_MemoriaCalculoId").AsString() ?? string.Empty).IsEqualTo(string.Empty);
+    }
+
+    [Test]
+    public async Task Terminal_alterado_depois_do_dimensionamento_impede_o_alimentador()
+    {
+        var (tomadas, _) = MontarQd1AlimentadoPeloQgbt();
+        var circuito = Cenario.Quadro.MEPModel.GetAssignedElectricalSystems().Single(sistema => sistema.Elements.Cast<Element>().Any(membro => membro.Id.Value == tomadas[0]));
+        Transacionar(() => Parametro(circuito, "AMP_ComprimentoRotaM").Set(UnitUtils.ConvertToInternalUnits(40, UnitTypeId.Meters)));
+
+        var resultados = DimensionamentoDeAlimentadores.Executar("ponto_de_entrega", PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao,
+            new DocumentoDeAlimentadoresRevit(Cenario.Documento), new DocumentoDeQuadrosRevit(Cenario.Documento));
+
+        await Assert.That(resultados.Single(resultado => resultado.Quadro == "QD1").Problemas.Single())
+            .StartsWith("circuitos do quadro com o dimensionamento desatualizado no modelo: TUG-01");
     }
 
     /// <summary>

@@ -13,7 +13,7 @@ namespace Ampere.Tests.Core.Alimentadores;
 /// <summary>
 ///     Alimentadores contra o perfil FICTÍCIO, com queda total de 7% no ponto de entrega. QD1 3F+N 220 V: IL-01 (600 VA,
 ///     fase A), TUG-01 (1270 VA, fase B) e TUE-01 (2200 VA, 2F nas fases B e C); demandas 480, 635 e 2200 VA → correntes
-///     A 3,78, B 15 e C 10 A.
+///     A 3,78, B 15 e C 10 A; fase-neutro A 3,78, B 5 e C 0 A.
 /// </summary>
 public class DimensionamentoDeAlimentadores_Teste
 {
@@ -31,7 +31,8 @@ public class DimensionamentoDeAlimentadores_Teste
         var calculo = resultado.Circuito!.Dimensionamento!;
         await Assert.That(calculo.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
         // Fase B: TUG-01 635 / 127 = 5 A mais o chuveiro 2F 2200 / 220 = 10 A (corrente de linha, não metade de S / V fase-neutro).
-        await Assert.That(Math.Round(calculo.CorrenteDeProjetoA!.Value, 6)).IsEqualTo(15m);
+        // IB exata, sem passar por S = √3 · V · I (que voltaria 1 ulp acima e recusaria o disjuntor igual a ela).
+        await Assert.That(calculo.CorrenteDeProjetoA).IsEqualTo(15m);
         await Assert.That(calculo.SecaoMm2).IsEqualTo(2.5m);
         await Assert.That(calculo.DisjuntorA).IsEqualTo(16m);
         await Assert.That(calculo.IdrSensibilidadeMa).IsNull();
@@ -39,27 +40,140 @@ public class DimensionamentoDeAlimentadores_Teste
 
         var memoria = calculo.Memoria!;
         await Assert.That(memoria.Circuito).IsEqualTo("Alimentador QD1");
-        await Assert.That(Passo(memoria, "Corrente de projeto").Observacao!).StartsWith(
-            "S: √3 · V · I da fase de maior corrente do QD1 (B: 15 A, soma das correntes de linha dos circuitos pela demanda; demanda total 3315 VA)");
+        var corrente = Passo(memoria, "Corrente de projeto");
+        await Assert.That(corrente.Expressao).IsEqualTo("IB = máx(I(A); I(B); I(C))");
+        await Assert.That(corrente.Observacao!).StartsWith("corrente de cada fase do QD1: soma das correntes de linha dos circuitos nela, pela demanda");
+        await Assert.That(corrente.Observacao!).Contains("; demanda total 3315 VA; quadro de cargas sha256:");
+
+        // Retorno pelo neutro: IN ≤ 5 − 0 A; √3 · (15 + 5) = 34,6 > 2 · 15 = 30 (entre fases).
+        var baseDaQueda = Passo(memoria, "Corrente para a queda de tensão");
+        await Assert.That(baseDaQueda.Expressao).IsEqualTo("IΔV = IB + IN; IN = máx(IFN) − mín(IFN)");
+        await Assert.That(baseDaQueda.Resultado).IsEqualTo(20m);
+        var queda = Passo(memoria, "Queda de tensão");
+        await Assert.That(queda.Expressao).IsEqualTo("ΔV% = k · ρ · L · IΔV / (S · V) · 100");
+        await Assert.That(queda.Valores.Single(valor => valor.Nome == "k").Valor).IsEqualTo(1.7320508075688772935274463415m);
+        await Assert.That(queda.Observacao!).StartsWith("fórmula resistiva (sem reatância), só o alimentador");
+
         var limite = Passo(memoria, "Limite de queda de tensão");
         await Assert.That(limite.Expressao).IsEqualTo("ΔV%máx = ΔV%total − ΔV%terminal");
         await Assert.That(Math.Round(limite.Resultado!.Value, 4)).IsEqualTo(5.7402m);
         await Assert.That(limite.Observacao).IsEqualTo(
-            "total: instalação alimentada em baixa tensão pela distribuidora (a partir do ponto de entrega); terminal: a maior queda dos circuitos do QD1 (TUG-01)");
+            "total: instalação alimentada em baixa tensão pela distribuidora (a partir do ponto de entrega), tomado na origem do alimentador (QGBT): " +
+            "o trecho antes dela não está no modelo; terminal: a maior queda dos circuitos do QD1 (TUG-01)");
         await Assert.That(Passo(memoria, "Exigência de IDR").Observacao!).StartsWith("a tabela de IDR por local vale para os circuitos terminais");
 
         await Assert.That(string.Join("|", cenario.Documento.Chamadas)).IsEqualTo($"transacao:{DimensionamentoDeAlimentadores.NomeDaTransacao}|gravar:900|condicoes:900");
     }
 
     [Test]
-    public async Task Sem_cargas_por_fase_completas_a_corrente_e_a_equilibrada()
+    public async Task Circuito_sem_fase_identificada_soma_na_fase_de_maior_corrente()
     {
         var cenario = new CenarioDeAlimentador(semFaseNoTue: true);
 
+        var resultado = Executar(cenario).Single();
+
+        await Assert.That(resultado.Problemas).IsEmpty();
+        var calculo = resultado.Circuito!.Dimensionamento!;
+        // Fases A 3,78, B 5 e C 0 A sem o chuveiro; os 10 A dele podem estar todos na fase B: IB = 15 A, nunca a média.
+        await Assert.That(calculo.CorrenteDeProjetoA).IsEqualTo(15m);
+        var corrente = Passo(calculo.Memoria!, "Corrente de projeto");
+        await Assert.That(corrente.Expressao).IsEqualTo("IB = máx(I(A); I(B); I(C)) + I(sem fase)");
+        await Assert.That(corrente.Observacao!).Contains("; sem fase identificada no Revit: TUE-01, somados à fase de maior corrente");
+    }
+
+    [Test]
+    public async Task Sem_nenhuma_fase_identificada_o_alimentador_trifasico_para()
+    {
+        var cenario = new CenarioDeAlimentador();
+        for (var indice = 0; indice < cenario.Circuitos.Count; indice++) cenario.Circuitos[indice] = cenario.Circuitos[indice] with { FasesNoQuadro = null };
+
+        var resultado = Executar(cenario).Single();
+
+        await Assert.That(resultado.Problemas.Single()).StartsWith("fases dos circuitos no quadro não identificadas no Revit");
+        await Assert.That(resultado.Circuito!.Memoria).IsNull();
+    }
+
+    [Test]
+    public async Task Carga_fase_neutro_equilibrada_e_carga_entre_fases_queda_com_2_IB()
+    {
+        var cenario = new CenarioDeAlimentador();
+        cenario.Adicionar(new CircuitoLido(104, "TUG-02", "TUG", 1270m, "F+N", 127m, ["C"]), CenarioDeAlimentador.Terminal(104, "TUG-02", "TUG", 1270m));
+
         var calculo = Executar(cenario).Single().Circuito!.Dimensionamento!;
 
-        await Assert.That(Math.Round(calculo.CorrenteDeProjetoA!.Value, 6)).IsEqualTo(Math.Round(3315m / (1.7320508075688772935274463415m * 220m), 6));
-        await Assert.That(Passo(calculo.Memoria!, "Corrente de projeto").Observacao!).EndsWith("; corrente de cada fase desconhecida: corrente equilibrada");
+        // Fases A 3,78, B 15 e C 15 A; fase-neutro A 3,78, B 5 e C 5 A: IN ≤ 1,22 A, √3 · 16,22 = 28,1 < 2 · 15 = 30.
+        await Assert.That(calculo.CorrenteDeProjetoA).IsEqualTo(15m);
+        var baseDaQueda = Passo(calculo.Memoria!, "Corrente para a queda de tensão");
+        await Assert.That(baseDaQueda.Expressao).IsEqualTo("IΔV = IB");
+        await Assert.That(baseDaQueda.Resultado).IsEqualTo(15m);
+        await Assert.That(Passo(calculo.Memoria!, "Queda de tensão").Valores.Single(valor => valor.Nome == "k").Valor).IsEqualTo(2m);
+    }
+
+    [Test]
+    public async Task So_cargas_trifasicas_queda_equilibrada()
+    {
+        var cenario = new CenarioDeAlimentador();
+        cenario.Circuitos.Clear();
+        cenario.Terminais.Clear();
+        cenario.Adicionar(new CircuitoLido(105, "MOT-01", "Motor", 6600m, "3F", 220m, ["A", "B", "C"]),
+            CenarioDeAlimentador.Terminal(105, "MOT-01", "Motor", 6600m, 220m, "3F"));
+
+        var calculo = Executar(cenario).Single().Circuito!.Dimensionamento!;
+
+        await Assert.That(Math.Round(calculo.CorrenteDeProjetoA!.Value, 6)).IsEqualTo(Math.Round(6600m / (1.7320508075688772935274463415m * 220m), 6));
+        await Assert.That(calculo.Memoria!.Passos.Any(passo => passo.Descricao == "Corrente para a queda de tensão")).IsFalse();
+        await Assert.That(Passo(calculo.Memoria!, "Queda de tensão").Expressao).IsEqualTo("ΔV% = k · ρ · L · IB / (S · V) · 100");
+    }
+
+    [Test]
+    public async Task Circuito_reserva_fica_fora_da_queda_terminal()
+    {
+        var cenario = new CenarioDeAlimentador();
+        // Reserva sem dados de dimensionamento (nenhum DadosDoCircuito): não pode bloquear o alimentador.
+        cenario.Circuitos.Add(new CircuitoLido(106, "RES-01", "Reserva", 0m, "F+N", 127m, ["C"]));
+
+        var resultado = Executar(cenario).Single();
+
+        await Assert.That(resultado.Problemas).IsEmpty();
+        await Assert.That(resultado.Circuito!.Dimensionamento!.Situacao).IsEqualTo(SituacaoDoDimensionamento.Dimensionado);
+    }
+
+    [Test]
+    public async Task Circuito_fora_do_quadro_de_cargas_impede_o_alimentador()
+    {
+        var cenario = new CenarioDeAlimentador();
+        cenario.Circuitos.Add(new CircuitoLido(107, "X-01", null, 900m, "F+N", 127m, ["C"]));
+
+        var problemas = Executar(cenario).Single().Problemas;
+
+        await Assert.That(problemas.Single()).StartsWith("quadro de cargas com pendências (circuito X-01: sem AMP_TipoCarga reconhecido");
+    }
+
+    [Test]
+    public async Task Terminal_com_dimensionamento_desatualizado_no_modelo_impede_o_alimentador()
+    {
+        var cenario = new CenarioDeAlimentador();
+        cenario.Documento.MemoriasGravadas[102] = "sha256:de-uma-rodada-anterior";
+
+        var problemas = Executar(cenario).Single().Problemas;
+
+        await Assert.That(problemas.Single()).IsEqualTo(
+            "circuitos do quadro com o dimensionamento desatualizado no modelo: TUG-01; rode 'Dimensionar circuitos'");
+    }
+
+    [Test]
+    public async Task Impedimento_do_modelo_apaga_o_alimentador_sem_conferir_o_resto()
+    {
+        var cenario = new CenarioDeAlimentador { Impedimento = "quadro alimentado por mais de um circuito (A1, A2): o Ampere dimensiona um alimentador por quadro" };
+        cenario.Documento.Condicoes = null;
+
+        var resultado = Executar(cenario).Single();
+
+        await Assert.That(resultado.Problemas.Count).IsEqualTo(2);
+        await Assert.That(resultado.Problemas[0]).StartsWith("quadro alimentado por mais de um circuito");
+        await Assert.That(resultado.Problemas[1]).StartsWith("o modelo não tem as condições do projeto");
+        await Assert.That(resultado.Circuito!.Memoria).IsNull();
+        await Assert.That(string.Join("|", cenario.Documento.Chamadas)).IsEqualTo($"transacao:{DimensionamentoDeAlimentadores.NomeDaTransacao}|gravar:900");
     }
 
     [Test]
@@ -131,6 +245,22 @@ public class DimensionamentoDeAlimentadores_Teste
         await Assert.That(problemas.Single()).StartsWith("o modelo não tem as condições do projeto");
     }
 
+    [Test]
+    public async Task IDR_exigido_pelo_projetista_vale_para_o_alimentador_inteiro()
+    {
+        var cenario = new CenarioDeAlimentador
+        {
+            Decisoes = new DecisoesDoProjetista(Idr: DecisoesDoProjetista.ExigirIdr, IdrSensibilidadeMa: 300m, Justificativa: "seletividade com os terminais")
+        };
+
+        var calculo = Executar(cenario).Single().Circuito!.Dimensionamento!;
+
+        var exigencia = Passo(calculo.Memoria!, "Exigência de IDR");
+        await Assert.That(exigencia.Expressao).IsEqualTo("IDR no alimentador (exigido pelo projetista)");
+        await Assert.That(exigencia.Valores).IsEmpty();
+        await Assert.That(exigencia.Unidade).IsEqualTo("alimentador");
+    }
+
     private static IReadOnlyList<ResultadoDoAlimentador> Executar(CenarioDeAlimentador cenario) => cenario.Executar();
 
     private static PassoDeCalculo Passo(MemoriaDeCalculo memoria, string descricao) => memoria.Passos.Single(passo => passo.Descricao == descricao);
@@ -149,20 +279,33 @@ internal sealed class CenarioDeAlimentador
 
     public static readonly Dictionary<TipoDeCarga, decimal> Fatores = new() { [TipoDeCarga.TUG] = 0.5m };
 
-    private readonly bool _semFaseNoTue;
-
     public CenarioDeAlimentador(bool semFaseNoTue = false)
     {
-        _semFaseNoTue = semFaseNoTue;
         Terminais =
         [
             Terminal(101, "IL-01", "Iluminação", 600m),
             Terminal(102, "TUG-01", "TUG", 1270m),
             Terminal(103, "TUE-01", "TUE", 2200m, 220m, "2F")
         ];
+        Circuitos =
+        [
+            new CircuitoLido(101, "IL-01", "Iluminação", 600m, "F+N", 127m, ["A"]),
+            new CircuitoLido(102, "TUG-01", "TUG", 1270m, "F+N", 127m, ["B"]),
+            new CircuitoLido(103, "TUE-01", "TUE", 2200m, "2F", 220m, semFaseNoTue ? null : ["B", "C"])
+        ];
     }
 
+    /// <summary>Dados de dimensionamento dos circuitos do quadro.</summary>
     public List<DadosDoCircuito> Terminais { get; }
+
+    /// <summary>Os circuitos do quadro, como o quadro de cargas os lê.</summary>
+    public List<CircuitoLido> Circuitos { get; }
+
+    public void Adicionar(CircuitoLido lido, DadosDoCircuito dados)
+    {
+        Circuitos.Add(lido);
+        Terminais.Add(dados);
+    }
 
     public bool SemAlimentador { get; init; }
 
@@ -172,12 +315,11 @@ internal sealed class CenarioDeAlimentador
 
     public string? MemoriaDoQuadro { get; init; }
 
-    public QuadroLido Quadro => new(1, "QD1",
-    [
-        new CircuitoLido(101, "IL-01", "Iluminação", 600m, "F+N", 127m, ["A"]),
-        new CircuitoLido(102, "TUG-01", "TUG", 1270m, "F+N", 127m, ["B"]),
-        new CircuitoLido(103, "TUE-01", "TUE", 2200m, "2F", 220m, _semFaseNoTue ? null : ["B", "C"])
-    ], new AlimentacaoDoQuadro("3F+N", 220m, "teste", ["A", "B", "C"]));
+    public string? Impedimento { get; init; }
+
+    public DecisoesDoProjetista? Decisoes { get; init; }
+
+    public QuadroLido Quadro => new(1, "QD1", Circuitos.ToList(), new AlimentacaoDoQuadro("3F+N", 220m, "teste", ["A", "B", "C"]));
 
     public static PerfilNormativo ComQuedaTotal(decimal total) =>
         PerfilNormativo.Carregar(PerfilFicticio.Json.Replace("\"valores\": { \"circuito_terminal\": 5 }",
@@ -192,7 +334,7 @@ internal sealed class CenarioDeAlimentador
     private DocumentoFalso? _documento;
     private QuadrosFalsos? _quadros;
 
-    private static DadosDoCircuito Terminal(long id, string numero, string tipo, decimal potenciaVA, decimal tensaoV = 127m, string fases = "F+N") =>
+    public static DadosDoCircuito Terminal(long id, string numero, string tipo, decimal potenciaVA, decimal tensaoV = 127m, string fases = "F+N") =>
         new(id, numero, tipo, 10m, null, null, [new DadosDoPonto(id * 10, potenciaVA, tensaoV, fases, "LOCAL-SECO", tipo)], Quadro: "QD1");
 
     public sealed class DocumentoFalso(CenarioDeAlimentador cenario) : IDocumentoDeAlimentadores
@@ -200,6 +342,9 @@ internal sealed class CenarioDeAlimentador
         public List<string> Chamadas { get; } = [];
 
         public CondicoesDoProjeto? Condicoes { get; set; } = CenarioDeAlimentador.Condicoes;
+
+        /// <summary>AMP_MemoriaCalculoId gravado por circuito; sem entrada, o da rodada em dia (o recalculado).</summary>
+        public Dictionary<long, string> MemoriasGravadas { get; } = [];
 
         public void EmUmaTransacao(string nome, Action acao)
         {
@@ -210,8 +355,8 @@ internal sealed class CenarioDeAlimentador
         public IReadOnlyList<QuadroComAlimentador> LerAlimentadores() =>
         [
             new(1, "QD1",
-                cenario.SemAlimentador ? null : new DadosDoAlimentador(900, 30m, null, null, null),
-                "QGBT", cenario.OrigemAlimentada, cenario.AlimentaQuadros)
+                cenario.SemAlimentador ? null : new DadosDoAlimentador(900, 30m, null, null, null, cenario.Decisoes),
+                "QGBT", cenario.OrigemAlimentada, cenario.AlimentaQuadros, cenario.Impedimento)
         ];
 
         public CondicoesDoProjeto? LerCondicoes() => Condicoes;
@@ -219,6 +364,13 @@ internal sealed class CenarioDeAlimentador
         public IReadOnlyDictionary<long, CondicoesDoProjeto> LerCondicoesDosCircuitos(IReadOnlyCollection<long> ids) => new Dictionary<long, CondicoesDoProjeto>();
 
         public IReadOnlyList<DadosDoCircuito> LerCircuitos(IReadOnlyCollection<long> ids) => cenario.Terminais.Where(circuito => ids.Contains(circuito.Id)).ToList();
+
+        public IReadOnlyDictionary<long, ResultadosNoCircuito> LerResultados(IReadOnlyCollection<long> ids) =>
+            LerCircuitos(ids).ToDictionary(dados => dados.Id, dados =>
+            {
+                var emDia = ResultadosNoCircuito.De(DimensionamentoDoProjeto.Calcular(dados, Condicoes ?? CenarioDeAlimentador.Condicoes, Perfil, Catalogos));
+                return MemoriasGravadas.TryGetValue(dados.Id, out var gravada) ? emDia with { MemoriaCalculoId = gravada } : emDia;
+            });
 
         public void GravarResultados(IReadOnlyList<ResultadoDoCircuito> resultados) =>
             Chamadas.Add($"gravar:{string.Join(",", resultados.Select(resultado => resultado.Id))}");

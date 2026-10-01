@@ -6,7 +6,11 @@ namespace Ampere.Core.Quadros;
 ///     Soma das correntes de linha dos circuitos na fase, pela demanda (ou, sem ela, pela potência instalada); nula se a
 ///     de algum circuito não pôde ser calculada.
 /// </param>
-public sealed record CargaDaFase(string Fase, decimal PotenciaInstaladaVA, decimal? DemandaVA, decimal? CorrenteA);
+/// <param name="CorrenteFaseNeutroA">
+///     A parte de <paramref name="CorrenteA" /> dos circuitos ligados entre fase e neutro (F+N e 2F+N), que volta pelo
+///     neutro; nula com ela.
+/// </param>
+public sealed record CargaDaFase(string Fase, decimal PotenciaInstaladaVA, decimal? DemandaVA, decimal? CorrenteA, decimal? CorrenteFaseNeutroA = null);
 
 /// <summary>
 ///     Distribuição das cargas do quadro nas fases: a carga de cada fase, a mais carregada e o desequilíbrio.
@@ -16,13 +20,22 @@ public sealed record CargaDaFase(string Fase, decimal PotenciaInstaladaVA, decim
 /// <param name="DesequilibrioPct">(maior − menor) / maior × 100 das potências das fases do quadro.</param>
 /// <param name="MaiorCorrente">A fase de maior corrente; nula se a corrente de alguma fase não pôde ser calculada.</param>
 /// <param name="CircuitosSemFase">Circuitos cujas fases no quadro não foram identificadas: ficam fora da conta.</param>
+/// <param name="CorrenteSemFaseA">
+///     Soma das correntes de linha dos circuitos sem fase identificada (0 sem eles): podem estar todos na fase de maior
+///     corrente. Nula se a de algum não pôde ser calculada.
+/// </param>
+/// <param name="CorrenteFaseNeutroSemFaseA">A parte de <paramref name="CorrenteSemFaseA" /> dos circuitos F+N e 2F+N; nula com ela.</param>
+/// <param name="Configuracoes">As configurações (AMP_Fases) dos circuitos do quadro, com e sem fase identificada.</param>
 public sealed record BalancoDasFases(
     IReadOnlyList<CargaDaFase> Fases,
     bool PelaDemanda,
     string FaseMaisCarregada,
     decimal DesequilibrioPct,
     CargaDaFase? MaiorCorrente,
-    IReadOnlyList<string> CircuitosSemFase);
+    IReadOnlyList<string> CircuitosSemFase,
+    decimal? CorrenteSemFaseA,
+    decimal? CorrenteFaseNeutroSemFaseA,
+    IReadOnlyList<string> Configuracoes);
 
 /// <summary>Circuito do quadro com as fases que ocupa (rótulos do Revit, ex.: A, B, C), a configuração e a tensão dele.</summary>
 /// <param name="Configuracao">AMP_Fases do circuito (F+N, 2F, 2F+N, 3F ou 3F+N).</param>
@@ -61,18 +74,27 @@ public static class CargasPorFase
         var contados = circuitos.Where(circuito => Identificado(circuito, fases)).ToList();
         if (fases.Count < 2 || contados.Count == 0) return null;
 
-        var semFase = circuitos.Where(circuito => !contados.Contains(circuito)).Select(circuito => circuito.Numero).ToList();
+        var semFase = circuitos.Where(circuito => !contados.Contains(circuito)).ToList();
         var pelaDemanda = circuitos.Count > 0 && circuitos.All(circuito => circuito.DemandaVA is not null);
+        decimal? Corrente(CircuitoNasFases circuito) =>
+            CorrenteDeLinha(circuito, pelaDemanda ? circuito.DemandaVA!.Value : circuito.PotenciaInstaladaVA, faseNeutroV);
 
         var cargas = fases.Select(fase =>
             {
                 var daFase = contados.Where(circuito => circuito.Fases!.Contains(fase, StringComparer.Ordinal)).ToList();
                 var instalada = daFase.Sum(circuito => circuito.PotenciaInstaladaVA / circuito.Fases!.Count);
                 decimal? demanda = pelaDemanda ? daFase.Sum(circuito => circuito.DemandaVA!.Value / circuito.Fases!.Count) : null;
-                var correntes = daFase.Select(circuito => CorrenteDeLinha(circuito, pelaDemanda ? circuito.DemandaVA!.Value : circuito.PotenciaInstaladaVA, faseNeutroV)).ToList();
-                decimal? corrente = correntes.All(valor => valor is not null) ? correntes.Sum(valor => valor!.Value) : null;
-                return new CargaDaFase(fase, instalada, demanda, corrente);
+                var (corrente, faseNeutro) = Soma(daFase, Corrente);
+                return new CargaDaFase(fase, instalada, demanda, corrente, faseNeutro);
             })
+            .ToList();
+        var (semFaseA, semFaseFaseNeutroA) = Soma(semFase, Corrente);
+        var configuracoes = circuitos
+            .Select(circuito => circuito.Configuracao?.Trim())
+            .OfType<string>()
+            .Where(configuracao => configuracao.Length > 0)
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
             .ToList();
 
         decimal Base(CargaDaFase carga) => pelaDemanda ? carga.DemandaVA!.Value : carga.PotenciaInstaladaVA;
@@ -80,7 +102,8 @@ public static class CargasPorFase
         var menor = cargas.Min(Base);
         var desequilibrio = Base(maior) > 0m ? (Base(maior) - menor) / Base(maior) * 100m : 0m;
         var maiorCorrente = cargas.All(carga => carga.CorrenteA is not null) ? cargas.MaxBy(carga => carga.CorrenteA!.Value) : null;
-        return new BalancoDasFases(cargas, pelaDemanda, maior.Fase, desequilibrio, maiorCorrente, semFase);
+        return new BalancoDasFases(cargas, pelaDemanda, maior.Fase, desequilibrio, maiorCorrente, semFase.Select(circuito => circuito.Numero).ToList(),
+            semFaseA, semFaseFaseNeutroA, configuracoes);
     }
 
     /// <summary>Tensão fase-neutro derivada da alimentação, quando o Revit não a informa; nula se não dá para saber.</summary>
@@ -104,6 +127,17 @@ public static class CargasPorFase
         "3F" or "3F+N" => 3,
         _ => null
     };
+
+    /// <summary>O circuito é ligado entre fase e neutro (a corrente dele volta pelo neutro)?</summary>
+    public static bool LigadoAoNeutro(string? configuracao) => configuracao?.Trim() is "F+N" or "2F+N";
+
+    // Soma das correntes de linha dos circuitos e a parte dos ligados entre fase e neutro; nulas se alguma falta.
+    private static (decimal? Total, decimal? FaseNeutro) Soma(IEnumerable<CircuitoNasFases> circuitos, Func<CircuitoNasFases, decimal?> corrente)
+    {
+        var correntes = circuitos.Select(circuito => (circuito, Corrente: corrente(circuito))).ToList();
+        if (correntes.Any(par => par.Corrente is null)) return (null, null);
+        return (correntes.Sum(par => par.Corrente!.Value), correntes.Where(par => LigadoAoNeutro(par.circuito.Configuracao)).Sum(par => par.Corrente!.Value));
+    }
 
     private static decimal? CorrenteDeLinha(CircuitoNasFases circuito, decimal potenciaVA, decimal? faseNeutroV) =>
         (circuito.Configuracao?.Trim(), circuito.TensaoV) switch

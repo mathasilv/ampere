@@ -25,6 +25,27 @@ public class CargasPorFase_Teste
         await Assert.That(balanco.Fases[2].CorrenteA).IsEqualTo(20m);
         await Assert.That(balanco.MaiorCorrente!.Fase).IsEqualTo("A");
         await Assert.That(balanco.CircuitosSemFase).IsEmpty();
+        await Assert.That(balanco.CorrenteSemFaseA).IsEqualTo(0m);
+        await Assert.That(string.Join(",", balanco.Configuracoes)).IsEqualTo("2F,F+N");
+    }
+
+    [Test]
+    public async Task Corrente_fase_neutro_e_a_dos_circuitos_que_voltam_pelo_neutro()
+    {
+        var balanco = CargasPorFase.Calcular(Abc, 127m,
+        [
+            new CircuitoNasFases(1, "IL-01", 635m, 635m, ["A"], "F+N", 127m),
+            new CircuitoNasFases(2, "TUE-01", 2200m, 2200m, ["A", "B"], "2F", 220m),
+            new CircuitoNasFases(3, "TUE-02", 2540m, 2540m, ["B", "C"], "2F+N", 220m),
+            new CircuitoNasFases(4, "TUG-01", 1270m, 1270m, null, "F+N", 127m),
+            new CircuitoNasFases(5, "TUE-03", 4400m, 4400m, null, "2F", 220m)
+        ])!;
+
+        // A: 5 (F+N) + 10 (2F); B: 10 (2F) + 2540 / (2 · 127) = 10 (2F+N); C: 10 (2F+N).
+        await Assert.That(string.Join("|", balanco.Fases.Select(fase => $"{fase.Fase}:{fase.CorrenteA}/{fase.CorrenteFaseNeutroA}"))).IsEqualTo("A:15/5|B:20/10|C:10/10");
+        // Sem fase: TUG-01 10 A (F+N) e TUE-03 20 A (2F).
+        await Assert.That(balanco.CorrenteSemFaseA).IsEqualTo(30m);
+        await Assert.That(balanco.CorrenteFaseNeutroSemFaseA).IsEqualTo(10m);
     }
 
     [Test]

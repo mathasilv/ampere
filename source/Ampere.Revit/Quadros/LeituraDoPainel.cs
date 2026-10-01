@@ -76,6 +76,35 @@ internal static class LeituraDoPainel
             ? Math.Round((decimal)UnitUtils.ConvertFromInternalUnits(parametro.AsDouble(), UnitTypeId.Volts), 3, MidpointRounding.AwayFromZero)
             : null;
 
+    /// <summary>
+    ///     Circuitos de força que o quadro alimenta, sem reserva nem espaço do Revit (<c>CircuitType</c> Spare e Space: sem
+    ///     cargas, ficam fora do quadro de cargas).
+    /// </summary>
+    public static List<ElectricalSystem> CircuitosDoQuadro(FamilyInstance painel) =>
+        painel.MEPModel?.GetAssignedElectricalSystems()?
+            .Where(sistema => sistema.SystemType == ElectricalSystemType.PowerCircuit && sistema.CircuitType == CircuitType.Circuit)
+            .ToList() ?? [];
+
+    /// <summary>
+    ///     Circuitos de força de que o equipamento é carga, em ordem de id. O <c>GetElectricalSystems</c> de um quadro também
+    ///     devolve os circuitos que ele alimenta: ficam só os que saem de outro equipamento e o têm entre os membros.
+    /// </summary>
+    public static List<ElectricalSystem> Alimentadores(FamilyInstance equipamento) =>
+        equipamento.MEPModel?.GetElectricalSystems()?
+            .Where(sistema => sistema.SystemType == ElectricalSystemType.PowerCircuit
+                              && sistema.BaseEquipment?.Id != equipamento.Id
+                              && sistema.Elements.Cast<Element>().Any(membro => membro.Id == equipamento.Id))
+            .OrderBy(sistema => sistema.Id.Value)
+            .ToList() ?? [];
+
+    /// <summary>Circuito que alimenta equipamento elétrico (quadro, transformador): é alimentador, não circuito terminal.</summary>
+    public static bool AlimentaEquipamento(ElectricalSystem sistema) =>
+        sistema.Elements.Cast<Element>().Any(membro => membro.Category?.BuiltInCategory == BuiltInCategory.OST_ElectricalEquipment);
+
+    /// <summary>Equipamento com sistema de distribuição secundário: transformador (os circuitos saem do secundário).</summary>
+    public static bool Transformador(Document documento, FamilyInstance equipamento) =>
+        Sistema(documento, equipamento, BuiltInParameter.RBS_FAMILY_CONTENT_SECONDARY_DISTRIBSYS) is not null;
+
     /// <summary>Nome do quadro: o "Nome do painel" do Revit ou, vazio, o nome do elemento.</summary>
     public static string Nome(FamilyInstance painel) =>
         painel.get_Parameter(BuiltInParameter.RBS_ELEC_PANEL_NAME)?.AsString() is { Length: > 0 } nome ? nome : painel.Name;

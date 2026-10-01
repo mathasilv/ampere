@@ -3,6 +3,7 @@ using Ampere.Core.Parametros;
 using Ampere.Core.Verificacao;
 using Ampere.Revit.Dimensionamento;
 using Ampere.Revit.Parametros;
+using Ampere.Revit.Quadros;
 using Autodesk.Revit.DB.Electrical;
 
 namespace Ampere.Revit.Verificacao;
@@ -14,7 +15,8 @@ namespace Ampere.Revit.Verificacao;
 ///     Ponto = família das categorias que recebem AMP_TipoCarga (luminárias, dispositivos elétricos, equipamentos
 ///     mecânicos) com conector elétrico de força, no próprio documento (vínculos ficam de fora). Os dados dos circuitos do
 ///     Ampere e as condições guardadas vêm do <see cref="DocumentoDeDimensionamentoRevit" />, para a verificação refazer o
-///     cálculo exatamente como o "Dimensionar".
+///     cálculo exatamente como o "Dimensionar". Circuitos: os terminais; reservas e espaços do Revit e alimentadores
+///     (circuito com quadro ou transformador entre os membros, conferido pelo "Dimensionar alimentadores") ficam de fora.
 /// </remarks>
 public sealed class DocumentoDeVerificacaoRevit(Document documento) : IDocumentoDeVerificacao
 {
@@ -47,7 +49,8 @@ public sealed class DocumentoDeVerificacaoRevit(Document documento) : IDocumento
             .OfCategory(BuiltInCategory.OST_ElectricalCircuit)
             .WhereElementIsNotElementType()
             .OfType<ElectricalSystem>()
-            .Where(sistema => sistema.SystemType == ElectricalSystemType.PowerCircuit)
+            .Where(sistema => sistema.SystemType == ElectricalSystemType.PowerCircuit && sistema.CircuitType == CircuitType.Circuit
+                              && !LeituraDoPainel.AlimentaEquipamento(sistema))
             .Select(sistema => new CircuitoVerificado(
                 sistema.Id.Value,
                 Texto(sistema, ParametrosAmpere.NumeroCircuito),

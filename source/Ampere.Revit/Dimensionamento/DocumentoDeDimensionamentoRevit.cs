@@ -2,6 +2,7 @@ using Ampere.Core.Alimentadores;
 using Ampere.Core.Dimensionamento;
 using Ampere.Core.Parametros;
 using Ampere.Revit.Armazenamento;
+using Ampere.Revit.Quadros;
 using Autodesk.Revit.DB.Electrical;
 
 namespace Ampere.Revit.Dimensionamento;
@@ -85,9 +86,10 @@ public sealed class DocumentoDeDimensionamentoRevit(Document documento) : IDocum
         return modelo.GetElectricalSystems() ?? Enumerable.Empty<ElectricalSystem>();
     }
 
+    // Alimentador (quadro ou transformador entre os membros) é do "Dimensionar alimentadores", mesmo com número do Ampere.
     private static List<long> Ordenar(IEnumerable<ElectricalSystem> sistemas) =>
         sistemas
-            .Where(sistema => sistema.SystemType == ElectricalSystemType.PowerCircuit)
+            .Where(sistema => sistema.SystemType == ElectricalSystemType.PowerCircuit && !LeituraDoPainel.AlimentaEquipamento(sistema))
             .Select(sistema => (Sistema: sistema, Numero: ParametrosAmpere.LerTexto(sistema, ParametrosAmpere.NumeroCircuito)))
             .Where(par => !string.IsNullOrWhiteSpace(par.Numero))
             .OrderBy(par => ParametrosAmpere.LerTexto(par.Sistema, ParametrosAmpere.Quadro) ?? string.Empty, StringComparer.Ordinal)
