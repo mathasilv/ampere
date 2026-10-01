@@ -1,12 +1,91 @@
 {
   "$meta": {
-    "fonte": "catálogo de fabricante ainda não escolhido (data/DATA_GAPS.md, GAP-004)",
-    "versao": "0",
-    "data": "2026-09-29",
+    "fonte": "Tigre, fichas técnicas Tigreflex (setembro/2025), Tigreflex Reforçado (outubro/2025) e Eletroduto de PVC Rígido Roscável (outubro/2013), e Catálogo Técnico Eletricidade TG-059-16 (maio/2016); transcritas pelo usuário e conferidas contra os PDFs em 01/10/2026",
+    "versao": "1",
+    "data": "2026-10-01",
     "ficticio": false,
-    "situacao": "Vazio: diâmetros internos só entram com o catálogo (fabricante e edição) em 'ref'; o carregador recusa valor sem fonte."
+    "situacao": "Diâmetro interno impresso pelo fabricante. Soldável fora: a Tigre não publica as dimensões (dependem da NBR 15465). Tigreflex 16 fora: descontinuado."
   },
   "catalogo": "eletrodutos",
-  "ref": "TODO_CATALOGO",
-  "tipos": []
+  "ref": "Tigre, fichas técnicas e catálogo (a ref de cada tipo diz qual)",
+  "tipos": [
+    {
+      "tipo": "Tigre Tigreflex amarelo",
+      "ref": "Tigre, Ficha Técnica Tigreflex (setembro/2025), p. 1: diâmetro interno",
+      "tamanhos": [
+        {
+          "nominal": "DN 20",
+          "diametro_interno_mm": 15
+        },
+        {
+          "nominal": "DN 25",
+          "diametro_interno_mm": 19.5
+        },
+        {
+          "nominal": "DN 32",
+          "diametro_interno_mm": 25.7
+        }
+      ]
+    },
+    {
+      "tipo": "Tigre Tigreflex Reforçado",
+      "ref": "Tigre, Ficha Técnica Tigreflex Reforçado (outubro/2025), p. 1: diâmetro interno",
+      "tamanhos": [
+        {
+          "nominal": "DN 20",
+          "diametro_interno_mm": 14.6
+        },
+        {
+          "nominal": "DN 25",
+          "diametro_interno_mm": 18.6
+        },
+        {
+          "nominal": "DN 32",
+          "diametro_interno_mm": 25.4
+        }
+      ]
+    },
+    {
+      "tipo": "Tigre PVC rígido roscável",
+      "ref": "Tigre, Ficha Técnica Eletroduto de PVC Rígido Roscável (outubro/2013), p. 1: diâmetro interno (o mesmo do Catálogo Técnico Eletricidade TG-059-16, p. 62)",
+      "tamanhos": [
+        {
+          "nominal": "½\"",
+          "diametro_interno_mm": 16.4
+        },
+        {
+          "nominal": "¾\"",
+          "diametro_interno_mm": 21.3
+        },
+        {
+          "nominal": "1\"",
+          "diametro_interno_mm": 27.5
+        },
+        {
+          "nominal": "1¼\"",
+          "diametro_interno_mm": 36.1
+        },
+        {
+          "nominal": "1½\"",
+          "diametro_interno_mm": 41.4
+        },
+        {
+          "nominal": "2\"",
+          "diametro_interno_mm": 52.8
+        },
+        {
+          "nominal": "2½\"",
+          "diametro_interno_mm": 67.1
+        },
+        {
+          "nominal": "3\"",
+          "diametro_interno_mm": 79.6
+        },
+        {
+          "nominal": "4\"",
+          "diametro_interno_mm": 103.1
+        }
+      ]
+    }
+  ]
 }

@@ -37,6 +37,7 @@ public class ReferenciasDeMemoria_Teste
     [Arguments("parado-catalogo-vazio")]
     [Arguments("decisoes-do-projetista")]
     [Arguments("alimentador-3fn")]
+    [Arguments("perfil-e-catalogos-oficiais")]
     public async Task Memoria_e_relatorio_iguais_aos_de_referencia(string cenario)
     {
         var memoria = Dimensionar(cenario).Memoria!;
@@ -64,6 +65,13 @@ public class ReferenciasDeMemoria_Teste
             Entrada("TUG-03", TipoDeCarga.TUG, 1270m, "F+N", 127m, 10m, ["LOCAL-SECO"]), Ficticio, CatalogosFicticios.Vazios),
         "decisoes-do-projetista" => DimensionamentoDeCircuito.Dimensionar(ComDecisoesDoProjetista(), Ficticio, CatalogosDeTeste),
         "alimentador-3fn" => new CenarioDeAlimentador().Executar().Single().Circuito!.Dimensionamento!,
+        // De ponta a ponta com o que vai para o projetista: perfil NBR 5410 e catálogos Prysmian e Tigre.
+        "perfil-e-catalogos-oficiais" => DimensionamentoDeCircuito.Dimensionar(
+            Entrada("TUG-01", TipoDeCarga.TUG, 1270m, "F+N", 127m, 12m, ["Demais locais internos"]) with
+            {
+                TipoDeCondutor = "Prysmian Superastic Flex 450/750 V", TipoDeEletroduto = "Tigre Tigreflex amarelo"
+            },
+            PerfilNormativo.NBR5410_2004, CatalogosDeProduto.Padrao),
         _ => throw new ArgumentOutOfRangeException(nameof(cenario), cenario, "cenário sem definição")
     };
 

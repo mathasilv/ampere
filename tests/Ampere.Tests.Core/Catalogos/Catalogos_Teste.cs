@@ -105,12 +105,16 @@ public class CatalogoDeEletrodutos_Teste
     private static readonly CatalogoDeEletrodutos Ficticio = CatalogoDeEletrodutos.Carregar(CatalogosFicticios.Eletrodutos);
 
     [Test]
-    public async Task Catalogo_oficial_esta_vazio_ate_a_escolha_do_fabricante()
+    [Property("Fonte", "Tigre: FT Tigreflex 09/2025, FT Tigreflex Reforçado 10/2025, FT Roscável 10/2013")]
+    public async Task Catalogo_oficial_tem_os_eletrodutos_Tigre_com_a_ficha_de_cada_um()
     {
-        var tamanhos = CatalogoDeEletrodutos.Padrao.Tamanhos("PVC rígido roscável");
+        var roscavel = CatalogoDeEletrodutos.Padrao.Tamanhos("Tigre PVC rígido roscável");
 
-        await Assert.That(tamanhos.Disponivel).IsFalse();
-        await Assert.That(tamanhos.Referencia).IsEqualTo("TODO_CATALOGO");
+        await Assert.That(string.Join("|", CatalogoDeEletrodutos.Padrao.Tipos)).IsEqualTo("Tigre Tigreflex amarelo|Tigre Tigreflex Reforçado|Tigre PVC rígido roscável");
+        await Assert.That(roscavel.Valor[0]).IsEqualTo(new TamanhoDeEletroduto("½\"", 16.4m));
+        await Assert.That(roscavel.Referencia).StartsWith("Tigre, Ficha Técnica Eletroduto de PVC Rígido Roscável (outubro/2013)");
+        await Assert.That(CatalogoDeEletrodutos.Padrao.Tamanhos("Tigre Tigreflex amarelo").Valor.Select(tamanho => tamanho.DiametroInternoMm))
+            .IsEquivalentTo([15m, 19.5m, 25.7m], CollectionOrdering.Matching);
     }
 
     [Test]

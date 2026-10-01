@@ -34,8 +34,10 @@ Use um projeto de teste com arquitetura vinculada ou com ambientes (Rooms/Spaces
 5. **Dimensionar circuitos** (sem seleção).
    - O diálogo abre vazio na primeira vez. Nas vezes seguintes, abre com as condições guardadas no modelo; feche e
      reabra o projeto para conferir.
-   - Resumo: com os catálogos de condutores e eletrodutos ainda vazios (GAP-004), o cálculo para no eletroduto. Seção,
-     disjuntor, IDR e queda de tensão aparecem nos parâmetros do circuito.
+   - No diálogo, escolha o condutor (Prysmian Superastic Flex 450/750 V) e o eletroduto (Tigre Tigreflex amarelo). O
+     cálculo deve ir até o eletroduto: seção, disjuntor, IDR, queda, `AMP_EletrodutoTipo` (ex.: DN 20) e a ocupação
+     aparecem nos parâmetros do circuito. Sem condutor escolhido, o cálculo para no diâmetro do condutor.
+   - Com isolação EPR e o Superastic (PVC), o cálculo deve parar dizendo que a isolação não confere.
    - Em `Documentos\Ampere\{projeto}\Circuitos` devem aparecer as memórias (JSON, MD e PDF), `circuitos.csv` e
      `materiais.csv`. Abra os CSV no Excel e confira os acentos.
 6. **Decisões do projetista.** Num circuito, preencha `AMP_SecaoMinimaProjetistaMm2` = 6 e
@@ -66,5 +68,6 @@ Use um projeto de teste com arquitetura vinculada ou com ambientes (Rooms/Spaces
 ## 3. O que conferir com a norma (pendências do usuário)
 
 - **Tabela 42 (FCA):** as faixas são 9 a 11, 12 a 15, 16 a 19 e 20 ou mais? Ver `DATA_GAPS.md`.
-- **GAP-004:** catálogos de condutores e eletrodutos (Prysmian etc.). Sem eles, o cálculo para no eletroduto.
+- **GAP-004:** catálogos Prysmian (Superastic, Sintenax unipolar) e Tigre (Tigreflex, roscável) preenchidos. Falta o
+  eletroduto soldável (NBR 15465) e, se usar, o de aço.
 - **GAP-005:** fatores de demanda (a norma da distribuidora). Hoje são informados no "Montar quadro de cargas".

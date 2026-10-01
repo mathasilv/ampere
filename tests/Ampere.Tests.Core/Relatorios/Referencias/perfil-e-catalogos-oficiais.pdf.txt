@@ -1,0 +1,112 @@
+== página 1 de 3
+56,7 [Titulo 56,7] Memória de cálculo — circuito TUG-01
+80,2 [Rotulo 56,7] Perfil normativo: [Texto 150,4] NBR5410:2004
+91,2 [Rotulo 56,7] Identificador (AMP_MemoriaCalculoId):
+102,3 [Codigo 56,7] sha256:f9be35baf1e6e9939e27b89903ce318dc0bd88c17273726dbe7247bd4fdbbc5d
+112,8 [Rotulo 56,7] Esquema do documento: [Texto 191,8] 1
+123,8 [Rotulo 56,7] Situação: [Texto 109,9] cálculo completo (17 passos)
+134,9 [Rotulo 56,7] Referências pendentes (TODO_NORMA ou TODO_CATALOGO): [Texto 387,4] 1 passo (13), sem fonte oficial
+153,9 [Nota 56,7] Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O
+163,8 [Nota 56,7] documento JSON da memória guarda os valores completos.
+183,7 [Secao 56,7] Passos
+205,7 [TituloDoPasso 56,7] 1. Corrente de projeto
+219,9 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 5.3.4.1 (IB é a corrente de projeto do circuito; Iz ver 6.2.5)
+231 [Rotulo 68,7] Expressão: [Codigo 132,7] IB = S / V
+242 [Rotulo 68,7] Valores: [Texto 115,8] S = 1270 VA; V = 127 V
+253,1 [Rotulo 68,7] Resultado: [Texto 129,2] 10 A
+272,1 [TituloDoPasso 56,7] 2. Condutores carregados
+286,4 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabelas 36-41 e 6.2.6.2 (neutro conta como carregado so com
+297,4 [Texto 68,7] harmonicas >15%; sem harmonicas, nao conta)
+308,5 [Rotulo 68,7] Expressão: [Codigo 132,7] n = condutores carregados (F+N)
+319,5 [Rotulo 68,7] Resultado: [Texto 129,2] 2 condutores
+338,6 [TituloDoPasso 56,7] 3. Fator de correção de temperatura
+352,8 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabela 40 (ar; 30 C = 1,0 e a referencia)
+363,9 [Rotulo 68,7] Expressão: [Codigo 132,7] FCT = tabela (PVC; 30 °C)
+374,9 [Rotulo 68,7] Valores: [Texto 115,8] θ = 30 °C
+386 [Rotulo 68,7] Resultado: [Texto 129,2] 1
+405,1 [TituloDoPasso 56,7] 4. Fator de correção de agrupamento
+419,3 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabela 42, linha 1 (em feixe); chave = início da faixa (9 a 11, 12 a
+430,3 [Texto 68,7] 15, 16 a 19, 20 ou mais)
+441,4 [Rotulo 68,7] Expressão: [Codigo 132,7] FCA = tabela (1 circuito)
+452,5 [Rotulo 68,7] Valores: [Texto 115,8] circuitos = 1
+463,5 [Rotulo 68,7] Resultado: [Texto 129,2] 1
+482,6 [TituloDoPasso 56,7] 5. Seção mínima
+496,8 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.2.6.1.1 e Tabela 47 (instalacoes fixas, condutores e cabos
+507,9 [Texto 68,7] isolados, cobre; aluminio 16 mm2)
+518,9 [Rotulo 68,7] Expressão: [Codigo 132,7] Smín = tabela (Forca)
+530 [Rotulo 68,7] Resultado: [Texto 129,2] 2,5 mm²
+549 [TituloDoPasso 56,7] 6. Seção pela capacidade de condução
+563,3 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabelas 36 e 37 (A1 a D; transcrita do texto oficial por
+574,3 [Texto 68,7] coordenadas, validada contra IEC 60364-5-52)
+585,4 [Rotulo 68,7] Expressão: [Codigo 132,7] menor S ≥ Smín com IZ₀(S) · FCA · FCT ≥ IB
+596,4 [Rotulo 68,7] Valores: [Texto 115,8] Smín = 2,5 mm²; IB = 10 A; FCA = 1; FCT = 1
+607,5 [Rotulo 68,7] Resultado: [Texto 129,2] 2,5 mm²
+618,5 [Rotulo 68,7] Observação: [Texto 138,3] seções nominais: NBR 5410:2004, Tabelas 36-39 (serie de secoes listada)
+637,6 [TituloDoPasso 56,7] 7. Resistividade do condutor
+651,8 [Rotulo 68,7] Referência: [Texto 133] Condutividade do cobre eletrolitico a 20 C (1/56 O.mm2/m), conforme ABNT NBR IEC
+662,9 [Texto 68,7] 60228; valor a 20 C — o uso do valor de servico (condutor aquecido) e decisao do projetista,
+673,9 [Texto 68,7] registrada nas Simplificacoes do data/DATA_GAPS.md
+685 [Rotulo 68,7] Expressão: [Codigo 132,7] ρ = tabela (Cobre)
+696,1 [Rotulo 68,7] Resultado: [Texto 129,2] 0,0179 Ω·mm²/m
+776 [Rodape 189,5] Memória de cálculo — circuito TUG-01 · página 1 de 3
+== página 2 de 3
+56,7 [TituloDoPasso 56,7] 8. Limite de queda de tensão
+70,9 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, itens 6.2.7.1 e 6.2.7.2
+82 [Rotulo 68,7] Expressão: [Codigo 132,7] ΔV%máx = tabela (circuito terminal)
+93 [Rotulo 68,7] Resultado: [Texto 129,2] 4%
+112,1 [TituloDoPasso 56,7] 9. Capacidade de condução da seção adotada
+126,3 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, Tabelas 36 e 37 (A1 a D; transcrita do texto oficial por
+137,4 [Texto 68,7] coordenadas, validada contra IEC 60364-5-52)
+148,4 [Rotulo 68,7] Expressão: [Codigo 132,7] IZ = IZ₀(S) · FCA · FCT
+159,5 [Rotulo 68,7] Valores: [Texto 115,8] S = 2,5 mm²; IZ₀ = 24 A; FCA = 1; FCT = 1
+170,6 [Rotulo 68,7] Resultado: [Texto 129,2] 24 A
+189,6 [TituloDoPasso 56,7] 10. Disjuntor
+203,8 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 5.3.4.1 (IB <= In <= Iz e I2 <= 1,45 Iz)
+214,9 [Rotulo 68,7] Expressão: [Codigo 132,7] menor In com IB ≤ In ≤ IZ
+226 [Rotulo 68,7] Valores: [Texto 115,8] IB = 10 A; IZ = 24 A
+237 [Rotulo 68,7] Resultado: [Texto 129,2] 10 A
+248,1 [Rotulo 68,7] Observação: [Texto 138,3] correntes nominais: Series preferenciais de disjuntores: ABNT NBR IEC 60898-1 (6
+259,1 [Texto 68,7] a 63 A, minidisjuntor) e IEC 60947-2 (caixa moldada, acima), adotadas pelos fabricantes
+270,2 [Texto 68,7] nacionais (WEG, Schneider); decisao de produto registrada em data/DATA_GAPS.md (GAP-004)
+289,2 [TituloDoPasso 56,7] 11. Queda de tensão
+303,5 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, itens 6.2.7.1 e 6.2.7.2
+314,5 [Rotulo 68,7] Expressão: [Codigo 132,7] ΔV% = k · ρ · L · IB / (S · V) · 100
+325,6 [Rotulo 68,7] Valores: [Texto 115,8] k = 2; ρ = 0,0179 Ω·mm²/m; L = 12 m; IB = 10 A; S = 2,5 mm²; V = 127 V
+336,6 [Rotulo 68,7] Resultado: [Texto 129,2] 1,3531%
+347,7 [Rotulo 68,7] Observação: [Texto 138,3] fórmula resistiva (sem reatância), só o circuito terminal
+366,8 [TituloDoPasso 56,7] 12. Exigência de IDR
+381 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 5.1.3.2.2 (alineas a-e: DR In <= 30 mA; nota 1: tomadas ate
+392 [Texto 68,7] 32 A; casos da secao 9 verificados em 9.1); locais nao listados nao exigem
+403,1 [Rotulo 68,7] Expressão: [Codigo 132,7] n = pontos em locais que exigem IDR para TUG
+414,2 [Rotulo 68,7] Valores: [Texto 115,8] total = 1 ponto
+425,2 [Rotulo 68,7] Resultado: [Texto 129,2] 0 pontos
+436,3 [Rotulo 68,7] Observação: [Texto 138,3] Demais locais internos (1 ponto): não exige
+455,3 [TituloDoPasso 56,7] 13. Condutores no eletroduto
+469,6 [Rotulo 68,7] Referência: [Texto 133] TODO_NORMA
+480,6 [Rotulo 68,7] Expressão: [Codigo 132,7] n = F + N + PE
+491,7 [Rotulo 68,7] Resultado: [Texto 129,2] 3 condutores
+502,7 [Rotulo 68,7] Observação: [Texto 138,3] neutro e proteção com o diâmetro da fase (conservador para a ocupação)
+521,8 [TituloDoPasso 56,7] 14. Diâmetro externo do condutor
+536 [Rotulo 68,7] Referência: [Texto 133] Prysmian, ficha técnica Superastic Flex 450/750 V (rodapé BW_005_02_PT), p. 4:
+547,1 [Texto 68,7] diâmetro nominal externo
+558,1 [Rotulo 68,7] Expressão: [Codigo 132,7] d = catálogo (Prysmian Superastic Flex 450/750 V; 2,5 mm²)
+569,2 [Rotulo 68,7] Resultado: [Texto 129,2] 3,5 mm
+588,3 [TituloDoPasso 56,7] 15. Taxa máxima de ocupação
+602,5 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.2.11.1.6, alinea a
+613,5 [Rotulo 68,7] Expressão: [Codigo 132,7] taxa = tabela (3 condutores)
+624,6 [Rotulo 68,7] Resultado: [Texto 129,2] 40%
+643,6 [TituloDoPasso 56,7] 16. Eletroduto adotado
+657,9 [Rotulo 68,7] Referência: [Texto 133] Tigre, Ficha Técnica Tigreflex (setembro/2025), p. 1: diâmetro interno
+668,9 [Rotulo 68,7] Expressão: [Codigo 132,7] menor Di com n · d² / Di² · 100 ≤ taxa
+680 [Rotulo 68,7] Valores: [Texto 115,8] n = 3 condutores; d = 3,5 mm; taxa = 40%
+691 [Rotulo 68,7] Resultado: [Texto 129,2] 15 mm
+702,1 [Rotulo 68,7] Observação: [Texto 138,3] tamanho nominal DN 20 (Tigre Tigreflex amarelo)
+776 [Rodape 189,5] Memória de cálculo — circuito TUG-01 · página 2 de 3
+== página 3 de 3
+56,7 [TituloDoPasso 56,7] 17. Ocupação do eletroduto
+70,9 [Rotulo 68,7] Referência: [Texto 133] NBR 5410:2004, item 6.2.11.1.6, alinea a
+82 [Rotulo 68,7] Expressão: [Codigo 132,7] ocupação = n · d² / Di² · 100
+93 [Rotulo 68,7] Valores: [Texto 115,8] n = 3 condutores; d = 3,5 mm; Di = 15 mm
+104,1 [Rotulo 68,7] Resultado: [Texto 129,2] 16,3333%
+115,2 [Rotulo 68,7] Observação: [Texto 138,3] só os condutores deste circuito: outros circuitos na mesma tubulação não entram
+776 [Rodape 189,5] Memória de cálculo — circuito TUG-01 · página 3 de 3
