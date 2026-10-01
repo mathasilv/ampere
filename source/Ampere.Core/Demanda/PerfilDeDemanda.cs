@@ -128,11 +128,11 @@ public sealed class PerfilDeDemanda
         var edificacoes = LerEdificacoes(arquivo.IluminacaoETug, problemas);
         var colunas = LerColunas(arquivo.Aparelhos, problemas);
         if (arquivo.ArCondicionado is not { Ref.Length: > 0 }) problemas.Add("ar-condicionado sem ref");
-        Faixas("ar-condicionado residencial", arquivo.ArCondicionado?.Residencial, problemas);
-        Faixas("ar-condicionado comercial", arquivo.ArCondicionado?.Comercial, problemas);
+        Faixas("ar-condicionado residencial", arquivo.ArCondicionado?.Residencial, problemas, porQuantidade: true);
+        Faixas("ar-condicionado comercial", arquivo.ArCondicionado?.Comercial, problemas, porQuantidade: true);
         if (arquivo.FornosEFogoes is not { Ref.Length: > 0, LimiteKw: > 0m }) problemas.Add("fornos e fogões sem ref ou sem limite de potência positivo");
-        Faixas("fornos e fogões até o limite", arquivo.FornosEFogoes?.AteOLimite, problemas);
-        Faixas("fornos e fogões acima do limite", arquivo.FornosEFogoes?.AcimaDoLimite, problemas);
+        Faixas("fornos e fogões até o limite", arquivo.FornosEFogoes?.AteOLimite, problemas, porQuantidade: true);
+        Faixas("fornos e fogões acima do limite", arquivo.FornosEFogoes?.AcimaDoLimite, problemas, porQuantidade: true);
         if (arquivo.Motores is not { Ref.Length: > 0, Aplicacao.Length: > 0, RefDoProjetista.Length: > 0 } || !Fator(arquivo.Motores.MaiorPct) || !Fator(arquivo.Motores.DemaisPct))
             problemas.Add("motores sem ref, aplicação, ref do fator do projetista ou fatores em (0; 100]");
         if (arquivo.MaquinasDeSolda is not { Ref.Length: > 0, PorOrdemPct.Count: > 0 } || !arquivo.MaquinasDeSolda.PorOrdemPct.All(pct => Fator(pct))
@@ -200,7 +200,8 @@ public sealed class PerfilDeDemanda
                 else aparelhos.Add(aparelho);
             }
 
-            colunas.Add(new ColunaDeAparelhos(nome, aparelhos, Faixas(nome, coluna.Faixas, problemas)));
+            if (coluna.Aparelhos is not { Count: > 0 }) problemas.Add($"{nome}: coluna sem aparelhos");
+            colunas.Add(new ColunaDeAparelhos(nome, aparelhos, Faixas(nome, coluna.Faixas, problemas, porQuantidade: true)));
         }
 
         foreach (var aparelho in DaTabelaDeAparelhos)
@@ -212,8 +213,8 @@ public sealed class PerfilDeDemanda
         return colunas;
     }
 
-    // Faixas: 'até' crescente, a última aberta (nula), fatores em (0; 100].
-    private static List<FaixaDeDemanda> Faixas(string tabela, List<List<decimal?>>? linhas, List<string> problemas)
+    // Faixas: 'até' crescente, a última aberta (nula), fatores em (0; 100]; por quantidade de aparelhos, 'até' inteiro.
+    private static List<FaixaDeDemanda> Faixas(string tabela, List<List<decimal?>>? linhas, List<string> problemas, bool porQuantidade = false)
     {
         var faixas = new List<FaixaDeDemanda>();
         if (linhas is not { Count: > 0 })
@@ -236,6 +237,8 @@ public sealed class PerfilDeDemanda
             if (!Fator(fator)) problemas.Add($"{tabela}: fator fora de (0; 100] na faixa {indice + 1}");
             if (linha[0] is { } ate && faixas.LastOrDefault()?.Ate is { } anterior && ate <= anterior) problemas.Add($"{tabela}: faixas fora de ordem ({anterior} e {ate})");
             if (linha[0] is <= 0m) problemas.Add($"{tabela}: faixa {indice + 1} com 'até' não positivo");
+            if (porQuantidade && linha[0] is { } quantidade && quantidade != decimal.Truncate(quantidade))
+                problemas.Add($"{tabela}: faixa {indice + 1} com quantidade fracionária ({quantidade})");
             faixas.Add(new FaixaDeDemanda(linha[0], fator));
         }
 

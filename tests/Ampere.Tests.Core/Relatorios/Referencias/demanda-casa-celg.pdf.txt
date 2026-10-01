@@ -1,9 +1,9 @@
 == página 1 de 2
 56,7 [Titulo 56,7] Memória de cálculo — demanda da entrada (CELG CT
 74,2 [Titulo 56,7] 04/18)
-97,6 [Rotulo 56,7] Perfil normativo: [Texto 150,4] CELG CT 04/18
-108,7 [Rotulo 56,7] Identificador (AMP_MemoriaCalculoId):
-119,7 [Codigo 56,7] sha256:9aab5da4927028684cc5b8f350a6b6f9bc28ccb98d0dcfe69a37bd48709f878e
+97,6 [Rotulo 56,7] Documento da distribuidora: [Texto 213,8] CELG CT 04/18
+108,7 [Rotulo 56,7] Identificador da memória (não gravado no modelo):
+119,7 [Codigo 56,7] sha256:b6054f7d0f1f80f607732e22d6adce778e9a2e5fd9839d8a8c15e477990c8182
 130,2 [Rotulo 56,7] Esquema do documento: [Texto 191,8] 1
 141,3 [Rotulo 56,7] Situação: [Texto 109,9] cálculo completo (9 passos)
 160,3 [Nota 56,7] Valores arredondados só para leitura: até 4 casas decimais (abaixo de 1, quatro algarismos significativos). O
@@ -93,5 +93,5 @@
 547 [Texto 68,7] d = 0,75 kVA; f = 2 kVA
 558 [Rotulo 68,7] Resultado: [Texto 129,2] 23,29 kVA
 569,1 [Rotulo 68,7] Observação: [Texto 138,3] fórmula do documento: D = a + (b1 + b2 + b3 + b4 + b5 + b6 + b7 + b8) + c + d
-580,1 [Texto 68,7] + e; parcelas sem pontos ficam de fora; reservas não entram
+580,1 [Texto 68,7] + e; parcelas sem pontos ficam de fora, menos a (diz a edificação); reservas não entram
 776 [Rodape 144,1] Memória de cálculo — demanda da entrada (CELG CT 04/18) · página 2 de 2

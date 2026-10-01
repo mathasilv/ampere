@@ -77,6 +77,33 @@ public class DemandaDaEntrada_Teste
     }
 
     [Test]
+    public async Task Aparelho_de_0_VA_nao_conta_na_quantidade_e_para_o_calculo()
+    {
+        // Um chuveiro de 0 VA faria n = 2 e o fator de 68% no chuveiro real.
+        PontoDeDemanda[] pontos = [new(1, "TUE", "Chuveiro", 5400m), new(2, "TUE", "Chuveiro", 0m)];
+
+        var resultado = DemandaDaEntrada.Calcular(pontos, new OpcoesDaDemanda("Residências"), Celg);
+
+        await Assert.That(resultado.Problemas.Single()).IsEqualTo("1 ponto(s) sem AMP_PotenciaInstaladaVA (vazia ou 0)");
+        await Assert.That(string.Join(",", resultado.PontosComProblema)).IsEqualTo("2");
+    }
+
+    [Test]
+    public async Task Texto_desconhecido_e_dito_e_todos_os_problemas_do_ponto_saem_de_uma_vez()
+    {
+        PontoDeDemanda[] pontos = [new(1, "TUE", "Geladeira", 500m), new(2, "Aquecedor", null, 500m), new(3, "TUE", null, null)];
+
+        var resultado = DemandaDaEntrada.Calcular(pontos, new OpcoesDaDemanda("Residências"), Celg);
+
+        await Assert.That(string.Join("\n", resultado.Problemas)).IsEqualTo(
+            "1 ponto(s) com AMP_TipoCarga desconhecido (digitado à mão?): classifique-os de novo\n" +
+            "1 ponto(s) sem AMP_PotenciaInstaladaVA (vazia ou 0)\n" +
+            "1 ponto(s) TUE sem AMP_Aparelho: a distribuidora dá um fator para cada tipo de aparelho (chuveiro, torneira, forno ou fogão…); use 'Outro' para os que não estão nas tabelas\n" +
+            "1 ponto(s) TUE com AMP_Aparelho desconhecido (digitado à mão?): use Chuveiro, Torneira, Lava-louças, Aquecedor de passagem, Aquecedor de acumulação, Forno ou fogão, Secadora de roupa, Micro-ondas, Máquina de solda, Outro");
+        await Assert.That(string.Join(",", resultado.PontosComProblema)).IsEqualTo("2,3,1");
+    }
+
+    [Test]
     public async Task Motores_exigem_a_escolha_da_regra()
     {
         var sem = DemandaDaEntrada.Calcular(PontosDaCasa(), Casa with { Motores = null }, Celg);

@@ -19,10 +19,10 @@ dotnet build source/Ampere/Ampere.csproj -c Release.R2027
 dotnet test tests/Ampere.Tests.Core                        # motor puro, fora do Revit (net8.0 + net10.0)
 dotnet test tests/Ampere.Tests.Revit -c Release.R2027      # integração: sobe o Revit 2027 no processo
 
-# Regenerar os golden files da memória e do relatório (só com justificativa; revise o diff dos .md antes do commit)
-AMPERE_ATUALIZAR_REFERENCIAS=1 dotnet test --project tests/Ampere.Tests.Core --framework net10.0 --treenode-filter "/*/*/ReferenciasDeMemoria_Teste/*"
-# PDFs de amostra dos mesmos circuitos, para revisão visual (fora do Git)
-AMPERE_AMOSTRAS_PDF=<pasta> dotnet test --project tests/Ampere.Tests.Core --framework net10.0 --treenode-filter "/*/*/ReferenciasDeMemoria_Teste/*"
+# Regenerar os golden files (circuitos, quadros, demanda) da memória e do relatório (só com justificativa; revise o diff dos .md antes do commit)
+AMPERE_ATUALIZAR_REFERENCIAS=1 dotnet test --project tests/Ampere.Tests.Core --framework net10.0 --treenode-filter "/*/*/Referencias*/*"
+# PDFs de amostra dos mesmos casos, para revisão visual (fora do Git)
+AMPERE_AMOSTRAS_PDF=<pasta> dotnet test --project tests/Ampere.Tests.Core --framework net10.0 --treenode-filter "/*/*/Referencias*/*"
 ```
 
 A pós-fixação `.RXXXX` na configuração é exigência do SDK Nice3point.Revit.Sdk.

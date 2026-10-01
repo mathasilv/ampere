@@ -1,7 +1,7 @@
 # Memória de cálculo — demanda da entrada (CELG CT 04/18)
 
-- **Perfil normativo:** CELG CT 04/18
-- **Identificador (AMP_MemoriaCalculoId):** `sha256:9aab5da4927028684cc5b8f350a6b6f9bc28ccb98d0dcfe69a37bd48709f878e`
+- **Documento da distribuidora:** CELG CT 04/18
+- **Identificador da memória (não gravado no modelo):** `sha256:b6054f7d0f1f80f607732e22d6adce778e9a2e5fd9839d8a8c15e477990c8182`
 - **Esquema do documento:** 1
 - **Situação:** cálculo completo (9 passos)
 
@@ -96,4 +96,4 @@
 - **Expressão:** `D = a + b1 + b2 + b6b + b8 + c + d + f`
 - **Valores:** a = 2,496 kVA; b1 = 7,344 kVA; b2 = 3 kVA; b6b = 3,2 kVA; b8 = 1,2 kVA; c = 3,3 kVA; d = 0,75 kVA; f = 2 kVA
 - **Resultado:** 23,29 kVA
-- **Observação:** fórmula do documento: D = a + (b1 + b2 + b3 + b4 + b5 + b6 + b7 + b8) + c + d + e; parcelas sem pontos ficam de fora; reservas não entram
+- **Observação:** fórmula do documento: D = a + (b1 + b2 + b3 + b4 + b5 + b6 + b7 + b8) + c + d + e; parcelas sem pontos ficam de fora, menos a (diz a edificação); reservas não entram

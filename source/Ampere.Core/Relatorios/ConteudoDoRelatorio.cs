@@ -73,16 +73,20 @@ internal sealed record ConteudoDoRelatorio(
             new("Documento da distribuidora", [new Campo("Fonte", perfil.Fonte), new Campo("Situação", perfil.Situacao)]),
             new("Parcelas", parcelas)
         };
-        return Montar(memoria, null, $"Memória de cálculo — {memoria.Circuito.ToLowerInvariant()} ({perfil.Nome})", abertura);
+        return Montar(memoria, null, $"Memória de cálculo — {memoria.Circuito.ToLowerInvariant()} ({perfil.Nome})", abertura,
+            "Documento da distribuidora", "Identificador da memória (não gravado no modelo)");
     }
 
-    private static ConteudoDoRelatorio Montar(MemoriaDeCalculo memoria, string? identificadorGravado, string titulo, IReadOnlyList<SecaoDePasso> abertura)
+    // Memória que não vai para o modelo (ex.: a demanda) não tem AMP_MemoriaCalculoId: os rótulos dizem o que ela é.
+    private static ConteudoDoRelatorio Montar(
+        MemoriaDeCalculo memoria, string? identificadorGravado, string titulo, IReadOnlyList<SecaoDePasso> abertura,
+        string rotuloDoPerfil = "Perfil normativo", string rotuloDoIdentificador = "Identificador (AMP_MemoriaCalculoId)")
     {
         var identificador = memoria.Hash();
         var cabecalho = new List<Campo>
         {
-            new("Perfil normativo", memoria.PerfilNorma),
-            new("Identificador (AMP_MemoriaCalculoId)", identificador, EhCodigo: true),
+            new(rotuloDoPerfil, memoria.PerfilNorma),
+            new(rotuloDoIdentificador, identificador, EhCodigo: true),
             new("Esquema do documento", MemoriaDeCalculo.VersaoDoEsquema),
             new("Situação", Situacao(memoria))
         };

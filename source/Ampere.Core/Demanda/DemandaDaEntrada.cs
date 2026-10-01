@@ -118,46 +118,51 @@ public static class DemandaDaEntrada
 
     private sealed record Lido(long Id, TipoDeCarga Tipo, Aparelho? Aparelho, decimal PotenciaVA);
 
-    // Os pontos que entram (reservas fora); sem tipo, sem potência ou TUE sem aparelho viram problema, com os ids.
+    // Os pontos que entram (reservas fora). Sem tipo, tipo ou aparelho desconhecido, sem potência (vazia ou 0: um aparelho de
+    // 0 VA contaria na quantidade e baixaria o fator dos outros) ou TUE sem aparelho viram problema, todos de uma vez, com os ids.
     private static List<Lido> Ler(IReadOnlyList<PontoDeDemanda> pontos, List<string> problemas, List<long> comProblema)
     {
         var semTipo = new List<long>();
+        var tipoDesconhecido = new List<long>();
         var semPotencia = new List<long>();
         var semAparelho = new List<long>();
+        var aparelhoDesconhecido = new List<long>();
         var lidos = new List<Lido>();
         foreach (var ponto in pontos.OrderBy(ponto => ponto.Id))
         {
             if (!CodigosDeTipoDeCarga.TryLer(ponto.TipoDeCarga, out var tipo))
             {
-                semTipo.Add(ponto.Id);
+                (string.IsNullOrWhiteSpace(ponto.TipoDeCarga) ? semTipo : tipoDesconhecido).Add(ponto.Id);
                 continue;
             }
 
             if (tipo == TipoDeCarga.Reserva) continue;
-            if (ponto.PotenciaVA is not { } potencia || potencia < 0m)
+            var valido = true;
+            if (ponto.PotenciaVA is not > 0m)
             {
                 semPotencia.Add(ponto.Id);
-                continue;
+                valido = false;
             }
 
             Aparelho? aparelho = null;
             if (tipo == TipoDeCarga.TUE)
             {
-                if (!CodigosDeAparelho.TryLer(ponto.Aparelho, out var lido))
+                if (CodigosDeAparelho.TryLer(ponto.Aparelho, out var lido)) aparelho = lido;
+                else
                 {
-                    semAparelho.Add(ponto.Id);
-                    continue;
+                    (string.IsNullOrWhiteSpace(ponto.Aparelho) ? semAparelho : aparelhoDesconhecido).Add(ponto.Id);
+                    valido = false;
                 }
-
-                aparelho = lido;
             }
 
-            lidos.Add(new Lido(ponto.Id, tipo, aparelho, potencia));
+            if (valido) lidos.Add(new Lido(ponto.Id, tipo, aparelho, ponto.PotenciaVA!.Value));
         }
 
         Problema(semTipo, "ponto(s) sem AMP_TipoCarga: classifique-os (ou apague-os, se não são carga)", problemas, comProblema);
-        Problema(semPotencia, "ponto(s) sem AMP_PotenciaInstaladaVA", problemas, comProblema);
+        Problema(tipoDesconhecido, "ponto(s) com AMP_TipoCarga desconhecido (digitado à mão?): classifique-os de novo", problemas, comProblema);
+        Problema(semPotencia, "ponto(s) sem AMP_PotenciaInstaladaVA (vazia ou 0)", problemas, comProblema);
         Problema(semAparelho, "ponto(s) TUE sem AMP_Aparelho: a distribuidora dá um fator para cada tipo de aparelho (chuveiro, torneira, forno ou fogão…); use 'Outro' para os que não estão nas tabelas", problemas, comProblema);
+        Problema(aparelhoDesconhecido, $"ponto(s) TUE com AMP_Aparelho desconhecido (digitado à mão?): use {string.Join(", ", CodigosDeAparelho.Todos)}", problemas, comProblema);
         return lidos;
     }
 
@@ -165,7 +170,7 @@ public static class DemandaDaEntrada
     {
         if (ids.Count == 0) return;
         problemas.Add($"{ids.Count} {descricao}");
-        comProblema.AddRange(ids);
+        comProblema.AddRange(ids.Where(id => !comProblema.Contains(id)));
     }
 
     private static void Motores(OpcoesDaDemanda opcoes, int quantos, PerfilDeDemanda perfil, List<string> problemas)
@@ -325,7 +330,7 @@ public static class DemandaDaEntrada
             var total = _parcelas.Sum(parcela => parcela.DemandaVA) / 1000m;
             Passo(perfil.ReferenciaDaFormula, "Demanda total", $"D = {string.Join(" + ", _parcelas.Select(parcela => parcela.Codigo))}",
                 _parcelas.Select(parcela => Valor(parcela.Codigo, parcela.DemandaVA / 1000m, "kVA")).ToList(), total,
-                $"fórmula do documento: {perfil.Expressao}; parcelas sem pontos ficam de fora; reservas não entram");
+                $"fórmula do documento: {perfil.Expressao}; parcelas sem pontos ficam de fora, menos a (diz a edificação); reservas não entram");
             var memoria = new MemoriaDeCalculo(Nome, perfil.Nome, _passos);
             return new ResultadoDaDemanda(total * 1000m, instaladaVA, _parcelas, memoria, [], []);
         }

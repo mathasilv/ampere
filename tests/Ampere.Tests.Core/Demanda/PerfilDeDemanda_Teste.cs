@@ -87,6 +87,8 @@ public class PerfilDeDemanda_Teste
     [Arguments("\"aparelhos\": [\"Chuveiro\"]", "\"aparelhos\": [\"Geladeira\"]", "aparelho 'Geladeira' desconhecido")]
     [Arguments("\"aparelhos\": [\"Micro-ondas\"]", "\"aparelhos\": [\"Chuveiro\"]", "Chuveiro: em 2 colunas")]
     [Arguments("\"fd_pct\": 86", "\"fd_pct\": 86, \"escalonado\": [[1, 50], [null, 40]]", "exatamente uma regra")]
+    [Arguments("\"residencial\": [[10, 100], [20, 86]", "\"residencial\": [[10.5, 100], [20, 86]", "quantidade fracionária (10.5)")]
+    [Arguments("\"aparelhos\": [\"Micro-ondas\"]", "\"aparelhos\": []", "coluna sem aparelhos")]
     public async Task Tabela_malformada_e_recusada(string trecho, string troca, string problema)
     {
         var json = ArquivoOficial();

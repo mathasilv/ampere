@@ -12,7 +12,7 @@ namespace Ampere.ViewModels;
 public sealed class DemandaViewModel : ObservableObject
 {
     private string _edificacao;
-    private bool _regraDoDocumento;
+    private RegraDeMotores? _regra;
     private string _fatorDosMotores;
     private string _justificativa;
     private string _problemas = string.Empty;
@@ -29,7 +29,8 @@ public sealed class DemandaViewModel : ObservableObject
         Motores = motores > 0 ? $"{motores} motor(es) no modelo: escolha a regra" : "Sem motores no modelo.";
         RegraDoDocumentoTexto =
             $"Regra do documento ({perfil.Motores.Aplicacao}): {Fator(perfil.Motores.MaiorPct)} no maior e {Fator(perfil.Motores.DemaisPct)} nos demais";
-        _regraDoDocumento = anteriores?.Motores != RegraDeMotores.DoProjetista;
+        // Sem padrão: a regra do documento é só para um tipo de edificação, e a escolha é do projetista.
+        _regra = anteriores?.Motores;
         _fatorDosMotores = anteriores?.FatorDosMotoresPct is { } fator ? fator.ToString(CultureInfo.CurrentCulture) : string.Empty;
         _justificativa = anteriores?.Justificativa ?? string.Empty;
     }
@@ -55,17 +56,14 @@ public sealed class DemandaViewModel : ObservableObject
 
     public bool RegraDoDocumento
     {
-        get => _regraDoDocumento;
-        set
-        {
-            if (SetProperty(ref _regraDoDocumento, value)) OnPropertyChanged(nameof(RegraDoProjetista));
-        }
+        get => _regra == RegraDeMotores.DoDocumento;
+        set => Escolher(value, RegraDeMotores.DoDocumento);
     }
 
     public bool RegraDoProjetista
     {
-        get => !_regraDoDocumento;
-        set => RegraDoDocumento = !value;
+        get => _regra == RegraDeMotores.DoProjetista;
+        set => Escolher(value, RegraDeMotores.DoProjetista);
     }
 
     /// <summary>Fator dos motores em % (só com a regra do projetista).</summary>
@@ -99,6 +97,12 @@ public sealed class DemandaViewModel : ObservableObject
             return true;
         }
 
+        if (_regra is null)
+        {
+            Problemas = "escolha a regra dos motores";
+            return false;
+        }
+
         if (RegraDoDocumento)
         {
             Opcoes = new OpcoesDaDemanda(Edificacao, RegraDeMotores.DoDocumento);
@@ -115,6 +119,14 @@ public sealed class DemandaViewModel : ObservableObject
 
         Opcoes = new OpcoesDaDemanda(Edificacao, RegraDeMotores.DoProjetista, fator.Valor, Justificativa.Trim());
         return true;
+    }
+
+    private void Escolher(bool marcada, RegraDeMotores regra)
+    {
+        if (!marcada || _regra == regra) return;
+        _regra = regra;
+        OnPropertyChanged(nameof(RegraDoDocumento));
+        OnPropertyChanged(nameof(RegraDoProjetista));
     }
 
     private static string Fator(decimal pct) => $"{NumeroEmTexto.Formatar(pct)}%";

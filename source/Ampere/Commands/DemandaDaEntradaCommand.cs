@@ -85,7 +85,12 @@ public class DemandaDaEntradaCommand : ExternalCommand
         if (resultado.PontosComProblema.Count > 0)
             dialogo.AddCommandLink(TaskDialogCommandLinkId.CommandLink1, $"Selecionar no modelo os {resultado.PontosComProblema.Count} ponto(s)");
         if (dialogo.Show() == TaskDialogResult.CommandLink1)
+        {
+            // Como no 'Verificar projeto': o modelo não muda, e a seleção fica para o projetista corrigir os pontos.
             uiDocumento.Selection.SetElementIds(resultado.PontosComProblema.Select(id => new ElementId(id)).ToList());
+            return;
+        }
+
         Result = Result.Cancelled;
     }
 
