@@ -1,3 +1,4 @@
+using System.Globalization;
 using Ampere.Core.Cargas;
 using Ampere.Core.Quadros;
 
@@ -13,7 +14,7 @@ public class FatoresEmJson_Teste
         var json = FatoresEmJson.Escrever(fatores);
 
         await Assert.That(json).IsEqualTo("""{"versao":1,"fatores":{"Iluminacao":1,"TUG":0.5}}""");
-        await Assert.That(string.Join(";", FatoresEmJson.Ler(json)!.OrderBy(par => par.Key).Select(par => $"{par.Key}={par.Value}"))).IsEqualTo("Iluminacao=1;TUG=0.5");
+        await Assert.That(string.Join(";", FatoresEmJson.Ler(json)!.OrderBy(par => par.Key).Select(par => $"{par.Key}={par.Value.ToString(CultureInfo.InvariantCulture)}"))).IsEqualTo("Iluminacao=1;TUG=0.5");
     }
 
     [Test]

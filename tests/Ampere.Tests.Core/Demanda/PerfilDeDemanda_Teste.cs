@@ -81,13 +81,13 @@ public class PerfilDeDemanda_Teste
     }
 
     [Test]
-    [Arguments("[[1, 100], [2, 68], [3, 56]", "[[1, 100], [3, 68], [2, 56]", "faixas fora de ordem")]
+    [Arguments("[[1, 100], [2, 68], [3, 56]", "[[1, 100], [3, 68], [2, 56]", "faixas fora de ordem (3 e 2)")]
     [Arguments("[[1, 100], [2, 68], [3, 56]", "[[1, 100], [2, 0], [3, 56]", "fator fora de (0; 100]")]
     [Arguments("[null, 23]] },\n      { \"nome\": \"Torneira", "[66, 23]] },\n      { \"nome\": \"Torneira", "só a última faixa é aberta")]
     [Arguments("\"aparelhos\": [\"Chuveiro\"]", "\"aparelhos\": [\"Geladeira\"]", "aparelho 'Geladeira' desconhecido")]
     [Arguments("\"aparelhos\": [\"Micro-ondas\"]", "\"aparelhos\": [\"Chuveiro\"]", "Chuveiro: em 2 colunas")]
     [Arguments("\"fd_pct\": 86", "\"fd_pct\": 86, \"escalonado\": [[1, 50], [null, 40]]", "exatamente uma regra")]
-    [Arguments("\"residencial\": [[10, 100], [20, 86]", "\"residencial\": [[10.5, 100], [20, 86]", "quantidade fracionária (10.5)")]
+    [Arguments("\"residencial\": [[10, 100], [20, 86]", "\"residencial\": [[10.5, 100], [20, 86]", "quantidade fracionária (10,5)")]
     [Arguments("\"aparelhos\": [\"Micro-ondas\"]", "\"aparelhos\": []", "coluna sem aparelhos")]
     public async Task Tabela_malformada_e_recusada(string trecho, string troca, string problema)
     {

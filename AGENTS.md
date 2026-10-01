@@ -94,6 +94,13 @@ quebre R2025/R2026: perguntar antes de aposentar essas configurações.
 - Golden files (`tests/Ampere.Tests.Core/Relatorios/Referencias`): comparados byte a byte, com LF forçado no
   `.gitattributes`. Regenere num framework só (os dois processos de teste escreveriam o mesmo arquivo ao mesmo tempo) e
   depois rode a suíte normal: net8.0 e net10.0 precisam gerar os mesmos bytes.
+- Números: texto para gente usa `NumeroEmTexto` (vírgula, igual em qualquer máquina); dado (JSON, chave, CSV, parâmetro
+  relido) usa `CultureInfo.InvariantCulture`; entrada digitada recebe a cultura explicitamente. Interpolar `decimal`
+  direto (`$"{valor}"`) usa a cultura do Windows: a memória muda de hash entre máquinas. Os testes do Core rodam numa
+  cultura "hostil" (`CulturaDosTestes`, separador decimal `‹d›`) para isso falhar também na nuvem, que não é pt-BR.
+- Finais de linha: LF em todo checkout (`.gitattributes`: `* text=auto eol=lf`). Com CRLF no Windows, testes que
+  substituem trechos com `
+` em JSON lidos do disco passavam na nuvem e falhavam aqui.
 - `Ampere.Core` compila para net8.0: nada de API do .NET 9+ (ex.: `System.Threading.Lock`), mesmo que o teste em net10.0
   passe.
 - PDFsharp: `GlobalFontSettings.FontResolver` é global e só aceita um registro por processo. `FontesDoRelatorio.Registrar()`

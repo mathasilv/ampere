@@ -235,10 +235,10 @@ public sealed class PerfilDeDemanda
             var ultima = indice == linhas.Count - 1;
             if (ultima != linha[0] is null) problemas.Add($"{tabela}: só a última faixa é aberta (até nulo)");
             if (!Fator(fator)) problemas.Add($"{tabela}: fator fora de (0; 100] na faixa {indice + 1}");
-            if (linha[0] is { } ate && faixas.LastOrDefault()?.Ate is { } anterior && ate <= anterior) problemas.Add($"{tabela}: faixas fora de ordem ({anterior} e {ate})");
+            if (linha[0] is { } ate && faixas.LastOrDefault()?.Ate is { } anterior && ate <= anterior) problemas.Add($"{tabela}: faixas fora de ordem ({NumeroEmTexto.Formatar(anterior)} e {NumeroEmTexto.Formatar(ate)})");
             if (linha[0] is <= 0m) problemas.Add($"{tabela}: faixa {indice + 1} com 'até' não positivo");
             if (porQuantidade && linha[0] is { } quantidade && quantidade != decimal.Truncate(quantidade))
-                problemas.Add($"{tabela}: faixa {indice + 1} com quantidade fracionária ({quantidade})");
+                problemas.Add($"{tabela}: faixa {indice + 1} com quantidade fracionária ({NumeroEmTexto.Formatar(quantidade)})");
             faixas.Add(new FaixaDeDemanda(linha[0], fator));
         }
 
