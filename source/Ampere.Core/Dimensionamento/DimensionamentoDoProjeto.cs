@@ -29,6 +29,7 @@ public interface IDocumentoDeDimensionamento : IDocumentoTransacional
 /// <param name="Quadro">AMP_Quadro do circuito (para relatórios e resumo).</param>
 /// <param name="TipoDeCarga">AMP_TipoCarga do circuito, como lido.</param>
 /// <param name="PotenciaVA">Soma das potências dos pontos; nula se algum ponto não tem potência.</param>
+/// <param name="Entrada">A entrada dimensionada (nula se faltaram dados): fases, comprimento e tipos, para a lista de materiais.</param>
 public sealed record ResultadoDoCircuito(
     long Id,
     string? Numero,
@@ -36,7 +37,8 @@ public sealed record ResultadoDoCircuito(
     IReadOnlyList<string> ProblemasDeDados,
     string? Quadro = null,
     string? TipoDeCarga = null,
-    decimal? PotenciaVA = null)
+    decimal? PotenciaVA = null,
+    EntradaDeDimensionamento? Entrada = null)
 {
     /// <summary>A memória a gravar, se o circuito chegou a ser calculado.</summary>
     public MemoriaDeCalculo? Memoria => Dimensionamento?.Memoria;
@@ -72,7 +74,7 @@ public static class DimensionamentoDoProjeto
                 return montada.Entrada is null
                     ? new ResultadoDoCircuito(dados.Id, dados.Numero, null, montada.Problemas, dados.Quadro, dados.TipoDeCarga, potencia)
                     : new ResultadoDoCircuito(dados.Id, dados.Numero, DimensionamentoDeCircuito.Dimensionar(montada.Entrada, perfil, catalogos), [],
-                        dados.Quadro, dados.TipoDeCarga, potencia);
+                        dados.Quadro, dados.TipoDeCarga, potencia, montada.Entrada);
             })
             .ToList();
 

@@ -19,8 +19,8 @@ namespace Ampere.Commands;
 ///     tensão, IDR e eletroduto, com memória de cálculo e as decisões do projetista de cada circuito. Com seleção, só os
 ///     circuitos selecionados (ou os dos quadros e pontos selecionados); sem seleção, todos os do projeto. Grava os
 ///     resultados nos circuitos e as condições usadas no modelo (um único desfazer; o que não foi calculado apaga o valor
-///     anterior) e salva as memórias em Documentos\Ampere\{projeto}\Circuitos. O diálogo abre com as condições guardadas no
-///     modelo.
+///     anterior) e salva as memórias, a planilha e a lista de materiais em Documentos\Ampere\{projeto}\Circuitos. O diálogo
+///     abre com as condições guardadas no modelo.
 /// </summary>
 [UsedImplicitly]
 [Transaction(TransactionMode.Manual)]
@@ -85,10 +85,10 @@ public class DimensionarCircuitosCommand : ExternalCommand
             return;
         }
 
-        var (pasta, gerados, planilha, errosDeDisco) = RelatoriosDosCircuitos.Gravar(resultados, Path.GetFileNameWithoutExtension(documento.PathName), daSelecao);
+        var gravacao = RelatoriosDosCircuitos.Gravar(resultados, Path.GetFileNameWithoutExtension(documento.PathName), daSelecao);
         cronometro.Stop();
 
-        var texto = ResumoDoDimensionamento.Texto(resultados, perfil, cronometro.Elapsed, pasta, gerados, planilha, errosDeDisco);
+        var texto = ResumoDoDimensionamento.Texto(resultados, perfil, cronometro.Elapsed, gravacao);
         if (porta.CondicoesNaoGravadas is { } motivo)
             texto += $"{Environment.NewLine}{Environment.NewLine}As condições do projeto não foram guardadas no modelo ({motivo}): na próxima vez, o diálogo não as traz preenchidas.";
         TaskDialog.Show(TituloDaJanela, texto);

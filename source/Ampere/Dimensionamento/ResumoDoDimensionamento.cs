@@ -11,8 +11,7 @@ internal static class ResumoDoDimensionamento
     private const int MaximoDeLinhas = 8;
 
     public static string Texto(
-        IReadOnlyList<ResultadoDoCircuito> resultados, PerfilNormativo perfil, TimeSpan tempo,
-        string? pastaDosRelatorios, int relatoriosGerados, string? planilha, IReadOnlyList<string> errosDeGravacao)
+        IReadOnlyList<ResultadoDoCircuito> resultados, PerfilNormativo perfil, TimeSpan tempo, GravacaoDosRelatorios gravacao)
     {
         var texto = new StringBuilder();
         var dimensionados = resultados.Count(resultado => resultado.Dimensionamento?.Situacao == SituacaoDoDimensionamento.Dimensionado);
@@ -32,15 +31,20 @@ internal static class ResumoDoDimensionamento
         Listar(texto, "Avisos", resultados.SelectMany(resultado =>
             (resultado.Dimensionamento?.Avisos ?? []).Select(aviso => $"{Identificar(resultado)}: {aviso}")));
 
-        if (pastaDosRelatorios is { Length: > 0 })
+        if (gravacao.Pasta is { Length: > 0 } pasta)
         {
             texto.AppendLine();
-            texto.AppendLine($"Memórias gravadas (JSON, Markdown e PDF): {relatoriosGerados}");
-            if (planilha is not null) texto.AppendLine($"Planilha de todos os circuitos: {Path.GetFileName(planilha)}");
-            texto.AppendLine(pastaDosRelatorios);
+            texto.AppendLine($"Memórias gravadas (JSON, Markdown e PDF): {gravacao.Gerados}");
+            if (gravacao.Planilha is { } planilha) texto.AppendLine($"Planilha dos circuitos: {Path.GetFileName(planilha)}");
+            if (gravacao.Materiais is { } materiais)
+            {
+                texto.AppendLine($"Lista de materiais: {Path.GetFileName(materiais.Caminho)} ({materiais.Itens} itens"
+                                 + (materiais.CircuitosFora > 0 ? $"; {materiais.CircuitosFora} circuito(s) fora da lista, com o motivo no fim da planilha)" : ")"));
+            }
+            texto.AppendLine(pasta);
         }
 
-        Listar(texto, "Erros de gravação dos relatórios", errosDeGravacao);
+        Listar(texto, "Erros de gravação dos relatórios", gravacao.Erros);
 
         if (!string.IsNullOrEmpty(perfil.Nome)) texto.AppendLine().Append($"Perfil: {perfil.Nome}");
         texto.AppendLine().Append($"Tempo: {tempo.TotalSeconds:0.00} s");

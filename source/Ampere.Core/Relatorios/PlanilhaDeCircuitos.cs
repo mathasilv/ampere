@@ -13,8 +13,6 @@ namespace Ampere.Core.Relatorios;
 /// </remarks>
 public static class PlanilhaDeCircuitos
 {
-    private const char Separador = ';';
-
     private static readonly string[] Cabecalho =
     [
         "Quadro", "Circuito", "Tipo de carga", "Situação", "Potência (VA)", "IB (A)", "FCT", "FCA", "Seção (mm²)", "IZ (A)",
@@ -25,8 +23,8 @@ public static class PlanilhaDeCircuitos
     public static string Csv(IReadOnlyList<ResultadoDoCircuito> resultados)
     {
         var texto = new StringBuilder();
-        Linha(texto, Cabecalho);
-        foreach (var resultado in resultados) Linha(texto, Colunas(resultado));
+        CsvEmPortugues.Linha(texto, Cabecalho);
+        foreach (var resultado in resultados) CsvEmPortugues.Linha(texto, Colunas(resultado));
         return texto.ToString();
     }
 
@@ -68,16 +66,4 @@ public static class PlanilhaDeCircuitos
     };
 
     private static string? Numero(decimal? valor) => valor is { } numero ? NumeroEmTexto.FormatarParaLeitura(numero) : null;
-
-    private static void Linha(StringBuilder texto, IEnumerable<string?> campos)
-    {
-        texto.Append(string.Join(Separador, campos.Select(Campo)));
-        texto.Append("\r\n");
-    }
-
-    private static string Campo(string? valor)
-    {
-        if (string.IsNullOrEmpty(valor)) return string.Empty;
-        return valor.IndexOfAny([Separador, '"', '\r', '\n']) >= 0 ? $"\"{valor.Replace("\"", "\"\"")}\"" : valor;
-    }
 }
