@@ -4,7 +4,8 @@ namespace Ampere.Core.Dimensionamento;
 
 /// <summary>Valores AMP_* de um ponto do circuito, como o adapter os lê (nulo = parâmetro vazio).</summary>
 /// <param name="Local">Local do ponto no vocabulário da tabela de IDR do perfil (nulo = sem local).</param>
-public sealed record DadosDoPonto(long Id, decimal? PotenciaVA, decimal? TensaoV, string? Fases, string? Local = null);
+/// <param name="TipoDeCarga">AMP_TipoCarga do ponto (texto): precisa ser o mesmo do circuito.</param>
+public sealed record DadosDoPonto(long Id, decimal? PotenciaVA, decimal? TensaoV, string? Fases, string? Local = null, string? TipoDeCarga = null);
 
 /// <summary>Comprimento que o Revit calcula para o circuito, do quadro aos pontos, e o caminho que ele considerou.</summary>
 /// <param name="Metros">Comprimento, em m (zero = o Revit não calculou).</param>
@@ -80,6 +81,7 @@ public static class EntradaDoCircuito
         if (dados.Pontos.Count == 0) problemas.Add("circuito sem pontos");
         foreach (var ponto in dados.Pontos.Where(ponto => ponto.PotenciaVA is null))
             problemas.Add($"ponto {ponto.Id} sem AMP_PotenciaInstaladaVA");
+        TiposDosPontos(dados, problemas);
 
         var tensoes = dados.Pontos.Select(ponto => ponto.TensaoV).OfType<decimal>().Distinct().Order().ToList();
         Unica(tensoes.Select(NumeroEmTexto.Formatar).ToList(), "AMP_TensaoCircuitoV", "tensões", problemas);
@@ -107,17 +109,42 @@ public static class EntradaDoCircuito
         return new EntradaMontada(entrada, []);
     }
 
+    // AMP_ComprimentoRotaM = 0 conta como vazio: o Revit não devolve parâmetro numérico a "sem valor", então zerar é o
+    // único jeito de o projetista voltar ao comprimento do Revit — e L = 0 daria queda de tensão zero sem aviso.
+    // Negativo segue como informado, para a validação da entrada recusá-lo.
     private static (decimal? Metros, string? Origem) Comprimento(DadosDoCircuito dados, List<string> problemas)
     {
-        if (dados.ComprimentoM is { } informado)
-            return (Milimetro(informado), "AMP_ComprimentoRotaM, informado pelo projetista");
-        if (dados.ComprimentoNoRevit is { Metros: > 0 } doRevit)
-            return (Milimetro(doRevit.Metros), $"calculado pelo Revit ({doRevit.Caminho}), arredondado ao milímetro");
+        var informado = dados.ComprimentoM is { } valor ? Milimetro(valor) : (decimal?)null;
+        if (informado is { } metros and not 0m) return (metros, "AMP_ComprimentoRotaM, informado pelo projetista");
 
+        var zerado = informado is not null ? "AMP_ComprimentoRotaM = 0, tratado como vazio; " : string.Empty;
+        if (dados.ComprimentoNoRevit is { } doRevit && Milimetro(doRevit.Metros) > 0)
+            return (Milimetro(doRevit.Metros), $"{zerado}calculado pelo Revit ({doRevit.Caminho}), arredondado ao milímetro");
+
+        var semInformado = informado is null ? "sem AMP_ComprimentoRotaM" : "AMP_ComprimentoRotaM = 0 (vazio)";
         problemas.Add(dados.ComprimentoNoRevit is null
-            ? "sem AMP_ComprimentoRotaM e sem comprimento do circuito no Revit"
-            : "sem AMP_ComprimentoRotaM e o Revit não calculou o comprimento do circuito (zero): informe o comprimento");
+            ? $"{semInformado} e sem comprimento do circuito no Revit"
+            : $"{semInformado} e o Revit não calculou o comprimento do circuito (zero): informe o comprimento");
         return (null, null);
+    }
+
+    // O tipo do circuito decide a seção mínima e a exigência de IDR: ponto de outro tipo (reclassificado depois de
+    // circuitado, ou posto no circuito pelo Revit) é problema, nunca um dos tipos escolhido.
+    private static void TiposDosPontos(DadosDoCircuito dados, List<string> problemas)
+    {
+        if (!CodigosDeTipoDeCarga.TryLer(dados.TipoDeCarga, out var doCircuito)) return;
+
+        var semTipo = dados.Pontos.Where(ponto => !CodigosDeTipoDeCarga.TryLer(ponto.TipoDeCarga, out _)).Select(ponto => ponto.Id).ToList();
+        if (semTipo.Count > 0) problemas.Add($"ponto(s) sem AMP_TipoCarga reconhecido: {string.Join("; ", semTipo)}");
+
+        var diferentes = dados.Pontos
+            .Where(ponto => CodigosDeTipoDeCarga.TryLer(ponto.TipoDeCarga, out var doPonto) && doPonto != doCircuito)
+            .GroupBy(ponto => { CodigosDeTipoDeCarga.TryLer(ponto.TipoDeCarga, out var doPonto); return CodigosDeTipoDeCarga.Codigo(doPonto); })
+            .OrderBy(grupo => grupo.Key, StringComparer.Ordinal)
+            .Select(grupo => $"{grupo.Key}: {grupo.Count()}")
+            .ToList();
+        if (diferentes.Count > 0)
+            problemas.Add($"pontos de tipo diferente do circuito ({CodigosDeTipoDeCarga.Codigo(doCircuito)}) — {string.Join("; ", diferentes)}: corrija o AMP_TipoCarga ou refaça o circuito");
     }
 
     private static decimal Milimetro(decimal metros) => Math.Round(metros, 3, MidpointRounding.AwayFromZero);

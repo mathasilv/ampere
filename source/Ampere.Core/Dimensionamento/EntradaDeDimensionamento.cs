@@ -50,7 +50,7 @@ public sealed record EntradaDeDimensionamento(
         if (PotenciaVA < 0) problemas.Add("potência não pode ser negativa");
         if (!ClassificacaoDeCarga.FasesValidas.Contains(Fases)) problemas.Add($"fases inválidas: '{Fases}'");
         if (TensaoV <= 0) problemas.Add("tensão deve ser positiva");
-        if (ComprimentoM < 0) problemas.Add("comprimento não pode ser negativo");
+        if (ComprimentoM <= 0) problemas.Add("comprimento deve ser positivo");
         if (string.IsNullOrWhiteSpace(MetodoDeInstalacao)) problemas.Add("método de instalação não informado");
         if (string.IsNullOrWhiteSpace(Isolacao)) problemas.Add("isolação não informada");
         if (string.IsNullOrWhiteSpace(Material)) problemas.Add("material do condutor não informado");
@@ -100,6 +100,10 @@ public enum SituacaoDoDimensionamento
 /// <param name="OcupacaoDoEletrodutoPct">Ocupação do eletroduto pelos condutores do circuito (AMP_OcupacaoEletrodutoPct).</param>
 /// <param name="Problemas">Por que o cálculo não foi feito ou parou.</param>
 /// <param name="Avisos">Divergências que não param o cálculo (ex.: decisão do projetista contrária à tabela).</param>
+/// <param name="IdrAvaliado">
+///     A exigência de IDR foi decidida (exigido ou não). Falso quando o cálculo parou antes ou na própria exigência: aí
+///     IDR nulo não quer dizer "sem IDR", e o disjuntor não forma um conjunto de proteção completo.
+/// </param>
 public sealed record ResultadoDoDimensionamento(
     string Circuito,
     SituacaoDoDimensionamento Situacao,
@@ -119,4 +123,5 @@ public sealed record ResultadoDoDimensionamento(
     decimal? OcupacaoDoEletrodutoPct,
     MemoriaDeCalculo? Memoria,
     IReadOnlyList<string> Problemas,
-    IReadOnlyList<string> Avisos);
+    IReadOnlyList<string> Avisos,
+    bool IdrAvaliado = false);

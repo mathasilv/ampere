@@ -90,7 +90,15 @@ Comportamento do modelo a validar pelo projetista:
 - Resultado que deixou de ser calculado (IDR que deixou de ser exigido, circuito que perdeu um dado, cálculo que parou
   antes) apaga o valor anterior. O Revit não devolve parâmetro compartilhado numérico a "sem valor" (`ClearValue` exige
   HideWhenNoValue, que a injeção não usa): o valor anterior vira **0**; parâmetro que nunca teve valor continua vazio.
-  Em tabelas, 0 em AMP_IDR_* = sem IDR; 0 nos demais = não calculado (ver a memória).
+- Seção, I<sub>Z</sub>, disjuntor, queda, IDR e eletroduto só são gravados quando a exigência de IDR foi decidida; se o
+  cálculo parou antes (ex.: ponto sem AMP_Local), ficam vazios/0 e só a corrente de projeto, os fatores e o hash da
+  memória são gravados. Leitura das tabelas: **IDR vazio ou 0 ao lado de um disjuntor gravado = sem IDR**; sem disjuntor
+  gravado, a proteção não foi decidida (ver a memória).
+- AMP_ComprimentoRotaM = 0 conta como vazio (é o único jeito de "esvaziar" o parâmetro): vale o comprimento do Revit.
+- Ponto com AMP_TipoCarga diferente do circuito (reclassificado depois, ou posto no circuito pelo Revit) é problema de
+  dados: o tipo decide a seção mínima e o IDR, e o motor não escolhe um deles.
+- Quadro de cargas: circuito que fica fora do quadro (sem tipo ou sem potência) perde o fator da montagem anterior;
+  quadro que ficou sem circuitos perde o hash; quadro em grupo ou vínculo fica sem o hash e o resumo avisa.
 
 Pendente:
 
@@ -99,6 +107,12 @@ Pendente:
   resultado — ler de volta transformaria o cálculo em "decisão"): parâmetro novo (GUID novo, decisão do usuário) ou
   campo no diálogo por circuito.
 - Seleção: o comando dimensiona todos os circuitos do Ampere no projeto; dimensionar só os selecionados fica para depois.
+- **Método D (enterrado) bloqueado**: as linhas da Tabela 40 do perfil são do ar e declaram `"metodos": [A1…C]`; para D
+  o motor para no fator de temperatura até a Tabela 40-solo (e as Tabelas 44/45 de agrupamento enterrado) serem
+  transcritas. D também sai da lista do diálogo.
+- **Alumínio fora do diálogo**: o perfil só tem resistividade do cobre, e a seção mínima (Tabela 47) está com os valores
+  do cobre (a ref já cita 16 mm² para alumínio). Para liberar: resistividade do alumínio com fonte e seção mínima por
+  material no perfil.
 
 ## Previstas (ainda sem código)
 

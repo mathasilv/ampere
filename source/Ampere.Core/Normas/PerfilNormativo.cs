@@ -64,7 +64,7 @@ public sealed class PerfilNormativo
         _temperatura = leitor.Ler<List<LinhaDeTemperaturaJson>, IReadOnlyList<LinhaDeTemperatura>>(
             "fator_de_temperatura", tabelas.FatorDeTemperatura, valores => valores.Count == 0,
             (valores, nome1) => valores
-                .Select(linha => new LinhaDeTemperatura(linha.Isolacao ?? string.Empty, leitor.PorDecimal(nome1, linha.PorTemperaturaC)))
+                .Select(linha => new LinhaDeTemperatura(linha.Isolacao ?? string.Empty, leitor.Metodos(nome1, linha.Metodos), leitor.PorDecimal(nome1, linha.PorTemperaturaC)))
                 .ToList());
         _agrupamento = leitor.PorInteiro("fator_de_agrupamento", tabelas.FatorDeAgrupamento);
         _queda = leitor.PorTexto("queda_de_tensao_maxima_pct", tabelas.QuedaDeTensaoMaximaPct);
@@ -76,11 +76,13 @@ public sealed class PerfilNormativo
         _fatorDeDemanda = leitor.Ler<Dictionary<string, decimal>, IReadOnlyDictionary<string, decimal>>(
             "fator_de_demanda_por_tipo", tabelas.FatorDeDemandaPorTipo, valores => valores.Count == 0, leitor.Fracao);
 
+        // Só o que o motor consegue levar adiante: método com fator de temperatura, material com resistividade.
         IReadOnlyList<LinhaDeCapacidade> capacidade = _capacidade.Pendente ? [] : _capacidade.Valores;
+        IReadOnlyList<LinhaDeTemperatura> temperatura = _temperatura.Pendente ? [] : _temperatura.Valores;
         Vocabulario = new VocabularioDoPerfil(
-            Distintos(capacidade.Select(linha => linha.Metodo)),
+            Distintos(capacidade.Select(linha => linha.Metodo).Where(metodo => temperatura.Any(linha => linha.Vale(metodo)))),
             Distintos(capacidade.Select(linha => linha.Isolacao)),
-            Distintos(capacidade.Select(linha => linha.Material)),
+            Distintos(capacidade.Select(linha => linha.Material).Where(material => !_resistividade.Pendente && _resistividade.Valores.ContainsKey(material))),
             // Na ordem do arquivo (o dicionário da tabela não garante ordem).
             _protecaoDiferencial.Pendente
                 ? []
@@ -168,12 +170,16 @@ public sealed class PerfilNormativo
             : DadoNormativo<decimal>.Ausente(_capacidade.Referencia, $"sem valor para {NumeroEmTexto.Formatar(secaoMm2)} mm² ({descricao})");
     }
 
-    public DadoNormativo<decimal> FatorDeTemperatura(string isolacao, decimal temperaturaC)
+    /// <param name="metodo">Método de instalação: a linha precisa valer para ele (a Tabela 40 do ar não vale para linha enterrada).</param>
+    public DadoNormativo<decimal> FatorDeTemperatura(string metodo, string isolacao, decimal temperaturaC)
     {
         if (_temperatura.Pendente) return Pendente<decimal>("fator_de_temperatura");
 
-        var linha = _temperatura.Valores.FirstOrDefault(linha => linha.Isolacao == isolacao);
-        if (linha is null) return DadoNormativo<decimal>.Ausente(_temperatura.Referencia, $"sem fatores para a isolação {isolacao}");
+        var daIsolacao = _temperatura.Valores.Where(linha => linha.Isolacao == isolacao).ToList();
+        if (daIsolacao.Count == 0) return DadoNormativo<decimal>.Ausente(_temperatura.Referencia, $"sem fatores para a isolação {isolacao}");
+        var linha = daIsolacao.FirstOrDefault(linha => linha.Vale(metodo));
+        if (linha is null)
+            return DadoNormativo<decimal>.Ausente(_temperatura.Referencia, $"sem fatores de temperatura para o método {metodo} ({isolacao}) no perfil");
 
         return linha.PorTemperatura.TryGetValue(temperaturaC, out var fator)
             ? DadoNormativo<decimal>.Com(fator, _temperatura.Referencia)
@@ -274,7 +280,11 @@ public sealed class PerfilNormativo
 
     private sealed record LinhaDeCapacidade(string Metodo, string Isolacao, string Material, int CondutoresCarregados, IReadOnlyDictionary<decimal, decimal> PorSecao);
 
-    private sealed record LinhaDeTemperatura(string Isolacao, IReadOnlyDictionary<decimal, decimal> PorTemperatura);
+    /// <param name="Metodos">Métodos a que a linha se aplica; nulo = todos.</param>
+    private sealed record LinhaDeTemperatura(string Isolacao, IReadOnlyList<string>? Metodos, IReadOnlyDictionary<decimal, decimal> PorTemperatura)
+    {
+        public bool Vale(string metodo) => Metodos is null || Metodos.Contains(metodo, StringComparer.Ordinal);
+    }
 
     /// <summary>Lê as tabelas aplicando a regra 4 e acumulando os problemas.</summary>
     private sealed class Leitor(List<string> problemas)
@@ -360,6 +370,13 @@ public sealed class PerfilNormativo
 
             if (resultado.Count == 0) problemas.Add($"{nome}: linha sem valores");
             return resultado;
+        }
+
+        public IReadOnlyList<string>? Metodos(string nome, List<string>? metodos)
+        {
+            if (metodos is null) return null;
+            if (metodos.Count == 0 || metodos.Any(string.IsNullOrWhiteSpace)) problemas.Add($"{nome}: lista de métodos vazia ou com método em branco");
+            return metodos.Select(metodo => metodo.Trim()).ToList();
         }
 
         public LinhaDeCapacidade Capacidade(string nome, LinhaDeCapacidadeJson linha)

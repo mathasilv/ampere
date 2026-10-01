@@ -28,7 +28,7 @@ public class PerfilNormativo_Teste
         await Assert.That(queda.Disponivel).IsTrue();
         await Assert.That(queda.Valor).IsEqualTo(4m);
         await Assert.That(queda.Referencia).Contains("6.2.7");
-        var temperatura = oficial.FatorDeTemperatura("PVC", 40m);
+        var temperatura = oficial.FatorDeTemperatura("B1", "PVC", 40m);
         await Assert.That(temperatura.Valor).IsEqualTo(0.87m);
         await Assert.That(oficial.FatorDeAgrupamento(3).Valor).IsEqualTo(0.70m);
         await Assert.That(oficial.FatorDeAgrupamento(25).Valor).IsEqualTo(0.38m);
@@ -55,7 +55,7 @@ public class PerfilNormativo_Teste
         await Assert.That(Ficticio.CorrentesNominaisDeDisjuntorA().Valor!.Count).IsEqualTo(8);
         await Assert.That(Ficticio.CondutoresCarregados("3F").Valor).IsEqualTo(3);
         await Assert.That(Ficticio.SecaoMinimaMm2("Forca").Valor).IsEqualTo(2.5m);
-        await Assert.That(Ficticio.FatorDeTemperatura("PVC", 40m).Valor).IsEqualTo(0.8m);
+        await Assert.That(Ficticio.FatorDeTemperatura("B1", "PVC", 40m).Valor).IsEqualTo(0.8m);
         await Assert.That(Ficticio.FatorDeAgrupamento(2).Valor).IsEqualTo(0.8m);
         await Assert.That(Ficticio.QuedaDeTensaoMaximaPct("circuito_terminal").Valor).IsEqualTo(5m);
         await Assert.That(Ficticio.ResistividadeOhmMm2PorM("Cobre").Valor).IsEqualTo(0.02m);
@@ -68,9 +68,10 @@ public class PerfilNormativo_Teste
     {
         var vocabulario = PerfilNormativo.NBR5410_2004.Vocabulario;
 
-        await Assert.That(vocabulario.MetodosDeInstalacao).IsEquivalentTo(["A1", "A2", "B1", "B2", "C", "D"], CollectionOrdering.Matching);
+        // D (enterrado) fica de fora até a Tabela 40 do solo; alumínio, até ter resistividade no perfil.
+        await Assert.That(vocabulario.MetodosDeInstalacao).IsEquivalentTo(["A1", "A2", "B1", "B2", "C"], CollectionOrdering.Matching);
         await Assert.That(vocabulario.Isolacoes).IsEquivalentTo(["PVC", "EPR ou XLPE"], CollectionOrdering.Matching);
-        await Assert.That(vocabulario.Materiais).IsEquivalentTo(["Cobre", "Alumínio"], CollectionOrdering.Matching);
+        await Assert.That(vocabulario.Materiais).IsEquivalentTo(["Cobre"], CollectionOrdering.Matching);
         await Assert.That(vocabulario.Locais).IsEquivalentTo(
             ["Local com banheira ou chuveiro", "Area externa", "Cozinha, lavanderia, area de servico ou garagem", "Demais locais internos"],
             CollectionOrdering.Matching);
@@ -85,6 +86,39 @@ public class PerfilNormativo_Teste
         await Assert.That(vocabulario.Isolacoes).IsEquivalentTo(["PVC"]);
         await Assert.That(vocabulario.Materiais).IsEquivalentTo(["Cobre"]);
         await Assert.That(vocabulario.Locais).IsEquivalentTo(["LOCAL-SECO", "LOCAL-MOLHADO", "LOCAL-EXTERNO", "LOCAL-ESPECIAL"], CollectionOrdering.Matching);
+    }
+
+    [Test]
+    public async Task Todo_metodo_e_material_do_vocabulario_oficial_tem_fator_de_temperatura_e_resistividade()
+    {
+        var oficial = PerfilNormativo.NBR5410_2004;
+
+        foreach (var metodo in oficial.Vocabulario.MetodosDeInstalacao)
+        foreach (var isolacao in oficial.Vocabulario.Isolacoes)
+            await Assert.That(oficial.FatorDeTemperatura(metodo, isolacao, 30m).Disponivel).IsTrue().Because($"{metodo}, {isolacao}");
+        foreach (var material in oficial.Vocabulario.Materiais)
+            await Assert.That(oficial.ResistividadeOhmMm2PorM(material).Disponivel).IsTrue().Because(material);
+    }
+
+    [Test]
+    public async Task Linha_de_temperatura_vale_so_para_os_metodos_declarados()
+    {
+        var perfil = PerfilNormativo.Carregar(PerfilFicticio.Json.Replace(
+            "{ \"isolacao\": \"PVC\", \"por_temperatura_c\"", "{ \"isolacao\": \"PVC\", \"metodos\": [\"B1\"], \"por_temperatura_c\""));
+
+        await Assert.That(perfil.FatorDeTemperatura("B1", "PVC", 30m).Valor).IsEqualTo(1m);
+        await Assert.That(perfil.FatorDeTemperatura("D", "PVC", 30m).Ausencia).IsEqualTo("sem fatores de temperatura para o método D (PVC) no perfil");
+        await Assert.That(perfil.FatorDeTemperatura("D", "EPR", 30m).Ausencia).IsEqualTo("sem fatores para a isolação EPR");
+    }
+
+    [Test]
+    public async Task Lista_de_metodos_vazia_e_rejeitada()
+    {
+        var json = PerfilFicticio.Json.Replace("{ \"isolacao\": \"PVC\", \"por_temperatura_c\"", "{ \"isolacao\": \"PVC\", \"metodos\": [], \"por_temperatura_c\"");
+
+        await Assert.That(() => PerfilNormativo.Carregar(json))
+            .Throws<PerfilNormativoInvalidoException>()
+            .WithMessageContaining("fator_de_temperatura: lista de métodos vazia ou com método em branco");
     }
 
     [Test]
@@ -151,7 +185,7 @@ public class PerfilNormativo_Teste
     public async Task Linha_inexistente_na_tabela_e_ausencia_explicada_nunca_aproximacao()
     {
         var capacidade = Ficticio.CapacidadeDeConducaoA("F", "PVC", "Cobre", 2, 2.5m);
-        var temperatura = Ficticio.FatorDeTemperatura("PVC", 35m);
+        var temperatura = Ficticio.FatorDeTemperatura("B1", "PVC", 35m);
 
         await Assert.That(capacidade.Disponivel).IsFalse();
         await Assert.That(capacidade.Ausencia).Contains("método F");

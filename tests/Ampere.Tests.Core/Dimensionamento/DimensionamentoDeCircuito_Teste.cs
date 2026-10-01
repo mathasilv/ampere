@@ -268,6 +268,38 @@ public class DimensionamentoDeCircuito_Teste
     }
 
     [Test]
+    public async Task IDR_avaliado_so_quando_a_exigencia_foi_decidida()
+    {
+        await Assert.That(Dimensionar(Entrada()).IdrAvaliado).IsTrue();
+        await Assert.That(Dimensionar(Entrada(locais: ["LOCAL-MOLHADO"])).IdrAvaliado).IsTrue();
+        await Assert.That(Dimensionar(Entrada(locais: ["LOCAL-MOLHADO"]) with { TipoDeEletroduto = null }).IdrAvaliado).IsTrue();
+        await Assert.That(Dimensionar(Entrada(locais: [null])).IdrAvaliado).IsFalse();
+        await Assert.That(Dimensionar(Entrada(fases: "2F+N")).IdrAvaliado).IsFalse();
+        await Assert.That(Dimensionar(Entrada(tensaoV: 0m)).IdrAvaliado).IsFalse();
+    }
+
+    [Test]
+    public async Task Comprimento_zero_e_entrada_invalida()
+    {
+        var resultado = Dimensionar(Entrada(comprimentoM: 0m));
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.EntradaInvalida);
+        await Assert.That(resultado.Problemas).IsEquivalentTo(["comprimento deve ser positivo"]);
+    }
+
+    [Test]
+    [Property("Fonte", "TODO_NORMA")]
+    public async Task Metodo_enterrado_para_no_fator_de_temperatura_enquanto_a_tabela_do_solo_falta()
+    {
+        var resultado = DimensionamentoDeCircuito.Dimensionar(
+            Entrada(locais: ["Demais locais internos"]) with { MetodoDeInstalacao = "D" }, PerfilNormativo.NBR5410_2004, CatalogosFicticiosCarregados);
+
+        await Assert.That(resultado.Situacao).IsEqualTo(SituacaoDoDimensionamento.Interrompido);
+        await Assert.That(resultado.FCT).IsNull();
+        await Assert.That(resultado.Problemas).IsEquivalentTo(["sem fatores de temperatura para o método D (PVC) no perfil"]);
+    }
+
+    [Test]
     public async Task Origem_do_comprimento_vai_para_a_observacao_da_queda_de_tensao()
     {
         var resultado = Dimensionar(Entrada() with { OrigemDoComprimento = "calculado pelo Revit (do quadro ao ponto mais distante)" });

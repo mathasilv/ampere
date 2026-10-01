@@ -1432,6 +1432,7 @@
       "valores": [
         {
           "isolacao": "PVC",
+          "metodos": ["A1", "A2", "B1", "B2", "C"],
           "por_temperatura_c": {
             "10": 1.22,
             "15": 1.17,
@@ -1448,6 +1449,7 @@
         },
         {
           "isolacao": "EPR ou XLPE",
+          "metodos": ["A1", "A2", "B1", "B2", "C"],
           "por_temperatura_c": {
             "10": 1.15,
             "15": 1.12,

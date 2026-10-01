@@ -36,6 +36,12 @@ public sealed class DimensionamentoNoRevit_Teste : TesteComProjetoEletrico
         [TipoDeCarga.TUG] = new(MaximoDePontos: 4)
     };
 
+    // O QD1 do template tem cerca de 42 posições: 400 pontos em 25 circuitos cabem com folga.
+    private static readonly IReadOnlyDictionary<TipoDeCarga, RegraDeAgrupamento> RegrasDoOrcamento = new Dictionary<TipoDeCarga, RegraDeAgrupamento>
+    {
+        [TipoDeCarga.TUG] = new(MaximoDePontos: 16)
+    };
+
     private DocumentoDeDimensionamentoRevit Dimensionamento => new(Cenario.Documento);
 
     [Test]
@@ -66,6 +72,7 @@ public sealed class DimensionamentoNoRevit_Teste : TesteComProjetoEletrico
         await Assert.That(iluminacao.Quadro).IsEqualTo("QD1");
         await Assert.That(iluminacao.Pontos.Count).IsEqualTo(3);
         await Assert.That(iluminacao.Pontos.All(ponto => ponto is { TensaoV: 127m, Fases: "F+N", Local: DemaisLocais })).IsTrue();
+        await Assert.That(iluminacao.Pontos.All(ponto => ponto.TipoDeCarga == CodigosDeTipoDeCarga.Codigo(TipoDeCarga.Iluminacao))).IsTrue();
         await Assert.That(iluminacao.Pontos.All(ponto => Math.Abs(ponto.PotenciaVA!.Value - 62m) < 0.000001m)).IsTrue();
         await Assert.That(iluminacao.ComprimentoM).IsNull();
         await Assert.That(iluminacao.ComprimentoNoRevit!.Metros).IsGreaterThan(0m);
@@ -139,6 +146,27 @@ public sealed class DimensionamentoNoRevit_Teste : TesteComProjetoEletrico
     }
 
     [Test]
+    public async Task Ponto_sem_local_deixa_o_circuito_sem_protecao_gravada()
+    {
+        var (_, tomadas) = MontarIluminacaoETomadas();
+        var ids = Dimensionamento.ListarCircuitos();
+        Dimensionar(ids);
+        var circuito = Elemento(ids[1]);
+        Transacionar(() => Parametro(Elemento(tomadas[0]), "AMP_Local").Set(string.Empty));
+
+        var resultados = Dimensionar(ids);
+
+        await Assert.That(resultados[1].Dimensionamento!.IdrAvaliado).IsFalse();
+        await Assert.That(resultados[1].Dimensionamento!.DisjuntorA).IsNotNull();
+        await Assert.That(Parametro(circuito, "AMP_DisjuntorNominalA").AsDouble()).IsEqualTo(0d);
+        await Assert.That(Parametro(circuito, "AMP_BitolaCondutorMm2").AsDouble()).IsEqualTo(0d);
+        await Assert.That(Parametro(circuito, "AMP_IDR_SensibilidadeMa").AsDouble()).IsEqualTo(0d);
+        await Assert.That(UnitUtils.ConvertFromInternalUnits(Parametro(circuito, "AMP_CorrenteProjetoA").AsDouble(), UnitTypeId.Amperes))
+            .IsEqualTo((double)resultados[1].Dimensionamento!.CorrenteDeProjetoA!.Value).Within(1e-9);
+        await Assert.That(Texto(circuito, "AMP_MemoriaCalculoId")).IsEqualTo(resultados[1].Memoria!.Hash());
+    }
+
+    [Test]
     public async Task Circuito_que_perdeu_dados_fica_sem_os_resultados_anteriores()
     {
         MontarIluminacaoETomadas();
@@ -162,8 +190,8 @@ public sealed class DimensionamentoNoRevit_Teste : TesteComProjetoEletrico
     {
         var tomadas = Cenario.ColocarTomadas(400);
         Classificar(tomadas, new ClassificacaoDeCarga(TipoDeCarga.TUG, PotenciaVA: 180m, TensaoV: 127m, Fases: "F+N", Local: Cozinha));
-        var plano = CriacaoDeCircuitos.Executar(tomadas, Cenario.Quadro.Id.Value, RegrasDoCenario, ConfiguracaoDeNumeracao.Padrao, Porta);
-        if (plano.Circuitos.Count != 100) throw new InvalidOperationException($"Cenário com {plano.Circuitos.Count} circuitos, esperado 100.");
+        var plano = CriacaoDeCircuitos.Executar(tomadas, Cenario.Quadro.Id.Value, RegrasDoOrcamento, ConfiguracaoDeNumeracao.Padrao, Porta);
+        if (plano.Circuitos.Count != 25) throw new InvalidOperationException($"Cenário com {plano.Circuitos.Count} circuitos, esperado 25.");
 
         var cronometro = Stopwatch.StartNew();
         var porta = new DocumentoDeDimensionamentoRevit(Cenario.Documento);
@@ -171,7 +199,7 @@ public sealed class DimensionamentoNoRevit_Teste : TesteComProjetoEletrico
         cronometro.Stop();
 
         Console.WriteLine($"Dimensionamento de {tomadas.Count} pontos em {resultados.Count} circuitos: {cronometro.Elapsed.TotalMilliseconds:0} ms");
-        await Assert.That(resultados.Count).IsEqualTo(100);
+        await Assert.That(resultados.Count).IsEqualTo(25);
         await Assert.That(resultados.All(resultado => resultado.Memoria is not null)).IsTrue();
         await Assert.That(cronometro.Elapsed).IsLessThan(TimeSpan.FromSeconds(5));
     }

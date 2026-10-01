@@ -10,13 +10,16 @@ namespace Ampere.Revit.Dimensionamento;
 /// <remarks>
 ///     <list type="bullet">
 ///         <item>Circuito = <c>ElectricalSystem</c> de força com AMP_NumeroCircuito (criado pelo Ampere); pontos = os membros
-///         do sistema, com AMP_PotenciaInstaladaVA, AMP_TensaoCircuitoV, AMP_Fases e AMP_Local.</item>
+///         do sistema, com AMP_PotenciaInstaladaVA, AMP_TensaoCircuitoV, AMP_Fases, AMP_Local e AMP_TipoCarga.</item>
 ///         <item>Comprimento: AMP_ComprimentoRotaM (LENGTH, unidades internas em pés) quando o projetista o preencheu, e
 ///         sempre o "Comprimento" nativo do circuito (<c>RBS_ELEC_CIRCUIT_LENGTH_PARAM</c>, o mesmo de
 ///         <c>ElectricalSystem.Length</c> sem a exceção de comprimento zero) com o modo do caminho — o Core escolhe.</item>
 ///         <item>Gravação: só os parâmetros de resultado, nunca as entradas (método, isolação, tipo de condutor e
 ///         comprimento): o padrão do projeto gravado no circuito viraria "decisão do projetista" na rodada seguinte.
 ///         Valor não calculado apaga o anterior (<see cref="ParametrosAmpere.GravarNumeroOuApagar" />).</item>
+///         <item>Proteção (seção, IZ, disjuntor, queda, IDR e eletroduto) só é gravada quando a exigência de IDR foi
+///         avaliada: sem isso, IDR vazio ao lado de um disjuntor seria lido como "sem IDR". Fica a corrente de projeto, os
+///         fatores e o hash da memória, que mostra onde o cálculo parou.</item>
 ///     </list>
 /// </remarks>
 public sealed class DocumentoDeDimensionamentoRevit(Document documento) : IDocumentoDeDimensionamento
@@ -65,18 +68,19 @@ public sealed class DocumentoDeDimensionamentoRevit(Document documento) : IDocum
         {
             var sistema = Sistema(resultado.Id);
             var calculo = resultado.Memoria is null ? null : resultado.Dimensionamento;
+            var protecao = calculo is { IdrAvaliado: true } ? calculo : null;
 
             Corrente(sistema, ParametrosAmpere.CorrenteProjetoA, calculo?.CorrenteDeProjetoA);
-            Numero(sistema, ParametrosAmpere.BitolaCondutorMm2, calculo?.SecaoMm2);
-            Corrente(sistema, ParametrosAmpere.CapacidadeConducaoA, calculo?.CapacidadeDeConducaoA);
             Numero(sistema, ParametrosAmpere.FCA, calculo?.FCA);
             Numero(sistema, ParametrosAmpere.FCT, calculo?.FCT);
-            Numero(sistema, ParametrosAmpere.DisjuntorNominalA, calculo?.DisjuntorA);
-            Numero(sistema, ParametrosAmpere.IdrNominalA, calculo?.IdrNominalA);
-            Numero(sistema, ParametrosAmpere.IdrSensibilidadeMa, calculo?.IdrSensibilidadeMa);
-            Numero(sistema, ParametrosAmpere.QuedaTensaoPct, calculo?.QuedaDeTensaoPct);
-            ParametrosAmpere.GravarTextoOuApagar(sistema, ParametrosAmpere.EletrodutoTipo, calculo?.Eletroduto);
-            Numero(sistema, ParametrosAmpere.OcupacaoEletrodutoPct, calculo?.OcupacaoDoEletrodutoPct);
+            Numero(sistema, ParametrosAmpere.BitolaCondutorMm2, protecao?.SecaoMm2);
+            Corrente(sistema, ParametrosAmpere.CapacidadeConducaoA, protecao?.CapacidadeDeConducaoA);
+            Numero(sistema, ParametrosAmpere.DisjuntorNominalA, protecao?.DisjuntorA);
+            Numero(sistema, ParametrosAmpere.IdrNominalA, protecao?.IdrNominalA);
+            Numero(sistema, ParametrosAmpere.IdrSensibilidadeMa, protecao?.IdrSensibilidadeMa);
+            Numero(sistema, ParametrosAmpere.QuedaTensaoPct, protecao?.QuedaDeTensaoPct);
+            ParametrosAmpere.GravarTextoOuApagar(sistema, ParametrosAmpere.EletrodutoTipo, protecao?.Eletroduto);
+            Numero(sistema, ParametrosAmpere.OcupacaoEletrodutoPct, protecao?.OcupacaoDoEletrodutoPct);
             ParametrosAmpere.GravarTextoOuApagar(sistema, ParametrosAmpere.PerfilNorma, calculo?.PerfilNorma);
             ParametrosAmpere.GravarTextoOuApagar(sistema, ParametrosAmpere.MemoriaCalculoId, resultado.Memoria?.Hash());
         }
@@ -93,7 +97,8 @@ public sealed class DocumentoDeDimensionamentoRevit(Document documento) : IDocum
                 : null,
             ParametrosAmpere.Ler(ponto, ParametrosAmpere.TensaoCircuitoV) is { HasValue: true } tensao ? (decimal)tensao.AsDouble() : null,
             Texto(ponto, ParametrosAmpere.Fases),
-            Texto(ponto, ParametrosAmpere.Local));
+            Texto(ponto, ParametrosAmpere.Local),
+            Texto(ponto, ParametrosAmpere.TipoCarga));
 
     private static decimal? ComprimentoInformadoM(ElectricalSystem sistema) =>
         ParametrosAmpere.Ler(sistema, ParametrosAmpere.ComprimentoRotaM) is { HasValue: true } comprimento

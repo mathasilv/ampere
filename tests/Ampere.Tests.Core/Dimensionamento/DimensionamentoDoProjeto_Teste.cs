@@ -165,6 +165,56 @@ public class DimensionamentoDoProjeto_Teste
     }
 
     [Test]
+    public async Task Comprimento_informado_zero_conta_como_vazio_e_vale_o_do_Revit()
+    {
+        var circuito = Circuito(1, "TUG-01", "TUG", Ponto(11, 1270m)) with
+        {
+            ComprimentoM = 0.0001m,
+            ComprimentoNoRevit = new ComprimentoDoRevit(37.5m, "do quadro ao ponto mais distante")
+        };
+
+        var resultado = DimensionamentoDoProjeto.Executar([1], Condicoes, Ficticio, Catalogos, new DocumentoDeDimensionamentoFalso([circuito]))[0];
+
+        var queda = resultado.Dimensionamento!.Memoria!.Passos.Single(passo => passo.Descricao == "Queda de tensão");
+        await Assert.That(queda.Valores.Single(valor => valor.Nome == "L").Valor).IsEqualTo(37.5m);
+        await Assert.That(queda.Observacao).EndsWith(
+            "; L: AMP_ComprimentoRotaM = 0, tratado como vazio; calculado pelo Revit (do quadro ao ponto mais distante), arredondado ao milímetro");
+    }
+
+    [Test]
+    public async Task Comprimento_informado_zero_sem_comprimento_do_Revit_e_problema_de_dados()
+    {
+        var circuito = Circuito(1, "TUG-01", "TUG", Ponto(11, 1270m)) with { ComprimentoM = 0m };
+
+        var resultado = DimensionamentoDoProjeto.Executar([1], Condicoes, Ficticio, Catalogos, new DocumentoDeDimensionamentoFalso([circuito]))[0];
+
+        await Assert.That(resultado.Dimensionamento).IsNull();
+        await Assert.That(resultado.ProblemasDeDados).IsEquivalentTo(["AMP_ComprimentoRotaM = 0 (vazio) e sem comprimento do circuito no Revit"]);
+    }
+
+    [Test]
+    public async Task Ponto_de_tipo_diferente_do_circuito_e_problema_de_dados()
+    {
+        var circuito = Circuito(1, "IL-01", "Iluminação", Ponto(11, 100m), Ponto(12, 180m) with { TipoDeCarga = "TUG" }, Ponto(13, 180m) with { TipoDeCarga = "TUG" });
+
+        var resultado = DimensionamentoDoProjeto.Executar([1], Condicoes, Ficticio, Catalogos, new DocumentoDeDimensionamentoFalso([circuito]))[0];
+
+        await Assert.That(resultado.Dimensionamento).IsNull();
+        await Assert.That(resultado.ProblemasDeDados).IsEquivalentTo(
+            ["pontos de tipo diferente do circuito (Iluminação) — TUG: 2: corrija o AMP_TipoCarga ou refaça o circuito"]);
+    }
+
+    [Test]
+    public async Task Ponto_sem_tipo_e_problema_de_dados()
+    {
+        var circuito = Circuito(1, "TUG-01", "TUG", Ponto(11, 600m), Ponto(12, 600m) with { TipoDeCarga = "" });
+
+        var resultado = DimensionamentoDoProjeto.Executar([1], Condicoes, Ficticio, Catalogos, new DocumentoDeDimensionamentoFalso([circuito]))[0];
+
+        await Assert.That(resultado.ProblemasDeDados).IsEquivalentTo(["ponto(s) sem AMP_TipoCarga reconhecido: 12"]);
+    }
+
+    [Test]
     [Arguments(false)]
     [Arguments(true)]
     public async Task Sem_comprimento_informado_nem_calculado_pelo_Revit_e_problema_de_dados(bool revitCalculouZero)
@@ -229,8 +279,9 @@ public class DimensionamentoDoProjeto_Teste
         return circuitos;
     }
 
+    // Ponto sem tipo explícito recebe o do circuito, como num circuito criado pelo Ampere.
     private static DadosDoCircuito Circuito(long id, string numero, string tipo, params DadosDoPonto[] pontos) =>
-        new(id, numero, tipo, 10m, "B1", "PVC", pontos);
+        new(id, numero, tipo, 10m, "B1", "PVC", pontos.Select(ponto => ponto with { TipoDeCarga = ponto.TipoDeCarga ?? tipo }).ToList());
 
     private static DadosDoPonto Ponto(long id, decimal potenciaVA, decimal tensaoV = 127m, string fases = "F+N", string? local = "LOCAL-SECO") =>
         new(id, potenciaVA, tensaoV, fases, local);

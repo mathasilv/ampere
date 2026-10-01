@@ -38,7 +38,8 @@ internal sealed record LinhaDeCapacidadeJson(
     int? CondutoresCarregados,
     Dictionary<string, decimal>? PorSecaoMm2);
 
-internal sealed record LinhaDeTemperaturaJson(string? Isolacao, Dictionary<string, decimal>? PorTemperaturaC);
+/// <param name="Metodos">Métodos de instalação a que a linha se aplica (ex.: a Tabela 40 do ar não vale para o D, enterrado); ausente = todos.</param>
+internal sealed record LinhaDeTemperaturaJson(string? Isolacao, Dictionary<string, decimal>? PorTemperaturaC, List<string>? Metodos = null);
 
 internal sealed record LinhaDeProtecaoDiferencialJson(string? Local, List<string>? TiposDeCarga, decimal? SensibilidadeMaximaMa);
 

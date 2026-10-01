@@ -59,6 +59,7 @@ public static class DimensionamentoDeCircuito
         private decimal? _ocupacao;
         private decimal? _idrNominal;
         private decimal? _idrSensibilidade;
+        private bool _idrAvaliado;
         private readonly List<string> _avisos = [];
 
         public ResultadoDoDimensionamento Executar()
@@ -80,7 +81,7 @@ public static class DimensionamentoDeCircuito
             var condutores = Consultar(perfil.CondutoresCarregados(entrada.Fases), "Condutores carregados",
                 $"n = condutores carregados ({entrada.Fases})", [], "condutores");
             _condutoresCarregados = condutores;
-            _fct = Consultar(perfil.FatorDeTemperatura(entrada.Isolacao, entrada.TemperaturaAmbienteC), "Fator de correção de temperatura",
+            _fct = Consultar(perfil.FatorDeTemperatura(entrada.MetodoDeInstalacao, entrada.Isolacao, entrada.TemperaturaAmbienteC), "Fator de correção de temperatura",
                 $"FCT = tabela ({entrada.Isolacao}; {Numero(entrada.TemperaturaAmbienteC)} °C)", [new ValorDoPasso("θ", entrada.TemperaturaAmbienteC, "°C")], string.Empty);
             _fca = Consultar(perfil.FatorDeAgrupamento(entrada.CircuitosAgrupados), "Fator de correção de agrupamento",
                 $"FCA = tabela ({Contagem(entrada.CircuitosAgrupados, "circuito", "circuitos")})", [new ValorDoPasso("circuitos", entrada.CircuitosAgrupados, string.Empty)], string.Empty);
@@ -167,7 +168,11 @@ public static class DimensionamentoDeCircuito
             var sensibilidade = entrada.IdrDoProjetista is { } decisao
                 ? PelaDecisaoDoProjetista(decisao, tabela.Referencia, avaliacao)
                 : PelaTabela(tabela.Referencia, avaliacao);
-            if (sensibilidade is null) return;
+            if (sensibilidade is null)
+            {
+                _idrAvaliado = true;
+                return;
+            }
             _idrSensibilidade = sensibilidade;
 
             const string Criterio = "menor In(IDR) ≥ In(disjuntor)";
@@ -184,6 +189,7 @@ public static class DimensionamentoDeCircuito
             Passo(referencia, "Corrente nominal do IDR", Criterio, [new ValorDoPasso("In", disjuntor, "A")], nominal, "A",
                 $"correntes nominais de IDR: {dadoDasCorrentes.Referencia}");
             _idrNominal = nominal;
+            _idrAvaliado = true;
         }
 
         private AvaliacaoPelaTabela AvaliarPelaTabela(DadoNormativo<IReadOnlyDictionary<string, ProtecaoDiferencialDoLocal>> tabela)
@@ -369,7 +375,7 @@ public static class DimensionamentoDeCircuito
         private ResultadoDoDimensionamento Resultado(SituacaoDoDimensionamento situacao, IReadOnlyList<string> problemas) =>
             new(entrada.Circuito, situacao, perfil.Nome, _correnteDeProjeto, _condutoresCarregados, _fct, _fca, _secao, _capacidade, _disjuntor,
                 _idrNominal, _idrSensibilidade, _queda, _eletroduto, _diametroInterno, _ocupacao,
-                new MemoriaDeCalculo(entrada.Circuito, perfil.Nome, _passos), problemas, _avisos);
+                new MemoriaDeCalculo(entrada.Circuito, perfil.Nome, _passos), problemas, _avisos, _idrAvaliado);
 
         private static string Numero(decimal valor) => NumeroEmTexto.FormatarParaLeitura(valor);
 
