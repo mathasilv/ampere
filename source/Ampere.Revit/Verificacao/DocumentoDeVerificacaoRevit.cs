@@ -31,7 +31,8 @@ public sealed class DocumentoDeVerificacaoRevit(Document documento) : IDocumento
                 instancia.Id.Value,
                 Texto(instancia, ParametrosAmpere.TipoCarga),
                 Texto(instancia, ParametrosAmpere.Local),
-                CircuitoDeForca(instancia)))
+                CircuitoDeForca(instancia),
+                Texto(instancia, ParametrosAmpere.Aparelho)))
             .OrderBy(ponto => ponto.Id)
             .ToList();
 

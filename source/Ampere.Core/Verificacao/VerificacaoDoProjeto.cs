@@ -11,7 +11,8 @@ namespace Ampere.Core.Verificacao;
 /// <param name="TipoDeCarga">AMP_TipoCarga (texto; nulo = vazio).</param>
 /// <param name="Local">AMP_Local (nulo = vazio).</param>
 /// <param name="Circuito">Circuito de força de que o ponto é membro (nulo = fora de circuito).</param>
-public sealed record PontoVerificado(long Id, string? TipoDeCarga, string? Local, long? Circuito);
+/// <param name="Aparelho">AMP_Aparelho (nulo = vazio): a demanda da entrada precisa dele nos TUE.</param>
+public sealed record PontoVerificado(long Id, string? TipoDeCarga, string? Local, long? Circuito, string? Aparelho = null);
 
 /// <summary>Circuito de força do documento, do Ampere ou não.</summary>
 /// <param name="Numero">AMP_NumeroCircuito (nulo = circuito criado fora do Ampere).</param>
@@ -128,6 +129,7 @@ public static class VerificacaoDoProjeto
     public const string PontosSemClassificacao = "Pontos sem classificação";
     public const string PontosForaDeCircuito = "Pontos fora de circuito";
     public const string PontosSemLocal = "Pontos sem local";
+    public const string PontosSemAparelho = "Pontos TUE sem aparelho";
     public const string CircuitosForaDoAmpere = "Circuitos criados fora do Ampere";
     public const string CircuitosComDadosFaltando = "Circuitos com dados faltando";
     public const string CircuitosNaoDimensionados = "Circuitos não dimensionados";
@@ -175,7 +177,7 @@ public static class VerificacaoDoProjeto
 
     private static readonly string[] OrdemDosGrupos =
     [
-        PontosSemClassificacao, PontosForaDeCircuito, PontosSemLocal, CircuitosForaDoAmpere, CircuitosComDadosFaltando,
+        PontosSemClassificacao, PontosForaDeCircuito, PontosSemLocal, PontosSemAparelho, CircuitosForaDoAmpere, CircuitosComDadosFaltando,
         CircuitosNaoDimensionados, MemoriasDesatualizadas, ResultadosEditados, QuadrosNaoMontados, QuadrosDesatualizados, AlimentadoresNaoDimensionados,
         AlimentadoresDesatualizados, AvisosDoDimensionamento, CondicoesNaoGuardadas, CalculoInterrompido, AlimentadoresSemCalculo
     ];
@@ -278,6 +280,16 @@ public static class VerificacaoDoProjeto
         }
 
         var classificados = pontos.Where(Classificado).ToList();
+        var semAparelho = classificados
+            .Where(ponto => CodigosDeTipoDeCarga.TryLer(ponto.TipoDeCarga, out var tipo) && tipo == TipoDeCarga.TUE && !CodigosDeAparelho.TryLer(ponto.Aparelho, out _))
+            .Select(ponto => ponto.Id)
+            .ToList();
+        if (semAparelho.Count > 0)
+        {
+            pendencias.Add(new Pendencia(GravidadeDaPendencia.Informacao, PontosSemAparelho,
+                $"{semAparelho.Count} ponto(s) TUE sem AMP_Aparelho: o dimensionamento não precisa dele, mas a 'Demanda da entrada' para (rode 'Classificar cargas' e escolha o aparelho, ou 'Outro')", semAparelho));
+        }
+
         var foraDeCircuito = classificados.Where(ponto => ponto.Circuito is null).Select(ponto => ponto.Id).ToList();
         if (foraDeCircuito.Count > 0)
         {

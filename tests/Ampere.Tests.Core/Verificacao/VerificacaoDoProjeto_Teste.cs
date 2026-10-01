@@ -34,6 +34,22 @@ public class VerificacaoDoProjeto_Teste
     }
 
     [Test]
+    public async Task Ponto_TUE_sem_aparelho_e_informacao_para_a_demanda()
+    {
+        var documento = Documento(Circuito(1, "TUG-01", Ponto(11)));
+        documento.GravarMemoriasAtuais();
+        documento.Pontos.Add(new PontoVerificado(30, "TUE", "LOCAL-SECO", 1));
+        documento.Pontos.Add(new PontoVerificado(31, "TUE", "LOCAL-SECO", 1, "Chuveiro"));
+        documento.Pontos.Add(new PontoVerificado(32, "TUG", "LOCAL-SECO", 1));
+
+        var pendencia = Verificar(documento).Pendencias.Single();
+
+        await Assert.That(pendencia.Gravidade).IsEqualTo(GravidadeDaPendencia.Informacao);
+        await Assert.That(pendencia.Grupo).IsEqualTo(VerificacaoDoProjeto.PontosSemAparelho);
+        await Assert.That(string.Join(",", pendencia.Elementos)).IsEqualTo("30");
+    }
+
+    [Test]
     public async Task Pontos_sem_classificacao_fora_de_circuito_ou_sem_local()
     {
         var documento = Documento(Circuito(1, "TUG-01", Ponto(11), Ponto(12, local: null)));
