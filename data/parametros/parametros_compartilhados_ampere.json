@@ -1,13 +1,14 @@
 {
   "$meta": {
     "fonte": "Especificação do MVP Ampere v0.1, §5 (cópia versionada de 10_Parametros_Compartilhados_Ampere.json)",
-    "versao": "0.2",
+    "versao": "0.3",
     "data": "2026-10-01",
     "regra": "GUIDs congelados: nunca alterar nem reutilizar. Parâmetro novo = GUID novo registrado aqui.",
     "categorias": "Matriz de vínculo aprovada pelo usuário em 2026-09-28 (F1.1): carga nos pontos, dimensionamento nos circuitos.",
     "alteracoes": [
       "0.2 (2026-10-01, decisão do usuário): AMP_Local, GUID novo fora da tabela §5 da especificação — local do ponto no vocabulário da tabela de IDR do perfil, para o comando 'Dimensionar'.",
-      "0.2 (2026-10-01, decisão do usuário): AMP_MemoriaCalculoId também em EquipamentosEletricos — o quadro guarda o hash da memória do quadro de cargas; o circuito, o da memória do seu dimensionamento."
+      "0.2 (2026-10-01, decisão do usuário): AMP_MemoriaCalculoId também em EquipamentosEletricos — o quadro guarda o hash da memória do quadro de cargas; o circuito, o da memória do seu dimensionamento.",
+      "0.3 (2026-10-01, decisão delegada ao desenvolvedor pelo usuário — 'carta branca'): decisões do projetista no circuito, só de entrada (o dimensionamento nunca as escreve) — seção mínima, disjuntor, decisão e sensibilidade do IDR, justificativa, temperatura ambiente e circuitos agrupados por circuito. Numérico 0 = sem decisão (o Revit não esvazia parâmetro numérico)."
     ]
   },
   "produto": "Ampere",
@@ -201,6 +202,55 @@
       "tipo": "TEXT",
       "descricao": "Local do ponto na tabela de proteção diferencial do perfil (ex.: Local com banheira ou chuveiro)",
       "categorias": ["Luminarias", "DispositivosEletricos", "EquipamentosMecanicos"]
+    },
+    {
+      "guid": "9a6d53ae-b8fb-4f70-9a35-c4a887856cda",
+      "nome": "AMP_SecaoMinimaProjetistaMm2",
+      "tipo": "NUMBER",
+      "descricao": "Seção mínima escolhida pelo projetista (mm²): o cálculo nunca adota menos; 0 = sem decisão",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "bdc72119-c444-46de-81aa-f776359aae81",
+      "nome": "AMP_DisjuntorProjetistaA",
+      "tipo": "NUMBER",
+      "descricao": "In do disjuntor escolhido pelo projetista (A), verificado em IB ≤ In ≤ IZ; 0 = sem decisão",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "4843f5b7-1010-4297-a8b2-5d826f85ae47",
+      "nome": "AMP_IDR_DecisaoProjetista",
+      "tipo": "TEXT",
+      "descricao": "Decisão do projetista sobre o IDR: Exigir ou Dispensar (vazio = tabela por local)",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "7c5feedf-f8a2-40ad-9d3c-f9e746201329",
+      "nome": "AMP_IDR_SensibilidadeProjetistaMa",
+      "tipo": "NUMBER",
+      "descricao": "IΔn do IDR exigido pelo projetista (mA); 0 = sem decisão",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "6c7c632b-6b43-47bc-9d9c-33de44ab2f49",
+      "nome": "AMP_JustificativaProjetista",
+      "tipo": "TEXT",
+      "descricao": "Justificativa das decisões do projetista no circuito (registrada na memória)",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "2cf50c7c-3675-4888-88bb-689e4ff9a5f7",
+      "nome": "AMP_TemperaturaAmbienteC",
+      "tipo": "NUMBER",
+      "descricao": "Temperatura ambiente do circuito (°C), no lugar da do projeto; 0 = a do projeto",
+      "categorias": ["CircuitosEletricos"]
+    },
+    {
+      "guid": "5f163c89-5cf0-4bb0-9797-e28e5013ac8a",
+      "nome": "AMP_CircuitosAgrupados",
+      "tipo": "NUMBER",
+      "descricao": "Circuitos agrupados com este, incluindo ele, no lugar do valor do projeto; 0 = o do projeto",
+      "categorias": ["CircuitosEletricos"]
     }
   ]
 }

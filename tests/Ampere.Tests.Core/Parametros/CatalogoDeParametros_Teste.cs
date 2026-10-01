@@ -14,7 +14,7 @@ public class CatalogoDeParametros_Teste
         var catalogo = CatalogoDeParametros.Padrao;
 
         await Assert.That(catalogo.GrupoRevit).IsEqualTo("Ampere");
-        await Assert.That(catalogo.Parametros.Count).IsEqualTo(27);
+        await Assert.That(catalogo.Parametros.Count).IsEqualTo(34);
     }
 
     [Test]

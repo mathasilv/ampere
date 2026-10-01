@@ -46,7 +46,15 @@ public class GuidsCongelados_Teste
     private static readonly (string Nome, string Guid, string Tipo)[] AdicionadosPorDecisao =
     [
         // Catálogo 0.2 (01/10/2026, decisão do usuário): local do ponto para a exigência de IDR no "Dimensionar".
-        ("AMP_Local", "8560ddec-2524-4c1c-a814-aca3a0346b22", "TEXT")
+        ("AMP_Local", "8560ddec-2524-4c1c-a814-aca3a0346b22", "TEXT"),
+        // Catálogo 0.3 (01/10/2026, decisão delegada ao desenvolvedor): decisões do projetista no circuito.
+        ("AMP_SecaoMinimaProjetistaMm2", "9a6d53ae-b8fb-4f70-9a35-c4a887856cda", "NUMBER"),
+        ("AMP_DisjuntorProjetistaA", "bdc72119-c444-46de-81aa-f776359aae81", "NUMBER"),
+        ("AMP_IDR_DecisaoProjetista", "4843f5b7-1010-4297-a8b2-5d826f85ae47", "TEXT"),
+        ("AMP_IDR_SensibilidadeProjetistaMa", "7c5feedf-f8a2-40ad-9d3c-f9e746201329", "NUMBER"),
+        ("AMP_JustificativaProjetista", "6c7c632b-6b43-47bc-9d9c-33de44ab2f49", "TEXT"),
+        ("AMP_TemperaturaAmbienteC", "2cf50c7c-3675-4888-88bb-689e4ff9a5f7", "NUMBER"),
+        ("AMP_CircuitosAgrupados", "5f163c89-5cf0-4bb0-9797-e28e5013ac8a", "NUMBER")
     ];
 
     private static readonly Dictionary<string, TipoDeDadoDoParametro> TipoNaEspecificacao = new()
