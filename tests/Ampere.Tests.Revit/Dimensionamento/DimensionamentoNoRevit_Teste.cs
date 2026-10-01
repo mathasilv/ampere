@@ -37,10 +37,10 @@ public sealed class DimensionamentoNoRevit_Teste : TesteComProjetoEletrico
         [TipoDeCarga.TUG] = new(MaximoDePontos: 4)
     };
 
-    // O QD1 do template tem cerca de 42 posições: 400 pontos em 25 circuitos cabem com folga.
+    // 8 pontos por circuito: 400 pontos dão 50 circuitos (carga e posições do quadro: ver o teste de 400 pontos).
     private static readonly IReadOnlyDictionary<TipoDeCarga, RegraDeAgrupamento> RegrasDoOrcamento = new Dictionary<TipoDeCarga, RegraDeAgrupamento>
     {
-        [TipoDeCarga.TUG] = new(MaximoDePontos: 16)
+        [TipoDeCarga.TUG] = new(MaximoDePontos: 8)
     };
 
     private DocumentoDeDimensionamentoRevit Dimensionamento => new(Cenario.Documento);
@@ -278,10 +278,23 @@ public sealed class DimensionamentoNoRevit_Teste : TesteComProjetoEletrico
     [Test]
     public async Task Dimensiona_400_pontos_em_menos_de_5_segundos()
     {
+        // O Revit soma a carga do conector de cada tomada (da família do template, não o AMP_PotenciaInstaladaVA) e avisa
+        // acima de 80% do disjuntor de 20 A que atribui ao criar o circuito; sem interface para dispensar o aviso, a
+        // transação é desfeita. Com 8 tomadas por circuito a carga fica abaixo disso. O quadro "225 A" do template
+        // comporta 12 circuitos de 1 polo: os 50 circuitos vão para cinco quadros iguais, 10 em cada.
         var tomadas = Cenario.ColocarTomadas(400);
         Classificar(tomadas, new ClassificacaoDeCarga(TipoDeCarga.TUG, PotenciaVA: 180m, TensaoV: 127m, Fases: "F+N", Local: Cozinha));
-        var plano = CriacaoDeCircuitos.Executar(tomadas, Cenario.Quadro.Id.Value, RegrasDoOrcamento, ConfiguracaoDeNumeracao.Padrao, Porta);
-        if (plano.Circuitos.Count != 25) throw new InvalidOperationException($"Cenário com {plano.Circuitos.Count} circuitos, esperado 25.");
+        var quadros = new List<long> { Cenario.Quadro.Id.Value };
+        for (var numero = 2; numero <= 5; numero++) quadros.Add(Cenario.ColocarQuadro($"QD{numero}", 10 * (numero - 1)).Id.Value);
+
+        var circuitos = 0;
+        for (var indice = 0; indice < quadros.Count; indice++)
+        {
+            circuitos += CriacaoDeCircuitos.Executar(tomadas.GetRange(80 * indice, 80), quadros[indice], RegrasDoOrcamento,
+                ConfiguracaoDeNumeracao.Padrao, Porta).Circuitos.Count;
+        }
+
+        if (circuitos != 50) throw new InvalidOperationException($"Cenário com {circuitos} circuitos, esperado 50.");
 
         var cronometro = Stopwatch.StartNew();
         var porta = new DocumentoDeDimensionamentoRevit(Cenario.Documento);
@@ -289,7 +302,7 @@ public sealed class DimensionamentoNoRevit_Teste : TesteComProjetoEletrico
         cronometro.Stop();
 
         Console.WriteLine($"Dimensionamento de {tomadas.Count} pontos em {resultados.Count} circuitos: {cronometro.Elapsed.TotalMilliseconds:0} ms");
-        await Assert.That(resultados.Count).IsEqualTo(25);
+        await Assert.That(resultados.Count).IsEqualTo(50);
         await Assert.That(resultados.All(resultado => resultado.Memoria is not null)).IsTrue();
         await Assert.That(cronometro.Elapsed).IsLessThan(TimeSpan.FromSeconds(5));
     }

@@ -106,6 +106,12 @@ quebre R2025/R2026: perguntar antes de aposentar essas configurações.
   registra o do Ampere; se outro add-in do Revit registrar antes, o PDF falha com mensagem clara. Os bytes do PDF mudam a
   cada geração (data e IDs do PDFsharp; compressão diferente em net8/net10): o golden do PDF é o roteiro das páginas
   (`*.pdf.txt`), igual em qualquer máquina porque a métrica vem das fontes embutidas.
+- Integração no Revit: na sessão de teste não há interface para dispensar aviso, então aviso do Revit desfaz a transação
+  (`RolledBack`). Cenário com circuito acima de 80% do disjuntor de 20 A que o Revit atribui ao criar o circuito gera
+  aviso: a carga vem do conector da família do template (a tomada "Padrão" passa de 120 VA), não do
+  `AMP_PotenciaInstaladaVA`. O quadro "225 A" do template comporta 12 circuitos de 1 polo.
+- Integração com o Revit do usuário aberto (máquina de 12 GB; ele chega a ~8 GB) falta memória: o teste de desempenho da
+  injeção estoura os 2 s e o processo de teste pode cair. Rodar com o Revit dele fechado — e só com permissão dele.
 - Parâmetro AMP_* que o dimensionamento grava (ex.: `AMP_IDR_SensibilidadeMa`) não pode ser lido de volta como
   entrada: na rodada seguinte o valor calculado viraria "decisão do projetista". Decisão manual precisa de fonte
   própria (ex.: `DecisaoDeIdr` do Core, alimentada por um campo que o motor nunca escreve). O mesmo vale ao contrário:
