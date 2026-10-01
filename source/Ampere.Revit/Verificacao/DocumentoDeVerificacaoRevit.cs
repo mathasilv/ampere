@@ -64,6 +64,8 @@ public sealed class DocumentoDeVerificacaoRevit(Document documento) : IDocumento
 
     public IReadOnlyDictionary<long, CondicoesDoProjeto> LerCondicoesDosCircuitos(IReadOnlyCollection<long> ids) => _dimensionamento.LerCondicoesDosCircuitos(ids);
 
+    public IReadOnlyDictionary<long, ResultadosNoCircuito> LerResultados(IReadOnlyCollection<long> ids) => _dimensionamento.LerResultados(ids);
+
     private static long? CircuitoDeForca(FamilyInstance instancia) =>
         instancia.MEPModel?.GetElectricalSystems()?
             .Where(sistema => sistema.SystemType == ElectricalSystemType.PowerCircuit)

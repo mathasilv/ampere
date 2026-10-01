@@ -209,6 +209,19 @@ public class VerificacaoDoProjeto_Teste
     }
 
     [Test]
+    public async Task Resultado_editado_a_mao_com_a_memoria_em_dia_e_aviso()
+    {
+        var documento = Documento(Circuito(1, "TUG-01", Ponto(11)));
+        documento.GravarMemoriasAtuais();
+        documento.Resultados[1] = documento.Resultados[1] with { DisjuntorA = 25m, QuedaDeTensaoPct = documento.Resultados[1].QuedaDeTensaoPct + 0.0000000001m };
+
+        var pendencia = Verificar(documento).Pendencias.Single();
+
+        await Assert.That(pendencia.Grupo).IsEqualTo(VerificacaoDoProjeto.ResultadosEditados);
+        await Assert.That(pendencia.Descricao).StartsWith("QD1 TUG-01: AMP_DisjuntorNominalA = 25 no modelo; o cálculo dá 10 (rode");
+    }
+
+    [Test]
     public async Task Quadro_de_cargas_conferido_pelos_fatores_guardados()
     {
         var documento = Documento(Circuito(1, "TUG-01", Ponto(11)));
@@ -288,6 +301,11 @@ public class VerificacaoDoProjeto_Teste
 
         public Dictionary<long, CondicoesDoProjeto> CondicoesDosCircuitos { get; } = [];
 
+        public Dictionary<long, ResultadosNoCircuito> Resultados { get; } = [];
+
+        public IReadOnlyDictionary<long, ResultadosNoCircuito> LerResultados(IReadOnlyCollection<long> ids) =>
+            Resultados.Where(par => ids.Contains(par.Key)).ToDictionary(par => par.Key, par => par.Value);
+
         public IReadOnlyDictionary<long, CondicoesDoProjeto> LerCondicoesDosCircuitos(IReadOnlyCollection<long> ids) =>
             CondicoesDosCircuitos.Where(par => ids.Contains(par.Key)).ToDictionary(par => par.Key, par => par.Value);
 
@@ -300,6 +318,7 @@ public class VerificacaoDoProjeto_Teste
             {
                 Gravar(resultado.Id, resultado.Memoria?.Hash());
                 CondicoesDosCircuitos[resultado.Id] = Condicoes!;
+                Resultados[resultado.Id] = ResultadosNoCircuito.De(resultado);
             }
         }
 

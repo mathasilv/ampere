@@ -121,8 +121,8 @@ Resolvido (decisões do usuário):
   condições guardadas pela última rodada), avisos e onde o cálculo para. Salva `verificacao.md` e seleciona no modelo
   os elementos de uma pendência. Cada memória é refeita com as condições da rodada que a gerou, pelo mesmo cálculo do
   "Dimensionar". Ponto com Reserva conta como sem classificação. Quadros: sem quadro de cargas montado, ou com o hash
-  gravado diferente do quadro refeito com os fatores guardados na montagem. Valores de resultado editados à mão (sem
-  mudar a memória) ainda não são detectados.
+  gravado diferente do quadro refeito com os fatores guardados na montagem. Resultado editado à mão (memória em dia,
+  mas um AMP_* de resultado diferente do que ela justifica — ex.: disjuntor trocado no parâmetro) é aviso.
 
 - ✅ Alimentação do quadro (01/10/2026): esquema e tensão do quadro de cargas vêm do sistema de distribuição atribuído
   ao painel no Revit (3 fases e 4 fios = 3F+N; 3 fios = 3F; monofásico 2 fios = F+N; monofásico 3 fios = 2F+N, que o

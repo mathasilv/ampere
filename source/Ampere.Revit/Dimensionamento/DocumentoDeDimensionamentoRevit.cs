@@ -137,24 +137,52 @@ public sealed class DocumentoDeDimensionamentoRevit(Document documento) : IDocum
         foreach (var resultado in resultados)
         {
             var sistema = Sistema(resultado.Id);
-            var calculo = resultado.Memoria is null ? null : resultado.Dimensionamento;
-            var protecao = calculo is { IdrAvaliado: true } ? calculo : null;
-
-            Corrente(sistema, ParametrosAmpere.CorrenteProjetoA, calculo?.CorrenteDeProjetoA);
-            Numero(sistema, ParametrosAmpere.FCA, calculo?.FCA);
-            Numero(sistema, ParametrosAmpere.FCT, calculo?.FCT);
-            Numero(sistema, ParametrosAmpere.BitolaCondutorMm2, protecao?.SecaoMm2);
-            Corrente(sistema, ParametrosAmpere.CapacidadeConducaoA, protecao?.CapacidadeDeConducaoA);
-            Numero(sistema, ParametrosAmpere.DisjuntorNominalA, protecao?.DisjuntorA);
-            Numero(sistema, ParametrosAmpere.IdrNominalA, protecao?.IdrNominalA);
-            Numero(sistema, ParametrosAmpere.IdrSensibilidadeMa, protecao?.IdrSensibilidadeMa);
-            Numero(sistema, ParametrosAmpere.QuedaTensaoPct, protecao?.QuedaDeTensaoPct);
-            ParametrosAmpere.GravarTextoOuApagar(sistema, ParametrosAmpere.EletrodutoTipo, protecao?.Eletroduto);
-            Numero(sistema, ParametrosAmpere.OcupacaoEletrodutoPct, protecao?.OcupacaoDoEletrodutoPct);
-            ParametrosAmpere.GravarTextoOuApagar(sistema, ParametrosAmpere.PerfilNorma, calculo?.PerfilNorma);
-            ParametrosAmpere.GravarTextoOuApagar(sistema, ParametrosAmpere.MemoriaCalculoId, resultado.Memoria?.Hash());
+            var gravar = ResultadosNoCircuito.De(resultado);
+            Corrente(sistema, ParametrosAmpere.CorrenteProjetoA, gravar.CorrenteDeProjetoA);
+            Numero(sistema, ParametrosAmpere.FCA, gravar.FCA);
+            Numero(sistema, ParametrosAmpere.FCT, gravar.FCT);
+            Numero(sistema, ParametrosAmpere.BitolaCondutorMm2, gravar.SecaoMm2);
+            Corrente(sistema, ParametrosAmpere.CapacidadeConducaoA, gravar.CapacidadeDeConducaoA);
+            Numero(sistema, ParametrosAmpere.DisjuntorNominalA, gravar.DisjuntorA);
+            Numero(sistema, ParametrosAmpere.IdrNominalA, gravar.IdrNominalA);
+            Numero(sistema, ParametrosAmpere.IdrSensibilidadeMa, gravar.IdrSensibilidadeMa);
+            Numero(sistema, ParametrosAmpere.QuedaTensaoPct, gravar.QuedaDeTensaoPct);
+            ParametrosAmpere.GravarTextoOuApagar(sistema, ParametrosAmpere.EletrodutoTipo, gravar.Eletroduto);
+            Numero(sistema, ParametrosAmpere.OcupacaoEletrodutoPct, gravar.OcupacaoDoEletrodutoPct);
+            ParametrosAmpere.GravarTextoOuApagar(sistema, ParametrosAmpere.PerfilNorma, gravar.PerfilNorma);
+            ParametrosAmpere.GravarTextoOuApagar(sistema, ParametrosAmpere.MemoriaCalculoId, gravar.MemoriaCalculoId);
         }
     }
+
+    /// <summary>Os AMP_* de resultado como estão no modelo (0 e texto vazio = apagado), para a verificação comparar.</summary>
+    public IReadOnlyDictionary<long, ResultadosNoCircuito> LerResultados(IReadOnlyCollection<long> ids) =>
+        ids.ToDictionary(id => id, id =>
+        {
+            var sistema = Sistema(id);
+            return new ResultadosNoCircuito(
+                CorrenteLida(sistema, ParametrosAmpere.CorrenteProjetoA),
+                NumeroGravado(sistema, ParametrosAmpere.FCA),
+                NumeroGravado(sistema, ParametrosAmpere.FCT),
+                NumeroGravado(sistema, ParametrosAmpere.BitolaCondutorMm2),
+                CorrenteLida(sistema, ParametrosAmpere.CapacidadeConducaoA),
+                NumeroGravado(sistema, ParametrosAmpere.DisjuntorNominalA),
+                NumeroGravado(sistema, ParametrosAmpere.IdrNominalA),
+                NumeroGravado(sistema, ParametrosAmpere.IdrSensibilidadeMa),
+                NumeroGravado(sistema, ParametrosAmpere.QuedaTensaoPct),
+                Texto(sistema, ParametrosAmpere.EletrodutoTipo),
+                NumeroGravado(sistema, ParametrosAmpere.OcupacaoEletrodutoPct),
+                Texto(sistema, ParametrosAmpere.PerfilNorma),
+                Texto(sistema, ParametrosAmpere.MemoriaCalculoId));
+        });
+
+    // 0 é o "apagado" do Ampere (o Revit não esvazia parâmetro numérico).
+    private static decimal? NumeroGravado(Element elemento, DefinicaoDeParametro definicao) =>
+        ParametrosAmpere.Ler(elemento, definicao) is { HasValue: true } parametro && parametro.AsDouble() is var valor and not 0d && double.IsFinite(valor) && Math.Abs(valor) < 1e15
+            ? (decimal)valor
+            : null;
+
+    private static decimal? CorrenteLida(Element elemento, DefinicaoDeParametro definicao) =>
+        NumeroGravado(elemento, definicao) is { } interno ? (decimal)UnitUtils.ConvertFromInternalUnits((double)interno, UnitTypeId.Amperes) : null;
 
     private ElectricalSystem Sistema(long id) =>
         documento.GetElement(new ElementId(id)) as ElectricalSystem
