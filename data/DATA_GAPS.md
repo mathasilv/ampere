@@ -113,6 +113,12 @@ Resolvido (decisões do usuário):
   com um polo por fase e IDR com um polo por condutor vivo; curva, capacidade de interrupção e tipo do IDR não são
   decididos; **eletrodutos fora da lista** (circuitos dividem trechos; o quantitativo é o dos eletrodutos modelados).
 
+- ✅ Verificar projeto (01/10/2026): comando só de leitura que lista pontos sem classificação, fora de circuito ou sem
+  local (quando o circuito não tem decisão do projetista sobre o IDR), circuitos criados fora do Ampere, com dados
+  faltando, não dimensionados ou com a memória gravada diferente da que o modelo dá hoje (o cálculo é refeito com as
+  condições guardadas pela última rodada), avisos e onde o cálculo para. Salva `verificacao.md` e seleciona no modelo
+  os elementos de uma pendência. Valores de resultado editados à mão (sem mudar a memória) ainda não são detectados.
+
 Comportamento do modelo a validar pelo projetista:
 
 - Resultado que deixou de ser calculado (IDR que deixou de ser exigido, circuito que perdeu um dado, cálculo que parou

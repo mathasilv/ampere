@@ -1,0 +1,47 @@
+<Window
+    x:Class="Ampere.Views.VerificacaoView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:viewModels="clr-namespace:Ampere.ViewModels"
+    mc:Ignorable="d"
+    d:DataContext="{d:DesignInstance viewModels:VerificacaoViewModel}"
+    Title="Verificar projeto"
+    Width="760"
+    Height="520"
+    MinWidth="520"
+    MinHeight="320"
+    WindowStartupLocation="CenterOwner"
+    ShowInTaskbar="False">
+    <DockPanel Margin="16">
+        <TextBlock DockPanel.Dock="Top" Text="{Binding Titulo}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,8" />
+        <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+            <TextBlock Text="{Binding Rodape}" Foreground="Gray" TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                <Button Content="Selecionar no modelo" Width="160" Margin="0,0,8,0" IsEnabled="{Binding PodeSelecionar}" Click="Selecionar"
+                        ToolTip="Fecha e seleciona no modelo os elementos da pendência escolhida" />
+                <Button Content="Fechar" IsCancel="True" IsDefault="True" Width="96" />
+            </StackPanel>
+        </StackPanel>
+        <ListBox ItemsSource="{Binding Linhas}" SelectedItem="{Binding Escolhida}" HorizontalContentAlignment="Stretch"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListBox.ItemTemplate>
+                <DataTemplate DataType="{x:Type viewModels:LinhaDePendencia}">
+                    <Grid Margin="0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="52" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="{Binding Gravidade}" FontWeight="SemiBold" />
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="{Binding Grupo}" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Descricao}" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding Quantidade}" Foreground="Gray" />
+                        </StackPanel>
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </DockPanel>
+</Window>

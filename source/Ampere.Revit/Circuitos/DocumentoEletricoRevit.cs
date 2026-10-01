@@ -152,17 +152,7 @@ public sealed class DocumentoEletricoRevit(Document documento) : IDocumentoEletr
     private static string NomeDoPainel(FamilyInstance painel) =>
         painel.get_Parameter(BuiltInParameter.RBS_ELEC_PANEL_NAME)?.AsString() is { Length: > 0 } nome ? nome : painel.Name;
 
-    private static Connector? ConectorDeForca(FamilyInstance instancia)
-    {
-        if (instancia.MEPModel?.ConnectorManager?.Connectors is not { } conectores) return null;
-        foreach (Connector conector in conectores)
-        {
-            if (conector.Domain == Domain.DomainElectrical && conector.ElectricalSystemType == ElectricalSystemType.PowerCircuit)
-                return conector;
-        }
-
-        return null;
-    }
+    private static Connector? ConectorDeForca(FamilyInstance instancia) => Revit.ConectorDeForca.De(instancia);
 
     private static string Alimentacao(Connector conector)
     {

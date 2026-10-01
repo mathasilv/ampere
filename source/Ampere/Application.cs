@@ -45,7 +45,12 @@ public class Application : ExternalApplication
         dimensionamento.AddPushButton<DimensionarCircuitosCommand>("Dimensionar\ncircuitos")
             .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
             .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
-            .SetToolTip("Dimensiona os circuitos do Ampere pela NBR 5410 (IB, seção, disjuntor, queda de tensão, IDR e eletroduto) com memória de cálculo; grava os resultados nos circuitos (um único desfazer).");
+            .SetToolTip("Dimensiona os circuitos do Ampere pela NBR 5410 (IB, seção, disjuntor, queda de tensão, IDR e eletroduto) com memória de cálculo; grava os resultados nos circuitos (um único desfazer). Com seleção, só os circuitos selecionados (ou dos quadros e pontos selecionados).");
+
+        dimensionamento.AddPushButton<VerificarProjetoCommand>("Verificar\nprojeto")
+            .SetImage("/Ampere;component/Resources/Icons/RibbonIcon16.png")
+            .SetLargeImage("/Ampere;component/Resources/Icons/RibbonIcon32.png")
+            .SetToolTip("Lista o que falta ou mudou, sem alterar o modelo: pontos sem classificação, fora de circuito ou sem local; circuitos fora do Ampere, com dados faltando, não dimensionados ou com memória desatualizada. Seleciona no modelo os elementos de uma pendência.");
 
         var quadros = Application.CreatePanel("Quadros", "Ampere");
 
