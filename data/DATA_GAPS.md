@@ -135,7 +135,17 @@ Resolvido (decisões do usuário):
   identificada"); a carga dele se divide igualmente entre elas. Por fase: instalada, demanda e corrente (fase-neutro);
   desequilíbrio = (maior − menor) / maior. É **indicador**, fora da memória de cálculo: a NBR 5410 não fixa limite.
   Aparece no resumo e numa seção do relatório do quadro. A validar no Revit: o formato do `PhaseLabel` (teste de
-  integração do quadro).
+  integração do quadro). Corrente por fase = soma das correntes de linha dos circuitos (S / V em F+N e 2F, S / √3·V em
+  3F, S / 2·V fase-neutro em 2F+N); tensão fase-neutro = a fase-terra do sistema de distribuição do Revit.
+
+- ✅ Alimentadores dos quadros (01/10/2026, decisões do desenvolvedor): comando "Dimensionar alimentadores", com o mesmo
+  motor dos terminais. IB pela demanda do quadro de cargas — refeito com os fatores guardados no quadro na montagem e
+  conferido pelo hash gravado (quadro desatualizado = não dimensiona) —; em 3F/3F+N com a corrente de todas as fases
+  conhecida, pela **fase de maior corrente** (soma aritmética das correntes de linha, a favor da segurança). Queda: o
+  alimentador fica com o que sobra do limite total do perfil para a origem escolhida (ponto de entrega 5%,
+  transformador ou gerador próprio 7%) depois da **maior queda dos circuitos do quadro**. IDR: a tabela por local é dos
+  terminais; no alimentador, só por decisão do projetista. **Fora desta versão** (o comando diz o motivo): alimentação
+  em cascata (QGBT → QD1 → QD2) e quadro que alimenta outros quadros — falta somar demandas e quedas em série.
 
 Comportamento do modelo a validar pelo projetista:
 

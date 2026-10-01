@@ -67,6 +67,20 @@ internal sealed class CenarioEletrico
         return new CenarioEletrico(documento, parede, face, nivel, quadro);
     }
 
+    /// <summary>Outro quadro igual ao QD1 (120/208 Wye), com o nome dado, ao lado dele na parede.</summary>
+    public FamilyInstance ColocarQuadro(string nome, double x)
+    {
+        using var transacao = new Transaction(Documento, "Quadro de teste");
+        transacao.Start();
+        var quadro = Colocar(Documento, _face, _nivel, BuiltInCategory.OST_ElectricalEquipment,
+            simbolo => simbolo.FamilyName.Contains("208V") && simbolo.Name == "225 A", new XYZ(x, 0, 4));
+        var sistema = new FilteredElementCollector(Documento).OfClass(typeof(DistributionSysType)).First(tipo => tipo.Name == "120/208 Wye");
+        quadro.get_Parameter(BuiltInParameter.RBS_FAMILY_CONTENT_DISTRIBUTION_SYSTEM).Set(sistema.Id);
+        quadro.get_Parameter(BuiltInParameter.RBS_ELEC_PANEL_NAME).Set(nome);
+        transacao.Commit();
+        return quadro;
+    }
+
     public List<long> ColocarLuminarias(int quantidade) =>
         ColocarVarias(quantidade, BuiltInCategory.OST_LightingFixtures, simbolo => simbolo.Name == "600x600 - 120", altura: 8);
 

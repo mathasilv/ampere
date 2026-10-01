@@ -42,10 +42,21 @@ internal static class RelatoriosDosCircuitos
         var lista = ListaDeMateriais.Montar(resultados);
         var materiais = GravarCsv(pasta, nomeDosMateriais, lista.Csv(), erros);
 
-        var comMemoria = resultados.Where(resultado => resultado.Memoria is not null).ToList();
+        var gerados = GravarMemorias(resultados, pasta, erros);
+
+        return new GravacaoDosRelatorios(gerados > 0 || planilha is not null || materiais is not null ? pasta : null, gerados, planilha,
+            materiais is null ? null : new ArquivoDeMateriais(materiais, lista.Itens.Count, lista.ForaDaLista.Count), erros, daSelecao);
+    }
+
+    /// <summary>
+    ///     A memória (JSON), o relatório (Markdown) e o PDF de cada resultado com memória, com o quadro, o nome e o início
+    ///     do hash no nome do arquivo; devolve quantos saíram. PDF indisponível não impede JSON e Markdown.
+    /// </summary>
+    public static int GravarMemorias(IEnumerable<ResultadoDoCircuito> resultados, string pasta, List<string> erros)
+    {
         var gerados = 0;
         var pdfDisponivel = true;
-        foreach (var resultado in comMemoria)
+        foreach (var resultado in resultados.Where(resultado => resultado.Memoria is not null))
         {
             var memoria = resultado.Memoria!;
             var hash = memoria.Hash();
@@ -66,8 +77,7 @@ internal static class RelatoriosDosCircuitos
             }
         }
 
-        return new GravacaoDosRelatorios(gerados > 0 || planilha is not null || materiais is not null ? pasta : null, gerados, planilha,
-            materiais is null ? null : new ArquivoDeMateriais(materiais, lista.Itens.Count, lista.ForaDaLista.Count), erros, daSelecao);
+        return gerados;
     }
 
     // Com BOM: o Excel só reconhece os acentos de um CSV em UTF-8 se ele começar com a marca.

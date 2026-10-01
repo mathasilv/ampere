@@ -1,3 +1,4 @@
+using Ampere.Core.Alimentadores;
 using Ampere.Core.Dimensionamento;
 using Ampere.Core.Parametros;
 using Ampere.Revit.Armazenamento;
@@ -114,6 +115,22 @@ public sealed class DocumentoDeDimensionamentoRevit(Document documento) : IDocum
                     ProblemasDeLeitura: problemas);
             })
             .ToList();
+
+    /// <summary>Os AMP_* de entrada de um circuito que alimenta um quadro (lidos como nos terminais).</summary>
+    public DadosDoAlimentador LerAlimentador(long id)
+    {
+        var sistema = Sistema(id);
+        var problemas = new List<string>();
+        return new DadosDoAlimentador(
+            id,
+            ComprimentoInformadoM(sistema),
+            Texto(sistema, ParametrosAmpere.MetodoInstalacao),
+            Texto(sistema, ParametrosAmpere.MaterialIsolacao),
+            Texto(sistema, ParametrosAmpere.TipoCondutor),
+            Decisoes(sistema, problemas),
+            ComprimentoNoRevit(sistema),
+            problemas);
+    }
 
     public void GravarResultados(IReadOnlyList<ResultadoDoCircuito> resultados)
     {
